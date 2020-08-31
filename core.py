@@ -18,7 +18,7 @@ from itertools import product
 from scipy import fft, signal
 from lib import log, aes, cpa, utils, traces as tr
 
-MODES = ["hw", "tiny"]  # available encryption source
+MODES = ["hw", "sw"]  # available encryption source
 F_SAMPLING = 200e6  # sensors sampling frequency
 ACQ_DIR = "acquisition"  # label for the acquisition directory
 COR_DIR = "correlation"  # label for the correlation  directory
@@ -48,10 +48,11 @@ class Request:
         Encryption mode.
     inv : bool
         True if encryption direction is decrypt.
-
+    serial : bool
+        True if an acquisition from serial port is requested.
     """
 
-    def __init__(self, iterations, mode, inv):
+    def __init__(self, iterations, mode, inv, serial):
         """Initializes a request with attributes.
 
         Attributes
@@ -62,11 +63,13 @@ class Request:
             Encryption mode.
         inv : bool
             True if encryption direction is decrypt.
-
+        serial : bool
+            True if an acquisition from serial port is requested.
         """
         self.iterations = iterations
         self.mode = mode
         self.inv = inv
+        self.serial = serial
 
     @classmethod
     def from_args(cls, args):
@@ -79,9 +82,9 @@ class Request:
 
         """
         try:
-            return Request(args.iterations, args.mode, args.inv)
+            return Request(args.iterations, args.mode, args.inv, args.serial)
         except AttributeError:
-            return Request(args.iterations, args.mode, args.model == cpa.Models.INV_SBOX)
+            return Request(args.iterations, args.mode, 0, False)
 
     @classmethod
     def from_meta(cls, meta):
@@ -93,7 +96,7 @@ class Request:
             Meta-data.
 
         """
-        return Request(meta.iterations, meta.mode, meta.direction == "decrypt")
+        return Request(meta.iterations, meta.mode, meta.direction == "decrypt", False)
 
     def filename(self, prefix, suffix=""):
         """Creates a filename based on the request.
@@ -151,7 +154,7 @@ def acquire_bin(source, request, path=None):
     """
     path = path or os.path.join(DATA_PATH_ACQ, request.mode)
     print(f"source: {source}")
-    if source[:3].lower() == "com":
+    if request.serial:
         s = log.read.serial(source, request.iterations, request.mode, request.inv)
         log.write.bytes(s, os.path.join(path, request.filename("cmd", ".log")))
     else:
@@ -297,10 +300,9 @@ def init_handler(data, traces, model):
     """
     key = aes.words_to_block(data.keys[0])
     if model == cpa.Models.SBOX:
-        key = key
         blocks = [aes.words_to_block(block) for block in data.plains]
     elif model == cpa.Models.INV_SBOX:
-        key = aes.key_expansion(key)[-1]
+        key = aes.key_expansion(key)[10].T
         blocks = [aes.words_to_block(block) for block in data.ciphers]
     else:
         return
@@ -403,25 +405,26 @@ def plot_cor(handler, request, meta=None, path=None):
 
     for i, j in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN)):
         b = i * aes.BLOCK_LEN + j
-        c = 100 * maxs[i, j, guess[i, j]]
-        infos = f"(iterations: {meta.iterations}, best correlation: {c:.2f}%)"
+        g = 100 * maxs[i, j, guess[i, j]]
+        k = 100 * maxs[i, j, key[i, j]]
+        infos = f"(iterations: {meta.iterations}, guess correlation: {g:.2f}%, key correlation:{k:.2f}%)"
         plt.fill_between(range(m), cor_max[i, j], cor_min[i, j], color="grey")
 
         @utils.plot_decorator(
             f"Correlation byte {b} {infos}",
             "Time Samples",
             "Pearson Correlation",
-            os.path.join(path, request.filename("sca_cor")))
+            os.path.join(path, request.filename("sca_cor", f"_b{b}")))
         def plot_guess():
-            if key[i, j] != guess[i, j]:
+            if exact[i, j]:
+                plt.plot(cor[i, j, key[i, j]], color="r", label=f"key 0x{key[i, j]:02x}")
+            else:
                 plt.plot(cor[i, j, key[i, j]], color="b", label=f"key 0x{key[i, j]:02x}")
                 plt.plot(cor[i, j, guess[i, j]], color="c", label=f"guess 0x{guess[i, j]:02x}")
-            else:
-                plt.plot(cor[i, j, key[i, j]], color="r", label=f"key 0x{key[i, j]:02x}")
 
         plot_guess()
 
-    print(f"exact guess: {np.count_nonzero(exact)}/{aes.BLOCK_LEN}\n{exact}")
+    print(f"exact guess: {np.count_nonzero(exact)}/{aes.BLOCK_LEN * aes.BLOCK_LEN}\n{exact}")
     print(f"key:\n{key}")
     print(f"guess:\n{guess}")
 

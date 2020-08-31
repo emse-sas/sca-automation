@@ -52,6 +52,8 @@ argp.add_argument("-p", "--plot", type=int, default=16,
                   help="Count of raw traces to plot.")
 argp.add_argument("-i", "--inv", action="store_true",
                   help="Perform inverse encryption.")
+argp.add_argument("-s", "--serial", action="store_true",
+                  help="Acquisition from serials source.")
 
 if __name__ == "__main__":
     main(argp.parse_args())
