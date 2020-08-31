@@ -150,7 +150,7 @@ class Handler:
         return self
 
     def correlations(self):
-        """Computes Pearson correlation coefficient on current data.
+        """Computes Pearson's correlation coefficient on current data.
 
         Returns
         -------
@@ -159,7 +159,7 @@ class Handler:
 
         """
         n = len(self.blocks)
-        m = len(self.means[0, 0, 0])
+        _, _, _, m = self.means.shape
         ret = np.empty((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_HYP, m))
         for i, j, h in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN), range(COUNT_HYP)):
             y = np.array(self.hyp[h] * self.lens[i, j], dtype=np.float)
@@ -193,8 +193,7 @@ class Handler:
         correlations : Compute temporal correlation.
 
         """
-        _, _, _, m = self.means.shape
-        maxs = np.max(np.abs(cor), axis=3)
+        maxs = np.max(cor, axis=3)
         guess = np.argmax(maxs, axis=2)
         exact = guess == self.key
         return guess, maxs, exact
