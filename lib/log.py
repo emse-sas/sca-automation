@@ -30,13 +30,14 @@ Examples
 
 import csv
 from warnings import warn
-
+from itertools import zip_longest
 import serial
 
 from lib.utils import decode_hamming, check_hex
 
 START_TRACE = b"\xfe\xfe\xfe\xfe"  # Start traces tag
 END_ACQ = b"\xff\xff\xff\xff"  # End acquisition tag
+ACQ_CMD = "sca"
 
 
 class read:
@@ -92,14 +93,15 @@ class read:
         py_sca.lib.utils.decode_hamming : Decode hamming weight.
 
         """
-        opts = (" -t %d" % iterations,
-                " -v" if verbose else "",
-                " -m %s" % mode,
-                " -i" if inv else ""
-                )
+        cmd = (ACQ_CMD,
+               " -t %d" % iterations,
+               " -v" if verbose else "",
+               " -h" if mode == "hw" else "",
+               " -i" if inv else ""
+               )
         with serial.Serial(port, 921_600, parity=serial.PARITY_NONE, xonxoff=False) as ser:
             ser.flush()
-            ser.write(("sca%s%s%s%s\n" % opts).encode())
+            ser.write(("%s%s%s%s%s\n" % cmd).encode())
             s = ser.read_all()
             while s[-8:].find(END_ACQ) == -1:
                 while ser.in_waiting == 0:
@@ -152,6 +154,10 @@ class Keywords:
         True if the meta-data keyword have already been browsed.
     inv: bool
         True if the keywords follow the inverse encryption sequence.
+    metawords: str
+        Keywords displayed once at the beginning of acquisition.
+    datawords: str
+        Keywords displayed recurrently during each trace acquisition.
     value: str
         Value of the current keyword.
 
@@ -169,14 +175,7 @@ class Keywords:
     WEIGHTS = "weights"
     DELIMITER = b":"
 
-    META = [MODE, DIRECTION, SENSORS, TARGET]
-    DATA = [KEY, PLAIN, CIPHER, SAMPLES, CODE]
-    DATA_IV = [KEY, CIPHER, PLAIN, SAMPLES, CODE]
-
-    META_LEN = len(META)
-    DATA_LEN = len(DATA)
-
-    def __init__(self, meta=False, inv=False):
+    def __init__(self, meta=False, inv=False, verbose=False):
         """Initializes a new keyword iterator.
 
         Parameters
@@ -188,8 +187,11 @@ class Keywords:
         """
         self.idx = 0
         self.meta = meta
-        self.inv = inv
-        self.value = Keywords.DATA[0] if meta else Keywords.META[0]
+        self.value = ""
+        if not meta:
+            self.__build_metawords()
+        self.__build_datawords(inv, verbose)
+        self.reset()
 
     def __iter__(self):
         return self
@@ -197,19 +199,31 @@ class Keywords:
     def __next__(self):
         current = self.value
         if self.meta:
-            self.idx = (self.idx + 1) % Keywords.DATA_LEN
-            self.value = Keywords.DATA_IV[self.idx] if self.inv else Keywords.DATA[self.idx]
-        else:
-            if self.idx < Keywords.META_LEN:
-                self.idx += 1
-            if self.idx == Keywords.META_LEN:
-                self.idx = 0
-                self.meta = True
-                self.value = Keywords.DATA_IV[0] if self.inv else Keywords.DATA[0]
-            else:
-                self.value = Keywords.META[self.idx]
+            self.idx = (self.idx + 1) % len(self.datawords)
+            self.value = self.datawords[self.idx]
+            return current
 
+        if self.idx < len(self.metawords):
+            self.idx += 1
+
+        if self.idx == len(self.metawords):
+            self.reset(meta=True)
+            return current
+
+        self.value = self.metawords[self.idx]
         return current
+
+    def reset(self, meta=None):
+        self.idx = 0
+        self.meta = meta or self.meta
+        self.value = self.datawords[0] if self.meta else self.metawords[0]
+
+    def __build_metawords(self):
+        self.metawords = [Keywords.SENSORS, Keywords.TARGET, Keywords.MODE, Keywords.DIRECTION, Keywords.KEY]
+
+    def __build_datawords(self, inv, verbose):
+        self.datawords = [Keywords.CIPHER, Keywords.PLAIN] if inv else [Keywords.PLAIN, Keywords.CIPHER]
+        self.datawords += [Keywords.SAMPLES, Keywords.WEIGHTS] if verbose else [Keywords.SAMPLES, Keywords.CODE]
 
 
 class Data:
@@ -278,7 +292,7 @@ class Data:
             header = ["p0", "p1", "p2", "p3", "c0", "c1", "c2", "c3", "k0", "k1", "k2", "k3"]
             writer = csv.writer(file, delimiter=";")
             writer.writerow(header)
-            for plain, cipher, key in zip(self.plains, self.ciphers, self.keys):
+            for plain, cipher, key in zip_longest(self.plains, self.ciphers, self.keys, fillvalue=self.keys[0]):
                 writer.writerow(plain + cipher + key)
 
     @classmethod
@@ -623,7 +637,7 @@ class Parser:
             except (ValueError, UnicodeDecodeError, RuntimeError) as e:
                 args = (e, len(self.leak.traces), idx, line)
                 warn("parsing error\nerror: {}\niteration: {:d}\nline {:d}: {}".format(*args))
-                keywords = Keywords(keywords.meta, inv)
+                keywords.reset(keywords.meta)
                 expected = next(keywords)
                 valid = False
                 self.pop()
@@ -643,7 +657,7 @@ class Parser:
         except IndexError:
             return False
 
-        if keyword in Keywords.DATA and keyword != expected:
+        if keyword != expected:
             raise RuntimeError("expected %s keyword not %s" % (expected, keyword))
 
         if keyword in (Keywords.MODE, Keywords.DIRECTION):
