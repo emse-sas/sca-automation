@@ -1,3 +1,6 @@
 __pycache__/
 venv/
 .idea/
+data/
+media/
+.pytest_cache/
