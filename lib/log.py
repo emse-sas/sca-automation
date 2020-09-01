@@ -4,7 +4,7 @@ This module is designed as a class library providing *entity classes*
 to represent the side channel data acquired from SoC.
 
 It provides binary data parsing in order to read
-acquisition data from a serial source or a binary file and
+acquisition data from a serial sources or a binary file and
 retrieve it in the entity classes.
 
 Examples
@@ -90,7 +90,7 @@ class read:
 
         See Also
         --------
-        py_sca.lib.utils.decode_hamming : Decode hamming weight.
+        sca-automation.lib.utils.decode_hamming : Decode hamming weight.
 
         """
         cmd = (ACQ_CMD,

@@ -102,7 +102,7 @@ class Handler:
 
         Returns
         -------
-        py_sca.lib.cpa.Handler
+        sca-automation.lib.cpa.Handler
             Reference to self.
 
         """
@@ -138,7 +138,7 @@ class Handler:
 
         Returns
         -------
-        py_sca.lib.cpa.Handler
+        sca-automation.lib.cpa.Handler
             Reference to self.
 
         """

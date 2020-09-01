@@ -18,7 +18,7 @@ from itertools import product
 from scipy import fft, signal
 from lib import log, aes, cpa, utils, traces as tr
 
-MODES = ["hw", "sw"]  # available encryption source
+MODES = ["hw", "sw"]  # available encryption sources
 F_SAMPLING = 200e6  # sensors sampling frequency
 ACQ_DIR = "acquisition"  # label for the acquisition directory
 COR_DIR = "correlation"  # label for the correlation  directory
@@ -92,7 +92,7 @@ class Request:
 
         Parameters
         ----------
-        meta : py_sca.lib.log.Meta
+        meta : sca-automation.lib.log.Meta
             Meta-data.
 
         """
@@ -125,11 +125,11 @@ class Request:
 def acquire_bin(source, request, path=None):
     """Acquires binary data from serial or file.
 
-    If ``source`` is a serial channel such as ``COM1``,
+    If ``sources`` is a serial channel such as ``COM1``,
     the acquired data is write-back to a log file.
     ``path`` must be the path of the write-back file.
 
-    Otherwise, it reads the file with the prefix given by ``source``.
+    Otherwise, it reads the file with the prefix given by ``sources``.
     Therefore ``path`` must be the path of the file to read.
 
     Notes
@@ -141,10 +141,10 @@ def acquire_bin(source, request, path=None):
     ----------
     source : str
         Serial channel or file prefix.
-    request : py_sca.core.Request
+    request : sca-automation.core.Request
         Acquisition request.
     path : str, optional
-        Export or source path.
+        Export or sources path.
 
     Returns
     -------
@@ -153,7 +153,7 @@ def acquire_bin(source, request, path=None):
 
     """
     path = path or os.path.join(DATA_PATH_ACQ, request.mode)
-    print(f"source: {source}")
+    print(f"sources: {source}")
     if request.serial:
         s = log.read.serial(source, request.iterations, request.mode, request.inv)
         log.write.bytes(s, os.path.join(path, request.filename("cmd", ".log")))
@@ -171,7 +171,7 @@ def parse_bin(s, request):
     ----------
     s : bytes
         Binary data string.
-    request : py_sca.core.Request
+    request : sca-automation.core.Request
         Acquisition request.
 
     Returns
@@ -197,13 +197,13 @@ def export_csv(request, meta=None, leak=None, data=None, path=None):
 
     Parameters
     ----------
-    request : py_sca.core.Request
+    request : sca-automation.core.Request
         Acquisition request.
-    meta : py_sca.lib.log.Meta, optional
+    meta : sca-automation.lib.log.Meta, optional
         Meta-data.
-    leak : py_sca.lib.log.Leak, optional
+    leak : sca-automation.lib.log.Leak, optional
         Leakage data.
-    data : py_sca.lib.log.Data, optional
+    data : sca-automation.lib.log.Data, optional
         Encryption data.
     path : str, optional
         Path of CSV files.
@@ -224,7 +224,7 @@ def import_csv(request, path=None):
 
     Parameters
     ----------
-    request : py_sca.core.Request
+    request : sca-automation.core.Request
         Acquisition request.
     path : str, optional
         Path of CSV files.
@@ -232,11 +232,11 @@ def import_csv(request, path=None):
     Returns
     -------
 
-    leak : py_sca.lib.log.Leak
+    leak : sca-automation.lib.log.Leak
         Leakage data.
-    data : py_sca.lib.log.Data
+    data : sca-automation.lib.log.Data
         Encryption data.
-    meta : py_sca.lib.log.Meta
+    meta : sca-automation.lib.log.Meta
         Meta-data.
     """
     path = path or os.path.join(DATA_PATH_ACQ, request.mode)
@@ -254,7 +254,7 @@ def filter_traces(leak):
 
     Parameters
     ----------
-    leak : py_sca.lib.log.Leak
+    leak : sca-automation.lib.log.Leak
         Leakage data.
 
     Returns
@@ -285,7 +285,7 @@ def init_handler(data, traces, model):
 
     Parameters
     ----------
-    data : py_sca.lib.log.Data
+    data : sca-automation.lib.log.Data
         Encryption data.
     traces : np.ndarray
         Traces matrix.
@@ -294,7 +294,7 @@ def init_handler(data, traces, model):
 
     Returns
     -------
-    py_sca.lib.cpa.Handler
+    sca-automation.lib.cpa.Handler
         Handler initialized to perform correlation over ``traces``.
 
     """
@@ -315,12 +315,12 @@ def plot_acq(leak, meta, request, path=None, limit=16):
 
     Parameters
     ----------
-    leak : py_sca.lib.log.Leak
+    leak : sca-automation.lib.log.Leak
         Leakage data.
-    request : py_sca.core.Request
+    request : sca-automation.core.Request
         Acquisition request.
         Encryption mode.
-    meta : py_sca.lib.log.Meta
+    meta : sca-automation.lib.log.Meta
         Meta-data.
     path : str
         Images saving path.
@@ -383,11 +383,11 @@ def plot_cor(handler, request, meta=None, path=None):
 
     Parameters
     ----------
-    handler : py_sca.lib.cpa.Handler
+    handler : sca-automation.lib.cpa.Handler
         Initialized handler.
-    request : py_sca.core.Request
+    request : sca-automation.core.Request
         Acquisition request.
-    meta : py_sca.lib.log.Meta
+    meta : sca-automation.lib.log.Meta
         Meta-data.
     path : str
         Images saving path.
