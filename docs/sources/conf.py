@@ -12,18 +12,18 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../../sca-automation'))
-sys.path.insert(0, os.path.abspath('../../..'))
+sys.path.insert(0, os.path.abspath('../../app'))
+sys.path.insert(0, os.path.abspath('../..'))
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'sca_framework'
+project = 'sca-automation'
 copyright = '2020, Sami Dahoux'
 author = 'Sami Dahoux'
 
 # The full version, including alpha/beta/rc tags
-release = '1.1.0'
+release = '1.0.0'
 
 
 # -- General configuration ---------------------------------------------------

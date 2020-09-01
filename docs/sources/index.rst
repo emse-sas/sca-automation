@@ -18,26 +18,16 @@ To do so, the package provides many useful tools :
 * *Library* and *API* to allow customization
 
 Reference
-===========
-
-.. automodule:: sca-automation
-   :members:
-   :undoc-members:
-   :show-inheritance:
+========
 
 .. toctree::
    :maxdepth: 1
    :caption: Application
 
-   sca-automation.app
-
-.. automodule:: sca-automation.lib
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   application
 
 .. toctree::
    :maxdepth: 1
    :caption: Library
 
-   sca-automation.lib
+   library

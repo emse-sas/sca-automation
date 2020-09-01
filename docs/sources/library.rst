@@ -1,7 +1,17 @@
+Overview
+--------------------
+
+
+.. automodule:: app.lib
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 lib.aes module
 ----------------------
 
-.. automodule:: sca-automation.lib.aes
+.. automodule:: app.lib.aes
    :members:
    :undoc-members:
    :show-inheritance:
@@ -9,7 +19,7 @@ lib.aes module
 lib.cpa module
 ----------------------
 
-.. automodule:: sca-automation.lib.cpa
+.. automodule:: app.lib.cpa
    :members:
    :undoc-members:
    :show-inheritance:
@@ -17,7 +27,7 @@ lib.cpa module
 lib.log module
 ----------------------
 
-.. automodule:: sca-automation.lib.log
+.. automodule:: app.lib.log
    :members:
    :undoc-members:
    :show-inheritance:
@@ -25,7 +35,7 @@ lib.log module
 lib.traces module
 -------------------------
 
-.. automodule:: sca-automation.lib.traces
+.. automodule:: app.lib.traces
    :members:
    :undoc-members:
    :show-inheritance:
@@ -33,7 +43,7 @@ lib.traces module
 lib.utils module
 ------------------------
 
-.. automodule:: sca-automation.lib.utils
+.. automodule:: app.lib.utils
    :members:
    :undoc-members:
    :show-inheritance:

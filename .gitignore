@@ -4,3 +4,4 @@ venv/
 data/
 media/
 .pytest_cache/
+docs/build
