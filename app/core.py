@@ -23,8 +23,8 @@ MODES = ["hw", "sw"]  # available encryption sources
 F_SAMPLING = 200e6  # sensors sampling frequency
 ACQ_DIR = "acquisition"  # label for the acquisition directory
 COR_DIR = "correlation"  # label for the correlation  directory
-DATA_PATH = "../data"
-MEDIA_PATH = "../media"
+DATA_PATH = os.path.join("..", "data")
+MEDIA_PATH = os.path.join("..", "media")
 IMG_PATH = os.path.join(MEDIA_PATH, "img")
 DATA_PATH_ACQ = os.path.join(DATA_PATH, ACQ_DIR)
 DATA_PATH_COR = os.path.join(DATA_PATH, COR_DIR)
@@ -156,7 +156,8 @@ def acquire_bin(source, request, path=None):
     path = path or os.path.join(DATA_PATH_ACQ, request.mode)
     print(f"sources: {source}")
     if request.serial:
-        s = log.read.serial(source, request.iterations, request.mode, request.inv)
+        s = log.read.serial(source, request.iterations,
+                            request.mode, request.inv)
         log.write.bytes(s, os.path.join(path, request.filename("cmd", ".log")))
     else:
         s = log.read.file(os.path.join(path, request.filename(source, ".log")))
@@ -241,9 +242,12 @@ def import_csv(request, path=None):
         Meta-data.
     """
     path = path or os.path.join(DATA_PATH_ACQ, request.mode)
-    data = log.Data.from_csv(os.path.join(path, request.filename("data", ".csv")))
-    leak = log.Leak.from_csv(os.path.join(path, request.filename("leak", ".csv")))
-    meta = log.Meta.from_csv(os.path.join(path, request.filename("meta", ".csv")))
+    data = log.Data.from_csv(os.path.join(
+        path, request.filename("data", ".csv")))
+    leak = log.Leak.from_csv(os.path.join(
+        path, request.filename("leak", ".csv")))
+    meta = log.Meta.from_csv(os.path.join(
+        path, request.filename("meta", ".csv")))
     iterations = meta.iterations if meta else "--"
     print(f"traces imported: {iterations}/{request.iterations}")
     return leak, data, meta
@@ -418,14 +422,18 @@ def plot_cor(handler, request, meta=None, path=None):
             os.path.join(path, request.filename("sca_cor", f"_b{b}")))
         def plot_guess():
             if exact[i, j]:
-                plt.plot(cor[i, j, key[i, j]], color="r", label=f"key 0x{key[i, j]:02x}")
+                plt.plot(cor[i, j, key[i, j]], color="r",
+                         label=f"key 0x{key[i, j]:02x}")
             else:
-                plt.plot(cor[i, j, key[i, j]], color="b", label=f"key 0x{key[i, j]:02x}")
-                plt.plot(cor[i, j, guess[i, j]], color="c", label=f"guess 0x{guess[i, j]:02x}")
+                plt.plot(cor[i, j, key[i, j]], color="b",
+                         label=f"key 0x{key[i, j]:02x}")
+                plt.plot(cor[i, j, guess[i, j]], color="c",
+                         label=f"guess 0x{guess[i, j]:02x}")
 
         plot_guess()
 
-    print(f"exact guess: {np.count_nonzero(exact)}/{aes.BLOCK_LEN * aes.BLOCK_LEN}\n{exact}")
+    print(
+        f"exact guess: {np.count_nonzero(exact)}/{aes.BLOCK_LEN * aes.BLOCK_LEN}\n{exact}")
     print(f"key:\n{key}")
     print(f"guess:\n{guess}")
 

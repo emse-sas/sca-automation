@@ -4,9 +4,9 @@ from math import sqrt
 
 from numpy.linalg import norm
 
-from app.lib import log, aes
+from lib import log, aes
 
-LOG_PATH = os.path.join("..", *["..", "data", "acquisition"])
+LOG_PATH = os.path.join("..", *["data", "acquisition"])
 
 
 class DataTest(unittest.TestCase):
