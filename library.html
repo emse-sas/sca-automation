@@ -1,0 +1,1724 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Overview &mdash; sca-automation 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+
+  
+  
+  
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Overview" href="application.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home" alt="Documentation Home"> sca-automation
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Application</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="application.html">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="application.html#module-app.clean">clean.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="application.html#module-app.setup">setup.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="application.html#module-app.acquire">acquire.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="application.html#module-app.attack">attack.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="application.html#module-app.core">core module</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Library</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#module-app.lib.aes">lib.aes module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#module-app.lib.cpa">lib.cpa module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#module-app.lib.log">lib.log module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#module-app.lib.traces">lib.traces module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#module-app.lib.utils">lib.utils module</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">sca-automation</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>Overview</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="_sources/library.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-app.lib">
+<span id="overview"></span><h1>Overview<a class="headerlink" href="#module-app.lib" title="Permalink to this headline">¶</a></h1>
+<p>Python library</p>
+<p>This library provide the abstractions needed to represent
+the side channel-attack pipeline.</p>
+<p>It allows to code your own scripts without using
+the high-level API.
+This can be useful especially if you want to have a behavior
+during acquisition or processing that is not provided by the API.</p>
+<p>The library allows to do the following tasks programmatically :</p>
+<ul class="simple">
+<li><p>Acquire side-channel data</p></li>
+<li><p>Acquire channel data</p></li>
+<li><p>Parse the data</p></li>
+<li><p>Export and import data</p></li>
+<li><p>Apply basic filtering</p></li>
+<li><p>Compute attack models</p></li>
+<li><p>Compute correlation</p></li>
+<li><p>Compute guess and related stats</p></li>
+</ul>
+</div>
+<div class="section" id="module-app.lib.aes">
+<span id="lib-aes-module"></span><h1>lib.aes module<a class="headerlink" href="#module-app.lib.aes" title="Permalink to this headline">¶</a></h1>
+<p>Numpy based AES module for side-channel attacks</p>
+<p>This module is designed to allow easily build power consumption models.</p>
+<p>It separately provides all the round operations used in the AES algorithm.
+It also features a handler class used to encapsulate key-expansion and
+ease encryption and decryption.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">lib</span> <span class="kn">import</span> <span class="n">aes</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">key</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ark</span> <span class="o">=</span> <span class="n">aes</span><span class="o">.</span><span class="n">add_round_key</span><span class="p">(</span><span class="n">plain</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">handler</span> <span class="o">=</span> <span class="n">aes</span><span class="o">.</span><span class="n">Handler</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cipher</span> <span class="o">=</span> <span class="n">handler</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">plain</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Unlike the usual AES implementation, this one keeps a full trace
+of the intermediate operations during encryption.</p>
+<p>More precisely, this module stores the value of the message block
+at each round and for each round operation.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">lib</span> <span class="kn">import</span> <span class="n">aes</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">key</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">4</span><span class="p">,</span><span class="mi">4</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">plain</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">handler</span> <span class="o">=</span> <span class="n">aes</span><span class="o">.</span><span class="n">Handler</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cipher</span> <span class="o">=</span> <span class="n">handler</span><span class="o">.</span><span class="n">encrypt</span><span class="p">(</span><span class="n">plain</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ark</span> <span class="o">=</span> <span class="n">handler</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">aes</span><span class="o">.</span><span class="n">Stages</span><span class="o">.</span><span class="n">ADD_ROUND_KEY</span><span class="p">]</span>
+</pre></div>
+</div>
+<dl class="py function">
+<dt id="app.lib.aes.word_to_col">
+<code class="sig-prename descclassname">app.lib.aes.</code><code class="sig-name descname">word_to_col</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">w</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.word_to_col" title="Permalink to this definition">¶</a></dt>
+<dd><p>Splits a hexadecimal string to a bytes column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>w</strong> (<em>str</em>) – Hexadecimal 32-bit word.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>4 bytes column containing integers representing the input string.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.aes.col_to_word">
+<code class="sig-prename descclassname">app.lib.aes.</code><code class="sig-name descname">col_to_word</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">c</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.col_to_word" title="Permalink to this definition">¶</a></dt>
+<dd><p>Formats a bytes column as a hexadecimal string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>c</strong> (<em>np.ndarray</em>) – 4 bytes column to format</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Hexadecimal 32 bits words representing the input column</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the column has a length different from 4</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.aes.words_to_block">
+<code class="sig-prename descclassname">app.lib.aes.</code><code class="sig-name descname">words_to_block</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">words</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.words_to_block" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transforms hexadecimal message string into an AES block matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>words</strong> (<em>str</em>) – 4 32-bits words as strings representing block’s columns</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>4x4 matrix column major message block’s matrix.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If the count of words provided differs from 4.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#app.lib.aes.word_to_col" title="app.lib.aes.word_to_col"><code class="xref py py-func docutils literal notranslate"><span class="pre">word_to_col()</span></code></a></dt><dd><p>Column conversion from word.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.aes.block_to_words">
+<code class="sig-prename descclassname">app.lib.aes.</code><code class="sig-name descname">block_to_words</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">block</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.block_to_words" title="Permalink to this definition">¶</a></dt>
+<dd><p>Formats a state block into an hexadecimal string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>block</strong> (<em>np.ndarray</em>) – 4x4 row major block matrix.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>4 32-bit words string representing the column major block.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If count of rows in block provided differs from 4.</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#app.lib.aes.col_to_word" title="app.lib.aes.col_to_word"><code class="xref py py-func docutils literal notranslate"><span class="pre">col_to_word()</span></code></a></dt><dd><p>column conversion to hexadecimal string.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.aes.add_round_key">
+<code class="sig-prename descclassname">app.lib.aes.</code><code class="sig-name descname">add_round_key</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">block</span></em>, <em class="sig-param"><span class="n">key</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.add_round_key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs a bitwise XOR between a state block and the key.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>block</strong> (<em>np.ndarray</em>) – 4x4 column major block matrix.</p></li>
+<li><p><strong>key</strong> (<em>np.ndarray</em>) – 4x4  column major block matrix.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>4x4 result block matrix</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.aes.sub_bytes">
+<code class="sig-prename descclassname">app.lib.aes.</code><code class="sig-name descname">sub_bytes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">block</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.sub_bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies sbox to a state block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>block</strong> (<em>np.ndarray</em>) – 4x4 column major block matrix.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>4x4 result block matrix</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.aes.inv_sub_bytes">
+<code class="sig-prename descclassname">app.lib.aes.</code><code class="sig-name descname">inv_sub_bytes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">block</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.inv_sub_bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies inverse sbox to a state block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>block</strong> (<em>np.ndarray</em>) – 4x4 column major block matrix.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>4x4 result block matrix.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.aes.shift_rows">
+<code class="sig-prename descclassname">app.lib.aes.</code><code class="sig-name descname">shift_rows</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">block</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.shift_rows" title="Permalink to this definition">¶</a></dt>
+<dd><p>Shifts rows of a state block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>block</strong> (<em>np.ndarray</em>) – 4x4 column major block matrix.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>4x4 result block matrix.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.aes.inv_shift_rows">
+<code class="sig-prename descclassname">app.lib.aes.</code><code class="sig-name descname">inv_shift_rows</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">block</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.inv_shift_rows" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reverses shift rows of a state block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>block</strong> (<em>np.ndarray</em>) – 4x4 column major block matrix.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>4x4 result block matrix.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.aes.mix_columns">
+<code class="sig-prename descclassname">app.lib.aes.</code><code class="sig-name descname">mix_columns</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">block</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.mix_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mix columns of a state block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>block</strong> (<em>np.ndarray</em>) – 4x4 column major block matrix.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>4x4 result block matrix.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.aes.inv_mix_columns">
+<code class="sig-prename descclassname">app.lib.aes.</code><code class="sig-name descname">inv_mix_columns</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">block</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.inv_mix_columns" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reverses mix columns of a state block.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>block</strong> (<em>np.ndarray</em>) – 4x4 column major block matrix.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>4x4 result block matrix.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.aes.sub_word">
+<code class="sig-prename descclassname">app.lib.aes.</code><code class="sig-name descname">sub_word</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">col</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.sub_word" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies SBOX to a key column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>col</strong> (<em>np.ndarray</em>) – 4 bytes array.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Result column.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.aes.rot_word">
+<code class="sig-prename descclassname">app.lib.aes.</code><code class="sig-name descname">rot_word</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">col</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.rot_word" title="Permalink to this definition">¶</a></dt>
+<dd><p>Rotates a 4 key column.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>col</strong> (<em>np.ndarray</em>) – 4 bytes array.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Result column.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.aes.key_expansion">
+<code class="sig-prename descclassname">app.lib.aes.</code><code class="sig-name descname">key_expansion</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.key_expansion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs key expansion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>key</strong> (<em>np.ndarray</em>) – 4x4 input block key matrix.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>4x4 input block key matrices for each round.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt id="app.lib.aes.Stages">
+<em class="property">class </em><code class="sig-prename descclassname">app.lib.aes.</code><code class="sig-name descname">Stages</code><a class="headerlink" href="#app.lib.aes.Stages" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>AES round stages enumeration.</p>
+<p>The index of the stage correspond to its order into the round.</p>
+<dl class="py attribute">
+<dt id="app.lib.aes.Stages.START">
+<code class="sig-name descname">START</code><em class="property"> = 0</em><a class="headerlink" href="#app.lib.aes.Stages.START" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.aes.Stages.SUB_BYTES">
+<code class="sig-name descname">SUB_BYTES</code><em class="property"> = 1</em><a class="headerlink" href="#app.lib.aes.Stages.SUB_BYTES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.aes.Stages.SHIFT_ROWS">
+<code class="sig-name descname">SHIFT_ROWS</code><em class="property"> = 2</em><a class="headerlink" href="#app.lib.aes.Stages.SHIFT_ROWS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.aes.Stages.MIX_COLUMNS">
+<code class="sig-name descname">MIX_COLUMNS</code><em class="property"> = 3</em><a class="headerlink" href="#app.lib.aes.Stages.MIX_COLUMNS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.aes.Stages.ADD_ROUND_KEY">
+<code class="sig-name descname">ADD_ROUND_KEY</code><em class="property"> = 4</em><a class="headerlink" href="#app.lib.aes.Stages.ADD_ROUND_KEY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.aes.Stages.INV_SHIFT_ROWS">
+<code class="sig-name descname">INV_SHIFT_ROWS</code><em class="property"> = 1</em><a class="headerlink" href="#app.lib.aes.Stages.INV_SHIFT_ROWS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.aes.Stages.INV_SUB_BYTES">
+<code class="sig-name descname">INV_SUB_BYTES</code><em class="property"> = 2</em><a class="headerlink" href="#app.lib.aes.Stages.INV_SUB_BYTES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.aes.Stages.INV_ADD_ROUND_KEY">
+<code class="sig-name descname">INV_ADD_ROUND_KEY</code><em class="property"> = 3</em><a class="headerlink" href="#app.lib.aes.Stages.INV_ADD_ROUND_KEY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.aes.Stages.INV_MIX_COLUMNS">
+<code class="sig-name descname">INV_MIX_COLUMNS</code><em class="property"> = 4</em><a class="headerlink" href="#app.lib.aes.Stages.INV_MIX_COLUMNS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="app.lib.aes.Handler">
+<em class="property">class </em><code class="sig-prename descclassname">app.lib.aes.</code><code class="sig-name descname">Handler</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">key</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.Handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>AES computations handler interface.</p>
+<dl class="py attribute">
+<dt id="app.lib.aes.Handler.blocks">
+<code class="sig-name descname">blocks</code><a class="headerlink" href="#app.lib.aes.Handler.blocks" title="Permalink to this definition">¶</a></dt>
+<dd><p>4x4 block state matrix for each round and each operation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.aes.Handler.keys">
+<code class="sig-name descname">keys</code><a class="headerlink" href="#app.lib.aes.Handler.keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>4x4 block key matrix for each round.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.aes.Handler.encrypt">
+<code class="sig-name descname">encrypt</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">block</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.Handler.encrypt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs AES cipher algorithm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>block</strong> (<em>np.ndarray</em>) – Plain 4x4 column major block matrix.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Cipher 4x4 column major block matrix.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.aes.Handler.decrypt">
+<code class="sig-name descname">decrypt</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">block</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.aes.Handler.decrypt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs AES inverse cipher algorithm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>block</strong> (<em>np.ndarray</em>) – Cipher 4x4 column major block matrix.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Plain 4x4 column major block matrix.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-app.lib.cpa">
+<span id="lib-cpa-module"></span><h1>lib.cpa module<a class="headerlink" href="#module-app.lib.cpa" title="Permalink to this headline">¶</a></h1>
+<p>Numpy based module for CPA side-channel attacks.</p>
+<p>This module is provides abstractions to handle
+side channel attacks via power consumption acquisition.</p>
+<p>It features a trace accumulator to avoid storing all the
+traces in memory. It also implements a fast Pearson correlation algorithm
+to retrieve attack results in a reasonable amount of time.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">lib</span> <span class="kn">import</span> <span class="n">log</span><span class="p">,</span> <span class="n">cpa</span><span class="p">,</span> <span class="n">aes</span><span class="p">,</span> <span class="n">traces</span> <span class="k">as</span> <span class="n">tr</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">meta</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">Meta</span><span class="o">.</span><span class="n">from_csv</span><span class="p">(</span><span class="s2">&quot;path/to/meta.csv&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">Data</span><span class="o">.</span><span class="n">from_csv</span><span class="p">(</span><span class="s2">&quot;path/to/data.csv&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">leak</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">Leak</span><span class="o">.</span><span class="n">from_csv</span><span class="p">(</span><span class="s2">&quot;path/to/leak.csv&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">blocks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">aes</span><span class="o">.</span><span class="n">words_to_block</span><span class="p">(</span><span class="n">block</span><span class="p">)</span> <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">plains</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">key</span> <span class="o">=</span> <span class="n">aes</span><span class="o">.</span><span class="n">words_to_block</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">traces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="n">leak</span><span class="o">.</span><span class="n">traces</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">handler</span> <span class="o">=</span> <span class="n">cpa</span><span class="o">.</span><span class="n">Handler</span><span class="p">(</span><span class="n">blocks</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">traces</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">correlations</span> <span class="o">=</span> <span class="n">handler</span><span class="o">.</span><span class="n">correlations</span><span class="p">()</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt id="app.lib.cpa.Models">
+<em class="property">class </em><code class="sig-prename descclassname">app.lib.cpa.</code><code class="sig-name descname">Models</code><a class="headerlink" href="#app.lib.cpa.Models" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>CPA power consumption models.</p>
+<dl class="py attribute">
+<dt id="app.lib.cpa.Models.SBOX">
+<code class="sig-name descname">SBOX</code><em class="property"> = 0</em><a class="headerlink" href="#app.lib.cpa.Models.SBOX" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.cpa.Models.INV_SBOX">
+<code class="sig-name descname">INV_SBOX</code><em class="property"> = 1</em><a class="headerlink" href="#app.lib.cpa.Models.INV_SBOX" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="app.lib.cpa.Handler">
+<em class="property">class </em><code class="sig-prename descclassname">app.lib.cpa.</code><code class="sig-name descname">Handler</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">blocks</span></em>, <em class="sig-param"><span class="n">key</span></em>, <em class="sig-param"><span class="n">traces</span></em>, <em class="sig-param"><span class="n">model</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>CPA correlation handler interface.</p>
+<dl class="py attribute">
+<dt id="app.lib.cpa.Handler.blocks">
+<code class="sig-name descname">blocks</code><a class="headerlink" href="#app.lib.cpa.Handler.blocks" title="Permalink to this definition">¶</a></dt>
+<dd><p>Encrypted data blocks for each trace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.cpa.Handler.key">
+<code class="sig-name descname">key</code><a class="headerlink" href="#app.lib.cpa.Handler.key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Key data block for all the traces.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.cpa.Handler.hyp">
+<code class="sig-name descname">hyp</code><a class="headerlink" href="#app.lib.cpa.Handler.hyp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value of power consumption for each hypothesis and class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.cpa.Handler.lens">
+<code class="sig-name descname">lens</code><a class="headerlink" href="#app.lib.cpa.Handler.lens" title="Permalink to this definition">¶</a></dt>
+<dd><p>Count of traces per class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.cpa.Handler.means">
+<code class="sig-name descname">means</code><a class="headerlink" href="#app.lib.cpa.Handler.means" title="Permalink to this definition">¶</a></dt>
+<dd><p>Average trace per class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.cpa.Handler.devs">
+<code class="sig-name descname">devs</code><a class="headerlink" href="#app.lib.cpa.Handler.devs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Standard deviation trace per class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.cpa.Handler.mean">
+<code class="sig-name descname">mean</code><a class="headerlink" href="#app.lib.cpa.Handler.mean" title="Permalink to this definition">¶</a></dt>
+<dd><p>Average trace for all classes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.cpa.Handler.dev">
+<code class="sig-name descname">dev</code><a class="headerlink" href="#app.lib.cpa.Handler.dev" title="Permalink to this definition">¶</a></dt>
+<dd><p>Standard deviation trace for all classes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.cpa.Handler.accumulate">
+<code class="sig-name descname">accumulate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">traces</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler.accumulate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sorts traces by class and compute means and deviation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>traces</strong> (<em>np.ndarray</em>) – Traces matrix.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Reference to self.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>sca-automation.lib.cpa.Handler</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.cpa.Handler.init_model">
+<code class="sig-name descname">init_model</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler.init_model" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes power consumption model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>model</strong> (<em>int</em>) – Model index.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Reference to self.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>sca-automation.lib.cpa.Handler</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.cpa.Handler.correlations">
+<code class="sig-name descname">correlations</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler.correlations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes Pearson’s correlation coefficient on current data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Temporal correlation per block position and hypothesis.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.cpa.Handler.guess_stats">
+<code class="sig-name descname">guess_stats</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cor</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler.guess_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the best guess key from correlation data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cor</strong> (<em>np.ndarray</em>) – Temporal correlation per block position and hypothesis.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>guess</strong> (<em>np.ndarray</em>) – Guessed key block.</p></li>
+<li><p><strong>maxs</strong> (<em>np.ndarray</em>) – Maximums of temporal correlation per hypothesis.</p></li>
+<li><p><strong>exact</strong> (<em>np.ndarray</em>) – <code class="docutils literal notranslate"><span class="pre">True</span></code> if the guess is exact for each byte position.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#app.lib.cpa.Handler.correlations" title="app.lib.cpa.Handler.correlations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">correlations()</span></code></a></dt><dd><p>Compute temporal correlation.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.cpa.Handler.guess_envelope">
+<code class="sig-name descname">guess_envelope</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cor</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler.guess_envelope" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the envelope of correlation.</p>
+<p>The envelope consists on two curves representing
+respectively the max and min of temporal correlation
+at each instant.</p>
+<p>This feature is mainly useful to plot
+temporal correlations curve.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cor</strong> (<em>np.ndarray</em>) – Temporal correlation per block position and hypothesis.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>cor_max</strong> (<em>np.ndarray</em>) – Maximum correlation at each instant.</p></li>
+<li><p><strong>cor_min</strong> (<em>np.ndarray</em>) – Minimum correlation at each instant.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#app.lib.cpa.Handler.correlations" title="app.lib.cpa.Handler.correlations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">correlations()</span></code></a></dt><dd><p>Compute temporal correlation.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-app.lib.log">
+<span id="lib-log-module"></span><h1>lib.log module<a class="headerlink" href="#module-app.lib.log" title="Permalink to this headline">¶</a></h1>
+<p>Python-agnostic SCA data parsing, logging and reporting module.</p>
+<p>This module is designed as a class library providing <em>entity classes</em>
+to represent the side channel data acquired from SoC.</p>
+<p>It provides binary data parsing in order to read
+acquisition data from a serial sources or a binary file and
+retrieve it in the entity classes.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">lib</span> <span class="kn">import</span> <span class="n">log</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">read</span><span class="o">.</span><span class="n">serial</span><span class="p">(</span><span class="s2">&quot;com5&quot;</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="s2">&quot;hw&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">read</span><span class="o">.</span><span class="n">file</span><span class="p">(</span><span class="s2">&quot;path/to/binary/file&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">parser</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>All the entity classes of the module provide CSV support
+to allow processing acquisition data without parsing.
+It also provides formatting data in a more human-readable format.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">lib</span> <span class="kn">import</span> <span class="n">log</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">meta</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">Meta</span><span class="o">.</span><span class="n">from_csv</span><span class="p">(</span><span class="s2">&quot;path/to/meta.csv&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">leak</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">Leak</span><span class="o">.</span><span class="n">from_csv</span><span class="p">(</span><span class="s2">&quot;path/to/leak.csv&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># some processing on meta</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">meta</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;path/to/meta.csv&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt id="app.lib.log.read">
+<em class="property">class </em><code class="sig-prename descclassname">app.lib.log.</code><code class="sig-name descname">read</code><a class="headerlink" href="#app.lib.log.read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Namespace for binary read operations.</p>
+<dl class="py method">
+<dt id="app.lib.log.read.file">
+<em class="property">classmethod </em><code class="sig-name descname">file</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">log_path</span></em><span class="sig-paren">)</span> &#x2192; bytes<a class="headerlink" href="#app.lib.log.read.file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads binary data from file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>log_path</strong> (<em>str</em>) – Path to the file to read.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Binary content of the file.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.read.serial">
+<em class="property">classmethod </em><code class="sig-name descname">serial</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">port</span></em>, <em class="sig-param"><span class="n">iterations</span></em>, <em class="sig-param"><span class="n">mode</span></em>, <em class="sig-param"><span class="n">inv</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.read.serial" title="Permalink to this definition">¶</a></dt>
+<dd><p>Launches acquisition and reads data from serial port.</p>
+<p>This method sends the side-channel acquisition command
+to the SoC and then reads the serial output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>port</strong> (<em>str</em>) – Serial port to read.</p></li>
+<li><p><strong>iterations</strong> (<em>int</em>) – Requested count of traces.</p></li>
+<li><p><strong>mode</strong> (<em>str</em>) – Encryption mode.</p></li>
+<li><p><strong>inv</strong> (<em>bool</em>) – True if encryption direction is decrypt.</p></li>
+<li><p><strong>verbose</strong> – If false, the traces data will be compressed using
+hamming weight encoding.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Binary data from the serial port.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">sca-automation.lib.utils.decode_hamming()</span></code></dt><dd><p>Decode hamming weight.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="app.lib.log.write">
+<em class="property">class </em><code class="sig-prename descclassname">app.lib.log.</code><code class="sig-name descname">write</code><a class="headerlink" href="#app.lib.log.write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Namespace for binary write operations.</p>
+<dl class="py method">
+<dt id="app.lib.log.write.bytes">
+<em class="property">classmethod </em><code class="sig-name descname">bytes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">s</span></em>, <em class="sig-param"><span class="n">path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.write.bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Writes binary data to a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>s</strong> (<em>bytes</em>) – Binary data to write.</p></li>
+<li><p><strong>path</strong> – Path to file.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="app.lib.log.Keywords">
+<em class="property">class </em><code class="sig-prename descclassname">app.lib.log.</code><code class="sig-name descname">Keywords</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">meta</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">inv</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">verbose</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Keywords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Iterates over the binary log keywords.</p>
+<p>This iterator allows to represent the keywords and
+the order in which they appear in the binary log consistently.</p>
+<p>This feature is useful when parsing log lines in order
+to avoid inserting a sequence that came in the wrong order.</p>
+<p>At each iteration the next expected keyword is returned.</p>
+<p><code class="docutils literal notranslate"><span class="pre">meta</span></code> attribute allows to avoid expect again meta keywords
+when an error occurs and the iterator must be reset.</p>
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.idx">
+<code class="sig-name descname">idx</code><a class="headerlink" href="#app.lib.log.Keywords.idx" title="Permalink to this definition">¶</a></dt>
+<dd><p>Current keyword index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.meta">
+<code class="sig-name descname">meta</code><a class="headerlink" href="#app.lib.log.Keywords.meta" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if the meta-data keyword have already been browsed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.inv">
+<code class="sig-name descname">inv</code><a class="headerlink" href="#app.lib.log.Keywords.inv" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if the keywords follow the inverse encryption sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.metawords">
+<code class="sig-name descname">metawords</code><a class="headerlink" href="#app.lib.log.Keywords.metawords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Keywords displayed once at the beginning of acquisition.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.datawords">
+<code class="sig-name descname">datawords</code><a class="headerlink" href="#app.lib.log.Keywords.datawords" title="Permalink to this definition">¶</a></dt>
+<dd><p>Keywords displayed recurrently during each trace acquisition.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.value">
+<code class="sig-name descname">value</code><a class="headerlink" href="#app.lib.log.Keywords.value" title="Permalink to this definition">¶</a></dt>
+<dd><p>Value of the current keyword.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.MODE">
+<code class="sig-name descname">MODE</code><em class="property"> = 'mode'</em><a class="headerlink" href="#app.lib.log.Keywords.MODE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.DIRECTION">
+<code class="sig-name descname">DIRECTION</code><em class="property"> = 'direction'</em><a class="headerlink" href="#app.lib.log.Keywords.DIRECTION" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.SENSORS">
+<code class="sig-name descname">SENSORS</code><em class="property"> = 'sensors'</em><a class="headerlink" href="#app.lib.log.Keywords.SENSORS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.TARGET">
+<code class="sig-name descname">TARGET</code><em class="property"> = 'target'</em><a class="headerlink" href="#app.lib.log.Keywords.TARGET" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.KEY">
+<code class="sig-name descname">KEY</code><em class="property"> = 'keys'</em><a class="headerlink" href="#app.lib.log.Keywords.KEY" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.PLAIN">
+<code class="sig-name descname">PLAIN</code><em class="property"> = 'plains'</em><a class="headerlink" href="#app.lib.log.Keywords.PLAIN" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.CIPHER">
+<code class="sig-name descname">CIPHER</code><em class="property"> = 'ciphers'</em><a class="headerlink" href="#app.lib.log.Keywords.CIPHER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.SAMPLES">
+<code class="sig-name descname">SAMPLES</code><em class="property"> = 'samples'</em><a class="headerlink" href="#app.lib.log.Keywords.SAMPLES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.CODE">
+<code class="sig-name descname">CODE</code><em class="property"> = 'code'</em><a class="headerlink" href="#app.lib.log.Keywords.CODE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.WEIGHTS">
+<code class="sig-name descname">WEIGHTS</code><em class="property"> = 'weights'</em><a class="headerlink" href="#app.lib.log.Keywords.WEIGHTS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.OFFSET">
+<code class="sig-name descname">OFFSET</code><em class="property"> = 'offset'</em><a class="headerlink" href="#app.lib.log.Keywords.OFFSET" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.ITERATIONS">
+<code class="sig-name descname">ITERATIONS</code><em class="property"> = 'iterations'</em><a class="headerlink" href="#app.lib.log.Keywords.ITERATIONS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Keywords.DELIMITER">
+<code class="sig-name descname">DELIMITER</code><em class="property"> = b':'</em><a class="headerlink" href="#app.lib.log.Keywords.DELIMITER" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.Keywords.reset">
+<code class="sig-name descname">reset</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">meta</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Keywords.reset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="app.lib.log.Data">
+<em class="property">class </em><code class="sig-prename descclassname">app.lib.log.</code><code class="sig-name descname">Data</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">plains</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ciphers</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">keys</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Encryption channel data.</p>
+<p>This class is designed to represent AES 128 encryption data
+for each trace acquired.</p>
+<p>data are represented as 32-bit hexadecimal strings
+in order to accelerate IO operations on the encrypted block.</p>
+<dl class="py attribute">
+<dt id="app.lib.log.Data.plains">
+<code class="sig-name descname">plains</code><a class="headerlink" href="#app.lib.log.Data.plains" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plains words for each trace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Data.ciphers">
+<code class="sig-name descname">ciphers</code><a class="headerlink" href="#app.lib.log.Data.ciphers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cipher words for each trace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Data.keys">
+<code class="sig-name descname">keys</code><a class="headerlink" href="#app.lib.log.Data.keys" title="Permalink to this definition">¶</a></dt>
+<dd><p>Keys words for each trace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If the three list attributes does not have the same length.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt id="app.lib.log.Data.STR_MAX_LINES">
+<code class="sig-name descname">STR_MAX_LINES</code><em class="property"> = 32</em><a class="headerlink" href="#app.lib.log.Data.STR_MAX_LINES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.Data.clear">
+<code class="sig-name descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Data.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears all the attributes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.Data.append">
+<code class="sig-name descname">append</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">item</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Data.append" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.Data.pop">
+<code class="sig-name descname">pop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Data.pop" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.Data.to_csv">
+<code class="sig-name descname">to_csv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Data.to_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exports encryption data to a CSV file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Path to the CSV file to write.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.Data.from_csv">
+<em class="property">classmethod </em><code class="sig-name descname">from_csv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Data.from_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Imports encryption data from CSV file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Path to the CSV to read.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Imported encryption data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#app.lib.log.Data" title="app.lib.log.Data">Data</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="app.lib.log.Meta">
+<em class="property">class </em><code class="sig-prename descclassname">app.lib.log.</code><code class="sig-name descname">Meta</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">direction</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">target</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">sensors</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">iterations</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">offset</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Meta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Meta-data of acquisition.</p>
+<p>This class is designed to represent additional infos
+about the current side-channel acquisition run.</p>
+<blockquote>
+<div><dl class="simple">
+<dt>mode<span class="classifier">str</span></dt><dd><p>Encryption mode.</p>
+</dd>
+<dt>direction<span class="classifier">str</span></dt><dd><p>Encryption direction, either encrypt or decrypt.</p>
+</dd>
+<dt>target<span class="classifier">int</span></dt><dd><p>Sensors calibration target value.</p>
+</dd>
+<dt>sensors<span class="classifier">int</span></dt><dd><p>Count of sensors.</p>
+</dd>
+<dt>iterations<span class="classifier">int</span></dt><dd><p>Requested count of traces.</p>
+</dd>
+<dt>offset<span class="classifier">int</span></dt><dd><p>If the traces are ASCII encoded, code offset</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="py method">
+<dt id="app.lib.log.Meta.clear">
+<code class="sig-name descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Meta.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets meta-data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.Meta.to_csv">
+<code class="sig-name descname">to_csv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Meta.to_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exports meta-data to a CSV file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Path to the CSV file to write.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.Meta.from_csv">
+<em class="property">classmethod </em><code class="sig-name descname">from_csv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Meta.from_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Imports meta-data from CSV file.</p>
+<p>If the file is empty returns an empty meta data object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Path to the CSV to read.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Imported meta-data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#app.lib.log.Meta" title="app.lib.log.Meta">Meta</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="app.lib.log.Leak">
+<em class="property">class </em><code class="sig-prename descclassname">app.lib.log.</code><code class="sig-name descname">Leak</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">traces</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Leak" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Side-channel leakage data.</p>
+<p>This class represents the power consumption traces
+acquired during encryption in order to process these.</p>
+<dl class="py attribute">
+<dt id="app.lib.log.Leak.samples">
+<code class="sig-name descname">samples</code><a class="headerlink" href="#app.lib.log.Leak.samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>Count of samples for each traces.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Leak.traces">
+<code class="sig-name descname">traces</code><a class="headerlink" href="#app.lib.log.Leak.traces" title="Permalink to this definition">¶</a></dt>
+<dd><p>Power consumption leakage signal for each acquisition.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>list[list[int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Leak.STR_MAX_LINES">
+<code class="sig-name descname">STR_MAX_LINES</code><em class="property"> = 32</em><a class="headerlink" href="#app.lib.log.Leak.STR_MAX_LINES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.Leak.clear">
+<code class="sig-name descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Leak.clear" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.Leak.append">
+<code class="sig-name descname">append</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">item</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Leak.append" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.Leak.pop">
+<code class="sig-name descname">pop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Leak.pop" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.Leak.to_csv">
+<code class="sig-name descname">to_csv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Leak.to_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Exports leakage data to CSV.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Path to the CSV file to write.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.Leak.from_csv">
+<em class="property">classmethod </em><code class="sig-name descname">from_csv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Leak.from_csv" title="Permalink to this definition">¶</a></dt>
+<dd><p>Imports leakage data from CSV.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Path to the CSV to read.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Imported leak data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#app.lib.log.Leak" title="app.lib.log.Leak">Leak</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt id="app.lib.log.Parser">
+<em class="property">class </em><code class="sig-prename descclassname">app.lib.log.</code><code class="sig-name descname">Parser</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">leak</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">meta</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Parser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Binary data parser.</p>
+<p>This class is designed to parse binary acquisition data
+and store parsed data in the entity classes in order
+to later import and export it.</p>
+<dl class="py attribute">
+<dt id="app.lib.log.Parser.leak">
+<code class="sig-name descname">leak</code><a class="headerlink" href="#app.lib.log.Parser.leak" title="Permalink to this definition">¶</a></dt>
+<dd><p>Leakage data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#app.lib.log.Leak" title="app.lib.log.Leak">Leak</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Parser.data">
+<code class="sig-name descname">data</code><a class="headerlink" href="#app.lib.log.Parser.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Encryption data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#app.lib.log.Data" title="app.lib.log.Data">Data</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt id="app.lib.log.Parser.meta">
+<code class="sig-name descname">meta</code><a class="headerlink" href="#app.lib.log.Parser.meta" title="Permalink to this definition">¶</a></dt>
+<dd><p>Meta-data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#app.lib.log.Meta" title="app.lib.log.Meta">Meta</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><a class="reference internal" href="#app.lib.log.Keywords" title="app.lib.log.Keywords"><code class="xref py py-class docutils literal notranslate"><span class="pre">Keywords</span></code></a></dt><dd><p>iterator representing the keyword sequence</p>
+</dd>
+</dl>
+</div>
+<dl class="py method">
+<dt id="app.lib.log.Parser.from_bytes">
+<em class="property">classmethod </em><code class="sig-name descname">from_bytes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">s</span></em>, <em class="sig-param"><span class="n">inv</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Parser.from_bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes an object with binary data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>s</strong> (<em>bytes</em>) – Binary data.</p></li>
+<li><p><strong>inv</strong> (<em>bool</em>) – True if encryption direction is decrypt.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Parser initialized with data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#app.lib.log.Parser" title="app.lib.log.Parser">Parser</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.Parser.pop">
+<code class="sig-name descname">pop</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Parser.pop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pops acquired value until data lengths matches.</p>
+<p>This method allows to guarantee that the data contained
+in the parser will always have the same length which is
+the number of traces parsed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>Reference to self.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#app.lib.log.Parser" title="app.lib.log.Parser">Parser</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.Parser.clear">
+<code class="sig-name descname">clear</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Parser.clear" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears all the parser data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.log.Parser.parse_bytes">
+<code class="sig-name descname">parse_bytes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">s</span></em>, <em class="sig-param"><span class="n">inv</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.log.Parser.parse_bytes" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses the given bytes to retrieve acquisition data.</p>
+<p>If inv`` is not specified the parser will infer the
+encryption direction from <code class="docutils literal notranslate"><span class="pre">s</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>s</strong> (<em>bytes</em>) – Binary data.</p></li>
+<li><p><strong>inv</strong> (<em>bool</em>) – True if encryption direction is decrypt.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Reference to self.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#app.lib.log.Parser" title="app.lib.log.Parser">Parser</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="module-app.lib.traces">
+<span id="lib-traces-module"></span><h1>lib.traces module<a class="headerlink" href="#module-app.lib.traces" title="Permalink to this headline">¶</a></h1>
+<p>Perform signal processing on power consumption traces.</p>
+<p>This module is designed to provide fast signal processing
+function for power consumption signals.</p>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">lib</span> <span class="kn">import</span> <span class="n">log</span><span class="p">,</span> <span class="n">traces</span> <span class="k">as</span> <span class="n">tr</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">numpy</span> <span class="kn">import</span> <span class="n">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">read</span><span class="o">.</span><span class="n">file</span><span class="p">(</span><span class="s2">&quot;path/to/binary/file&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">parser</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">Parser</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">traces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">crop</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">leak</span><span class="o">.</span><span class="n">traces</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">traces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tr</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">leak</span><span class="o">.</span><span class="n">traces</span><span class="p">))</span>
+</pre></div>
+</div>
+<dl class="py function">
+<dt id="app.lib.traces.crop">
+<code class="sig-prename descclassname">app.lib.traces.</code><code class="sig-name descname">crop</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">traces</span></em>, <em class="sig-param"><span class="n">end</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.traces.crop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Crops all the traces signals to have the same duration.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">end</span></code> parameter is not provided the traces are cropped to have
+the same duration as the shortest given trace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>traces</strong> (<em>list</em><em>[</em><em>list</em><em>[</em><em>int</em><em>]</em><em>]</em>) – 2D list of numbers representing the trace signal.</p></li>
+<li><p><strong>end</strong> (<em>int</em><em>, </em><em>optional</em>) – Index after which the traces are truncated.
+Must be inferior to the length of the shortest trace.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Cropped traces.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list[list[int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.traces.pad">
+<code class="sig-prename descclassname">app.lib.traces.</code><code class="sig-name descname">pad</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">traces</span></em>, <em class="sig-param"><span class="n">fill</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">end</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.traces.pad" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pads all the traces signals have the same duration.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">end</span></code> parameter is not provided the traces are padded to have
+the same duration as the longest given trace.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>traces</strong> (<em>list</em><em>[</em><em>list</em><em>[</em><em>int</em><em>]</em><em>]</em>) – 2D list of numbers representing the trace signal.</p></li>
+<li><p><strong>fill</strong> (<em>int</em><em>, </em><em>optional</em>) – Padding value to insert after the end of traces.</p></li>
+<li><p><strong>end</strong> (<em>int</em><em>, </em><em>optional</em>) – New count of samples of the traces.
+Must be greater than the length of the longest trace.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Padded traces.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list[list[int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.traces.sync">
+<code class="sig-prename descclassname">app.lib.traces.</code><code class="sig-name descname">sync</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">traces</span></em>, <em class="sig-param"><span class="n">step</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">stop</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.traces.sync" title="Permalink to this definition">¶</a></dt>
+<dd><p>Synchronize trace signals by correlating them</p>
+<p>This function implements an algorithm based on Pearson’s
+correlation to synchronize signals peaks.</p>
+<p>More precisely, it compares the traces to a reference trace
+by rolling theses forward or backward. The algorithm search
+for the roll value that maximizes pearson correlation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>traces</strong> (<em>np.ndarray</em>) – 2D numbers array representing cropped or padded traces data.</p></li>
+<li><p><strong>step</strong> (<em>int</em><em>, </em><em>optional</em>) – Rolling step, if equals n, the trace will be rolled
+n times in both directions at each rolling iteration.</p></li>
+<li><p><strong>stop</strong> (<em>int</em><em>, </em><em>optional</em>) – Rolling stop, maximum roll to perform.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>2D array representing synchronized traces.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="module-app.lib.utils">
+<span id="lib-utils-module"></span><h1>lib.utils module<a class="headerlink" href="#module-app.lib.utils" title="Permalink to this headline">¶</a></h1>
+<p>General utility functions.</p>
+<dl class="py function">
+<dt id="app.lib.utils.decode_hamming">
+<code class="sig-prename descclassname">app.lib.utils.</code><code class="sig-name descname">decode_hamming</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">c</span></em>, <em class="sig-param"><span class="n">offset</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.utils.decode_hamming" title="Permalink to this definition">¶</a></dt>
+<dd><p>Decodes ASCII encoded hamming weight.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>c</strong> (<em>str</em>) – Char representing encoded hamming weight.</p></li>
+<li><p><strong>offset</strong> (<em>int</em><em>, </em><em>optional</em>) – Additional offset value used to encode weight.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Decoded hamming weight.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.utils.check_hex">
+<code class="sig-prename descclassname">app.lib.utils.</code><code class="sig-name descname">check_hex</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">w</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.utils.check_hex" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if a correct hexadecimal bytes string is given.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>w</strong> (<em>str</em>) – Hexadecimal 32-bit word string.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>0 padded hexadecimal string.</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – Unable to parse integer from given string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.utils.format_sizeof">
+<code class="sig-prename descclassname">app.lib.utils.</code><code class="sig-name descname">format_sizeof</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">num</span></em>, <em class="sig-param"><span class="n">suffix</span><span class="o">=</span><span class="default_value">'B'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.utils.format_sizeof" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts and format a number to a file size unit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num</strong> (<em>int</em>) – Number to format.</p></li>
+<li><p><strong>suffix</strong> (<em>str</em>) – Unit suffix.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Formatted number.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.utils.create_subdir">
+<code class="sig-prename descclassname">app.lib.utils.</code><code class="sig-name descname">create_subdir</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">names</span></em>, <em class="sig-param"><span class="n">path</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.utils.create_subdir" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.utils.remove_subdir_files">
+<code class="sig-prename descclassname">app.lib.utils.</code><code class="sig-name descname">remove_subdir_files</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.utils.remove_subdir_files" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes files in the sub directories at given directory.</p>
+<p>Files in the given directory are not deleted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>path</strong> (<em>str</em>) – Path where to remove sub directories.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.utils.try_create_dir">
+<code class="sig-prename descclassname">app.lib.utils.</code><code class="sig-name descname">try_create_dir</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">path</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.utils.try_create_dir" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates directory or print a message
+.</p>
+<blockquote>
+<div><dl class="simple">
+<dt>path<span class="classifier">str</span></dt><dd><p>Path to the directory to create.</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.utils.operation_decorator">
+<code class="sig-prename descclassname">app.lib.utils.</code><code class="sig-name descname">operation_decorator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">title</span></em>, <em class="sig-param"><span class="n">message</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.utils.operation_decorator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Executes a function and prints messages and duration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>title</strong> (<em>str</em>) – Starting message.</p></li>
+<li><p><strong>message</strong> (<em>str</em>) – End message on success.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Decorated method.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>function</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="app.lib.utils.plot_decorator">
+<code class="sig-prename descclassname">app.lib.utils.</code><code class="sig-name descname">plot_decorator</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">title</span></em>, <em class="sig-param"><span class="n">xlabel</span></em>, <em class="sig-param"><span class="n">ylabel</span></em>, <em class="sig-param"><span class="n">filepath</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.utils.plot_decorator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Performs plot methods and formatting.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>title</strong> (<em>str</em>) – Title of the plot.</p></li>
+<li><p><strong>xlabel</strong> (<em>str</em>) – X-axis legend.</p></li>
+<li><p><strong>ylabel</strong> (<em>str</em>) – Y-axis legend.</p></li>
+<li><p><strong>filepath</strong> (<em>str</em>) – Path to save plot image.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Decorated method.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>function</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="application.html" class="btn btn-neutral float-left" title="Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        
+        &copy; Copyright 2020, Sami Dahoux
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
