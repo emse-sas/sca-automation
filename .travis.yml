@@ -8,11 +8,12 @@ install:
 script: cd docs/sources && make html
 
 deploy:
-  email: sami@dahoux.net
-  local_dir: 'docs/build/html'
-  provider: pages
+  provider: pages:git
   skip_cleanup: true
-  github_token: $GITHUB_TOKEN  # Set in the settings page of your repository, as a secure variable
+  email: sami@dahoux.net
+  local_dir: 'docs/build/all/html'
+  deploy_key: $DEPLOY_KEY  # Set in the settings page of your repository, as a secure variable
   keep_history: true
+  edge: true
   on:
     branch: master
