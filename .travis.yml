@@ -2,7 +2,7 @@ language: python
 python:
   - 3.6
 install:
-  - pip install sphinx sphinx_rtd_theme
+  - pip install sphinx sphinx_rtd_theme sphinx-argparse recommonmark
   - pip install -r requirements.txt
 
 script: cd docs/sources && make html
