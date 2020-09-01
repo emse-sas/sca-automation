@@ -103,3 +103,7 @@ class ParserTest(unittest.TestCase):
         self.assertEqual(n, len(parser.data.plains), "plains len mismatch")
         self.assertEqual(n, parser.meta.iterations, "iterations mismatch")
         self.assertGreaterEqual(n, 65536 * 0.8, "< 80% of traces retrieved")
+
+
+if __name__ == "__main__":
+    unittest.main()

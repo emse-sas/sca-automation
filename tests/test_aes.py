@@ -50,3 +50,7 @@ class HandlerTest(unittest.TestCase):
     def test_words_to_block(self):
         block = aes.words_to_block(self.plain_str)
         self.assertEqual(np.linalg.norm(block - self.plain), 0)
+
+
+if __name__ == "__main__":
+    unittest.main()
