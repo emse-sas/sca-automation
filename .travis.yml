@@ -4,7 +4,11 @@ python:
 install:
 - pip install sphinx sphinx_rtd_theme sphinx-argparse recommonmark
 - pip install -r requirements.txt
-script: cd docs/sources && make html && cd ../..
+
+before_deploy:
+  - openssl aes-256-cbc -K $encrypted_b5cde2e0c765_key -iv $encrypted_b5cde2e0c765_iv
+    -in deploy_sca.enc -out deploy_sca -d
+  - cd docs/sources && cp .nojekyll ../.. && make html && cd ../..
 deploy:
   provider: pages:git
   email: sami@dahoux.net
@@ -14,6 +18,3 @@ deploy:
   edge: true
   on:
     branch: master
-before_deploy:
-- openssl aes-256-cbc -K $encrypted_b5cde2e0c765_key -iv $encrypted_b5cde2e0c765_iv
-  -in deploy_sca.enc -out deploy_sca -d
