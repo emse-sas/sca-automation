@@ -106,11 +106,17 @@ def sync(traces, step=1, stop=None):
 
     for trace in traces:
         strided = np.lib.stride_tricks.as_strided(trace, shape, strides_pos)
-        buffer = list(map(lambda shift: stats.pearsonr(ref, strided[shift])[0], shifts))
+        try:
+            buffer = list(map(lambda shift: stats.pearsonr(ref, strided[shift])[0], shifts))
+        except ValueError:
+            continue
         argmax_pos = np.int(np.argmax(buffer))
         max_pos = buffer[argmax_pos]
         strided = np.lib.stride_tricks.as_strided(trace, shape, strides_neg)
-        buffer = list(map(lambda shift: stats.pearsonr(ref, strided[shift])[0], shifts))
+        try:
+            buffer = list(map(lambda shift: stats.pearsonr(ref, strided[shift])[0], shifts))
+        except ValueError:
+            continue
         argmax_neg = np.int(np.argmax(buffer))
         max_neg = buffer[argmax_neg]
         if max_neg < max_pos:
