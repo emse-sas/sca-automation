@@ -8,7 +8,7 @@ from lib import aes
 class HandlerTest(unittest.TestCase):
 
     def setUp(self):
-        self.plain_str = "00112233 44556677 8899aabb ccddeeff"
+        self.plain_str = "00112233445566778899aabbccddeeff"
 
         self.plain = np.array([
             [0x00, 0x44, 0x88, 0xcc],
@@ -48,5 +48,5 @@ class HandlerTest(unittest.TestCase):
         self.assertEqual(word, self.plain_str)
 
     def test_words_to_block(self):
-        block = aes.words_to_block(self.plain_str.split(" "))
+        block = aes.words_to_block(self.plain_str)
         self.assertEqual(np.linalg.norm(block - self.plain), 0)

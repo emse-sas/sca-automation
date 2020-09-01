@@ -153,7 +153,7 @@ def words_to_block(words):
 
     Parameters
     ----------
-    words : list[str]
+    words : str
         4 32-bits words as strings representing block's columns
 
     Returns
@@ -171,13 +171,12 @@ def words_to_block(words):
         word_to_col : Column conversion from word.
 
     """
-    if len(words) != BLOCK_LEN:
-        raise ValueError("input words must be of length 4")
+
     ret = np.empty((BLOCK_LEN, BLOCK_LEN))
-    ret[0] = word_to_col(words[0])
-    ret[1] = word_to_col(words[1])
-    ret[2] = word_to_col(words[2])
-    ret[3] = word_to_col(words[3])
+    ret[0] = word_to_col(words[0:8])
+    ret[1] = word_to_col(words[8:16])
+    ret[2] = word_to_col(words[16:24])
+    ret[3] = word_to_col(words[24:32])
     return np.array(ret, dtype=np.uint8).T
 
 
@@ -206,7 +205,7 @@ def block_to_words(block):
     """
     if len(block) != BLOCK_LEN:
         raise ValueError("input block must be of length 4")
-    return "%s %s %s %s" % tuple(col_to_word(c) for c in block.T)
+    return "%s%s%s%s" % tuple(col_to_word(c) for c in block.T)
 
 
 def add_round_key(block, key):

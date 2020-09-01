@@ -30,8 +30,8 @@ Examples
 
 import csv
 from warnings import warn
-from itertools import zip_longest
 import serial
+
 
 from lib.utils import decode_hamming, check_hex
 
@@ -167,12 +167,14 @@ class Keywords:
     DIRECTION = "direction"
     SENSORS = "sensors"
     TARGET = "target"
-    KEY = "key"
-    PLAIN = "plain"
-    CIPHER = "cipher"
+    KEY = "keys"
+    PLAIN = "plains"
+    CIPHER = "ciphers"
     SAMPLES = "samples"
     CODE = "code"
     WEIGHTS = "weights"
+    OFFSET = "offset"
+    ITERATIONS = "iterations"
     DELIMITER = b":"
 
     def __init__(self, meta=False, inv=False, verbose=False):
@@ -229,7 +231,7 @@ class Keywords:
 class Data:
     """Encryption channel data.
 
-    This class is designed to represent AES encryption data
+    This class is designed to represent AES 128 encryption data
     for each trace acquired.
 
     data are represented as 32-bit hexadecimal strings
@@ -237,11 +239,11 @@ class Data:
 
     Attributes
     ----------
-    plains: list[list[str]]
+    plains: list[str]
         Plains words for each trace.
-    ciphers: list[list[str]]
+    ciphers: list[str]
         Cipher words for each trace.
-    keys: list[list[str]]
+    keys: list[str]
         Keys words for each trace.
 
     Raises
@@ -251,16 +253,18 @@ class Data:
 
     """
 
+    STR_MAX_LINES = 32
+
     def __init__(self, plains=None, ciphers=None, keys=None):
         """Initializes an object by giving attributes values
 
         Parameters
         ----------
-        plains: list[list[str]], optional
+        plains: list[str], optional
             Plains words for each trace.
-        ciphers: list[list[str]], optional
+        ciphers: list[str], optional
             Cipher words for each trace.
-        keys: list[list[str]], optional
+        keys: list[str], optional
             Keys words for each trace.
 
         """
@@ -269,7 +273,48 @@ class Data:
         self.keys = keys or []
 
         if len(self.plains) != len(self.ciphers) or len(self.plains) != len(self.keys):
-            raise ValueError("Plains, ciphers and keys must have the same length")
+            raise ValueError("Inconsistent plains, cipher and keys length")
+
+    def __getitem__(self, item):
+        return self.plains[item], self.ciphers[item], self.keys[item]
+
+    def __setitem__(self, item, value):
+        plain, cipher, key = value
+        self.plains[item] = plain
+        self.ciphers[item] = cipher
+        self.keys[item] = key
+
+    def __delitem__(self, item):
+        del self.plains[item]
+        del self.ciphers[item]
+        del self.keys[item]
+
+    def __len__(self):
+        return len(self.plains)
+
+    def __iter__(self):
+        return zip(self.plains, self.ciphers, self.keys)
+
+    def __reversed__(self):
+        return zip(reversed(self.plains), reversed(self.ciphers), reversed(self.keys))
+
+    def __repr__(self):
+        return f"{type(self).__name__}({self.plains!r}, {self.ciphers!r}, {self.keys!r})"
+
+    def __str__(self):
+        n = len(self.plains[0]) + 4
+        ret = f"{'plains':<{n}s}{'ciphers':<{n}s}{'keys':<{n}s}"
+        for d, (plain, cipher, key) in enumerate(self):
+            if d == Data.STR_MAX_LINES:
+                return ret + f"\n{len(self) - d} more..."
+            ret += f"\n{plain:<{n}s}{cipher:<{n}s}{key:<{n}s}"
+        return ret
+
+    def __iadd__(self, other):
+        self.plains += other.plains
+        self.ciphers += other.ciphers
+        self.keys += other.keys
+        return self
 
     def clear(self):
         """Clears all the attributes.
@@ -278,6 +323,17 @@ class Data:
         self.plains.clear()
         self.ciphers.clear()
         self.keys.clear()
+
+    def append(self, item):
+        plain, cipher, key = item
+        self.plains.append(plain)
+        self.ciphers.append(cipher)
+        self.keys.append(key)
+
+    def pop(self):
+        self.plains.pop()
+        self.ciphers.pop()
+        self.keys.pop()
 
     def to_csv(self, path):
         """Exports encryption data to a CSV file.
@@ -289,11 +345,12 @@ class Data:
 
         """
         with open(path, "w", newline="") as file:
-            header = ["p0", "p1", "p2", "p3", "c0", "c1", "c2", "c3", "k0", "k1", "k2", "k3"]
-            writer = csv.writer(file, delimiter=";")
-            writer.writerow(header)
-            for plain, cipher, key in zip_longest(self.plains, self.ciphers, self.keys, fillvalue=self.keys[0]):
-                writer.writerow(plain + cipher + key)
+            writer = csv.DictWriter(file, [Keywords.PLAIN, Keywords.CIPHER, Keywords.KEY], delimiter=";")
+            writer.writeheader()
+            for plain, cipher, key in self:
+                writer.writerow({Keywords.PLAIN: plain,
+                                 Keywords.CIPHER: cipher,
+                                 Keywords.KEY: key})
 
     @classmethod
     def from_csv(cls, path):
@@ -313,14 +370,11 @@ class Data:
         ciphers = []
         keys = []
         with open(path, "r", newline="") as file:
-            reader = csv.reader(file, delimiter=";")
-            next(reader)
+            reader = csv.DictReader(file, delimiter=";")
             for row in reader:
-                if not row:
-                    continue
-                plains.append(list(row[0:4]))
-                ciphers.append(list(row[4:8]))
-                keys.append(list(row[8:12]))
+                plains.append(row[Keywords.PLAIN])
+                ciphers.append(row[Keywords.CIPHER])
+                keys.append(row[Keywords.KEY])
 
         return Data(plains, ciphers, keys)
 
@@ -372,6 +426,24 @@ class Meta:
         self.iterations = iterations
         self.offset = offset
 
+    def __repr__(self):
+        return f"{type(self).__name__}(" \
+               f"{self.mode!r}, " \
+               f"{self.direction!r}, " \
+               f"{self.target!r}, " \
+               f"{self.sensors!r}, " \
+               f"{self.iterations!r}, " \
+               f"{self.offset!r})"
+
+    def __str__(self):
+        dl = str(Keywords.DELIMITER, 'ascii')
+        return f"{Keywords.MODE}{dl} {self.mode}\n" \
+               f"{Keywords.DIRECTION}{dl} {self.direction}\n" \
+               f"{Keywords.TARGET}{dl} {self.target}\n" \
+               f"{Keywords.SENSORS}{dl} {self.sensors}\n" \
+               f"{Keywords.ITERATIONS}{dl} {self.iterations}\n" \
+               f"{Keywords.OFFSET}{dl} {self.offset}"
+
     def clear(self):
         """Resets meta-data.
 
@@ -393,11 +465,20 @@ class Meta:
 
         """
         with open(path, "w", newline="") as file:
-            writer = csv.writer(file, delimiter=";")
-            rows = self.__dict__
-            header = list(rows.keys())
-            values = list(rows.values())
-            writer.writerows([header, values])
+            fieldnames = [Keywords.MODE,
+                          Keywords.DIRECTION,
+                          Keywords.TARGET,
+                          Keywords.SENSORS,
+                          Keywords.ITERATIONS,
+                          Keywords.OFFSET]
+            writer = csv.DictWriter(file, fieldnames, delimiter=";")
+            writer.writeheader()
+            writer.writerow({Keywords.MODE: self.mode,
+                             Keywords.DIRECTION: self.direction,
+                             Keywords.TARGET: self.target,
+                             Keywords.SENSORS: self.sensors,
+                             Keywords.ITERATIONS: self.iterations,
+                             Keywords.OFFSET: self.offset})
 
     @classmethod
     def from_csv(cls, path):
@@ -416,13 +497,17 @@ class Meta:
             Imported meta-data.
         """
         with open(path, "r", newline="") as file:
-            reader = csv.reader(file, delimiter=";")
+            reader = csv.DictReader(file, delimiter=";")
             try:
-                next(reader)
+                row = next(reader)
             except StopIteration:
                 return None
-            row = next(reader)
-        return Meta(row[0], row[1], int(row[2]), int(row[3]), int(row[4]), int(row[5]))
+        return Meta(row[Keywords.MODE],
+                    row[Keywords.DIRECTION],
+                    int(row[Keywords.TARGET]),
+                    int(row[Keywords.SENSORS]),
+                    int(row[Keywords.ITERATIONS]),
+                    int(row[Keywords.OFFSET]))
 
 
 class Leak:
@@ -439,6 +524,7 @@ class Leak:
         Power consumption leakage signal for each acquisition.
 
     """
+    STR_MAX_LINES = 32
 
     def __init__(self, traces=None):
         """Parses raw traces data.
@@ -449,19 +535,58 @@ class Leak:
             Power consumption leakage signal for each acquisition.
 
         """
-        if traces:
-            self.samples = list(map(len, traces)) if traces else []
-            self.traces = traces or []
-        else:
-            self.samples = []
-            self.traces = []
+        self.samples = list(map(len, traces)) if traces else []
+        self.traces = traces or []
+
+    def __getitem__(self, item):
+        return self.traces[item]
+
+    def __setitem__(self, item, value):
+        self.traces[item] = value
+        self.samples[item] = len(value)
+
+    def __delitem__(self, item):
+        del self.traces[item]
+        del self.samples[item]
+
+    def __len__(self):
+        return len(self.traces)
+
+    def __iter__(self):
+        return iter(self.traces)
+
+    def __reversed__(self):
+        return iter(reversed(self.traces))
+
+    def __repr__(self):
+        return f"{type(self).__name__}({self.traces!r})"
+
+    def __str__(self):
+        ret = f"{'no.':<16s}traces"
+        for d, trace in enumerate(self):
+            if d == Leak.STR_MAX_LINES:
+                return ret + f"\n{len(self) - d} more..."
+            ret += f"\n{d:<16d}"
+            for t in trace:
+                ret += f"{t:<4d}"
+        return ret
+
+    def __iadd__(self, other):
+        self.traces += other.traces
+        self.samples += other.samples
+        return self
 
     def clear(self):
-        """Clears leakage data.
-
-        """
-        self.samples.clear()
         self.traces.clear()
+        self.samples.clear()
+
+    def append(self, item):
+        self.traces.append(item)
+        self.samples.append(len(item))
+
+    def pop(self):
+        self.traces.pop()
+        self.samples.pop()
 
     def to_csv(self, path):
         """Exports leakage data to CSV.
@@ -490,14 +615,14 @@ class Leak:
         Leak
             Imported leak data.
         """
-        leaks = []
+        traces = []
         with open(path, "r", newline="") as file:
             reader = csv.reader(file, delimiter=";")
             for row in reader:
                 if not row:
                     continue
-                leaks.append(list(map(lambda x: int(x), row)))
-        return Leak(leaks)
+                traces.append(list(map(lambda x: int(x), row)))
+        return Leak(traces)
 
 
 class Parser:
@@ -539,6 +664,9 @@ class Parser:
         self.data = data or Data()
         self.meta = meta or Meta()
 
+        if len(self.leak) != len(self.data) or len(self.data) > self.meta.iterations:
+            raise ValueError("Incompatible leaks and data lengths")
+
     @classmethod
     def from_bytes(cls, s, inv=False):
         """Initializes an object with binary data.
@@ -570,18 +698,15 @@ class Parser:
             Reference to self.
         """
         lens = list(map(len, [
-            self.data.keys, self.data.plains, self.data.ciphers, self.leak.samples,
-            self.leak.traces
+            self.data.keys, self.data.plains, self.data.ciphers, self.leak.samples, self.leak.traces
         ]))
         n_min = min(lens)
         n_max = max(lens)
 
         if n_max == n_min:
-            self.leak.samples.pop()
-            self.leak.traces.pop()
-            self.data.keys.pop()
-            self.data.plains.pop()
-            self.data.ciphers.pop()
+            self.leak.pop()
+            self.data.pop()
+            self.meta.iterations -= 1
             return
 
         while len(self.leak.samples) != n_min:
@@ -641,6 +766,9 @@ class Parser:
                 expected = next(keywords)
                 valid = False
                 self.pop()
+
+        if len(self.data.keys) == 1:
+            self.data.keys = [self.data.keys[0]] * len(self.data)
         self.meta.iterations += len(self.leak.traces)
         return self
 
@@ -665,11 +793,11 @@ class Parser:
         elif keyword in (Keywords.SENSORS, Keywords.TARGET):
             setattr(self.meta, keyword, int(data))
         elif keyword in (Keywords.KEY, Keywords.PLAIN, Keywords.CIPHER):
-            getattr(self.data, keyword + "s").append(list(map(check_hex, data.split(b" "))))
+            getattr(self.data, keyword).append(check_hex(data.replace(b" ", b"")))
         elif keyword == Keywords.SAMPLES:
             self.leak.samples.append(int(data))
         elif keyword == Keywords.CODE:
-            self.leak.traces.append(list(map(self.__decode_hamming, line[6:])))
+            self.leak.traces.append(list(map(self.__decode_hamming, line[(len(Keywords.CODE) + 2):])))
         elif keyword == Keywords.WEIGHTS:
             self.leak.traces.append(list(map(int, data.split(b","))))
         else:
