@@ -5,14 +5,12 @@ install:
   - pip install sphinx sphinx_rtd_theme sphinx-argparse recommonmark
   - pip install -r requirements.txt
 
-script: cd docs/sources && make html
+script: cd docs/sources && make html && cd ../..
 
 deploy:
   provider: pages:git
-  skip_cleanup: true
   email: sami@dahoux.net
   local_dir: 'docs/build/all/html'
-  deploy_key: $DEPLOY_KEY  # Set in the settings page of your repository, as a secure variable
   keep_history: true
   edge: true
   on:
