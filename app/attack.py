@@ -27,9 +27,6 @@ import argparse
 import numpy as np
 
 import core
-
-from lib.cpa import Models
-
 from lib.utils import operation_decorator
 
 

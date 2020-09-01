@@ -16,14 +16,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from itertools import product
 from scipy import fft, signal
-from lib import log, aes, cpa, utils, traces as tr
+from lib import log, aes, cpa, traces as tr
+from lib import utils
 
 MODES = ["hw", "sw"]  # available encryption sources
 F_SAMPLING = 200e6  # sensors sampling frequency
 ACQ_DIR = "acquisition"  # label for the acquisition directory
 COR_DIR = "correlation"  # label for the correlation  directory
-DATA_PATH = "data"
-MEDIA_PATH = "media"
+DATA_PATH = "../data"
+MEDIA_PATH = "../media"
 IMG_PATH = os.path.join(MEDIA_PATH, "img")
 DATA_PATH_ACQ = os.path.join(DATA_PATH, ACQ_DIR)
 DATA_PATH_COR = os.path.join(DATA_PATH, COR_DIR)

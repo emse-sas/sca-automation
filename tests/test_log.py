@@ -4,7 +4,7 @@ from math import sqrt
 
 from numpy.linalg import norm
 
-from lib import log, aes
+from app.lib import log, aes
 
 LOG_PATH = os.path.join("..", *["..", "data", "acquisition"])
 

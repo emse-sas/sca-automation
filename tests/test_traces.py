@@ -1,6 +1,6 @@
 import unittest
 import numpy as np
-from lib import traces as tr
+from app.lib import traces as tr
 
 
 class TracesTest(unittest.TestCase):

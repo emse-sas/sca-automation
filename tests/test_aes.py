@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from lib import aes
+from app.lib import aes
 
 
 class HandlerTest(unittest.TestCase):

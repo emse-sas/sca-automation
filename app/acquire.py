@@ -44,8 +44,8 @@ argp = argparse.ArgumentParser(
     description="Acquire data from SoC and export it.")
 argp.add_argument("iterations", type=int,
                   help="Requested count of traces.")
-argp.add_argument("sources", type=str,
-                  help="Binary data acquisition sources.")
+argp.add_argument("source", type=str,
+                  help="Binary data acquisition source.")
 argp.add_argument("-m", "--mode", choices=core.MODES, default=core.MODES[0],
                   help="Encryption mode.")
 argp.add_argument("-p", "--plot", type=int, default=16,
