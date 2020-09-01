@@ -22,7 +22,6 @@ class TracesTest(unittest.TestCase):
     def test_sync(self):
         print(self.x0, self.x1, sep="\n")
         traces = tr.sync(np.array([self.x0, self.x1]))
-        print(traces[0], traces[1], sep="\n")
         self.assertAlmostEqual(np.linalg.norm(traces[0] - traces[1]), 0, delta=0.15)
 
 
