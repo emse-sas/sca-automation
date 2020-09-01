@@ -5,4 +5,5 @@ data/
 media/
 .pytest_cache/
 docs/build
-deploy_sca*
+deploy_sca
+deploy_sca.pub
