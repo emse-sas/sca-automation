@@ -4,7 +4,8 @@ python:
 install:
 - pip install sphinx sphinx_rtd_theme sphinx-argparse recommonmark
 - pip install -r requirements.txt
-- cd docs/sources && cp .nojekyll ../.. && make html && cd ../..
+
+scripts: cd docs/sources && make html && cd ../all/html && touch .nojekyll
 
 before_deploy:
 - openssl aes-256-cbc -K $encrypted_b5cde2e0c765_key -iv $encrypted_b5cde2e0c765_iv
