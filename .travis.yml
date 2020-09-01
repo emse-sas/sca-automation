@@ -5,7 +5,7 @@ install:
   - pip install sphinx sphinx_rtd_theme
   - pip install -r requirements.txt
 
-script: make html
+script: cd docs/sources && make html
 
 deploy:
   email: sami@dahoux.net
