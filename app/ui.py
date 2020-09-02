@@ -16,7 +16,6 @@ from itertools import product
 
 import matplotlib.pyplot as plt
 import numpy as np
-import serial
 from scipy import fft, signal
 
 from lib import data, aes, cpa, utils, io
@@ -38,7 +37,7 @@ IMG_PATH_COR = os.path.join(IMG_PATH, COR_DIR)
 
 
 @utils.operation_decorator("acquiring bytes", "acquisition successful!")
-def acquire_bin(source, request, path=None):
+def acquire(request, path=None):
     """Acquires binary data from serial or file.
 
     If ``sources`` is a serial channel such as ``COM1``,
@@ -55,10 +54,9 @@ def acquire_bin(source, request, path=None):
 
     Parameters
     ----------
-    source : str
-        Serial port id or file prefix according to the request source.
     request : sca-automation.core.Request
         Acquisition request.
+
     path : str, optional
         Export or sources path.
 
@@ -69,21 +67,40 @@ def acquire_bin(source, request, path=None):
 
     """
     path = path or os.path.join(DATA_PATH_ACQ, request.mode)
-    print(f"source: {source}")
+    print(f"source: {request.name}")
     if request.source == Request.Sources.SERIAL:
-        s = io.acquire_serial(source, request.command(Request.ACQ_CMD_NAME),
+        s = io.acquire_serial(request.name,
+                              request.command(Request.ACQ_CMD_NAME),
                               terminator=Keywords.END_ACQ_TAG,
                               path=os.path.join(path, request.filename("raw", ".bin")))
     elif request.source == Request.Sources.FILE:
-        s = io.read_file(os.path.join(path, request.filename(source, ".bin")))
+        s = io.read_file(os.path.join(path, request.filename(request.name, ".bin")))
     else:
         raise ValueError(f"unrecognized request source: {request.source}")
     print(f"buffer size: {utils.format_sizeof(len(s or []))}")
     return s
 
 
+@utils.operation_decorator("acquiring chunks", "acquisition successful!")
+def acquire_chunks(request, callback, path=None):
+    path = path or os.path.join(DATA_PATH_ACQ, request.mode)
+    print(f"source: {request.name}")
+    if request.source == Request.Sources.SERIAL:
+        s = io.acquire_chunks(request.name, request.command(Request.ACQ_CMD_NAME), callback,
+                              count=request.chunks,
+                              terminator=Keywords.END_ACQ_TAG,
+                              path=os.path.join(path, request.filename("raw", ".bin")))
+    elif request.source == Request.Sources.FILE:
+        for chunk in range(request.chunks):
+            s = io.read_file(os.path.join(path, request.filename(request.name, f"_{chunk}.bin")))
+            callback(s, chunk)
+    else:
+        raise ValueError(f"unrecognized request source: {request.source}")
+    return s
+
+
 @utils.operation_decorator("parsing bytes", "parsing successful!")
-def parse_bin(s, request):
+def parse(s, request):
     """Parses binary data.
 
     Parameters
@@ -99,14 +116,14 @@ def parse_bin(s, request):
         Parser initialized with binary data.
 
     """
-    parser = data.Parser.from_bytes(s, request.direction)
+    parser = data.Parser(s, request.direction)
     print(f"traces parsed: {parser.meta.iterations}/{request.iterations}")
     return parser
 
 
-@utils.operation_decorator("exporting data", "export successful!")
-def export_csv(request, meta=None, leak=None, channel=None, path=None):
-    """Exports parser data to CSV files.
+@utils.operation_decorator("saving data", "export successful!")
+def save(request, leak=None, channel=None, meta=None, path=None):
+    """Exports CSV data to CSV files.
 
     If ``iterations`` and ``mode`` are not specified
     ``meta`` must be given.
@@ -128,17 +145,18 @@ def export_csv(request, meta=None, leak=None, channel=None, path=None):
         Path of CSV files.
 
     """
+    append = request.chunks is not None
     path = path or os.path.join(DATA_PATH_ACQ, request.mode)
     if channel:
-        channel.to_csv(os.path.join(path, request.filename("channel", ".csv")))
+        channel.write_csv(os.path.join(path, request.filename("channel", ".csv")), append)
     if leak:
-        leak.to_csv(os.path.join(path, request.filename("leak", ".csv")))
+        leak.write_csv(os.path.join(path, request.filename("leak", ".csv")), append)
     if meta:
-        meta.to_csv(os.path.join(path, request.filename("meta", ".csv")))
+        meta.write_csv(os.path.join(path, request.filename("meta", ".csv")), append)
 
 
-@utils.operation_decorator("importing data", "import successful!")
-def import_csv(request, path=None):
+@utils.operation_decorator("loading data", "import successful!")
+def load(request, path=None):
     """Imports CSV files and parse data.
 
     Parameters
@@ -159,12 +177,27 @@ def import_csv(request, path=None):
         Meta-data.
     """
     path = path or os.path.join(DATA_PATH_ACQ, request.mode)
-    channel = data.Channel.from_csv(os.path.join(path, request.filename("channel", ".csv")))
-    leak = data.Leak.from_csv(os.path.join(path, request.filename("leak", ".csv")))
-    meta = data.Meta.from_csv(os.path.join(path, request.filename("meta", ".csv")))
+    channel = data.Channel(os.path.join(path, request.filename("channel", ".csv")))
+    leak = data.Leak(os.path.join(path, request.filename("leak", ".csv")))
+    meta = data.Meta(os.path.join(path, request.filename("meta", ".csv")))
     iterations = meta.iterations if meta else "--"
     print(f"traces imported: {iterations}/{request.iterations}")
     return leak, channel, meta
+
+
+@utils.operation_decorator("loading data", "import successful!")
+def load_chunks(request, callback, path=None):
+    path = path or os.path.join(DATA_PATH_ACQ, request.mode)
+    count = request.iterations
+    for chunk in range(request.chunks):
+        print(f"chunk: {chunk}/{request.chunks}")
+        start = chunk * count
+        channel = data.Channel(os.path.join(path, request.filename("channel", ".csv")), count, start)
+        leak = data.Leak(os.path.join(path, request.filename("leak", ".csv")), count, start)
+        meta = data.Meta(os.path.join(path, request.filename("meta", ".csv")), count, start)
+        iterations = meta.iterations if meta else "--"
+        print(f"traces imported: {iterations}/{request.iterations}")
+        callback(channel, leak, meta, chunk)
 
 
 @utils.operation_decorator("processing traces", "processing successful!")
@@ -199,12 +232,12 @@ def filter_traces(leak):
 
 
 @utils.operation_decorator("creating handler", "handler successfully create!")
-def init_handler(data, traces, model):
+def init_handler(channel, traces, model):
     """Creates a correlation handler.
 
     Parameters
     ----------
-    data : sca-automation.lib.log.Data
+    channel : sca-automation.lib.log.Data
         Encryption data.
     traces : np.ndarray
         Traces matrix.
@@ -217,12 +250,12 @@ def init_handler(data, traces, model):
         Handler initialized to perform correlation over ``traces``.
 
     """
-    key = aes.words_to_block(data.keys[0])
+    key = aes.words_to_block(channel.keys[0])
     if model == cpa.Models.SBOX:
-        blocks = [aes.words_to_block(block) for block in data.plains]
+        blocks = [aes.words_to_block(block) for block in channel.plains]
     elif model == cpa.Models.INV_SBOX:
         key = aes.key_expansion(key)[10].T
-        blocks = [aes.words_to_block(block) for block in data.ciphers]
+        blocks = [aes.words_to_block(block) for block in channel.ciphers]
     else:
         return
     return cpa.Handler(np.array(blocks), key, traces, model=model)

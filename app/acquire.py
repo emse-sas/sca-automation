@@ -34,11 +34,18 @@ from lib.data import Request
 
 @operation_decorator("acquire.py", "\nexiting...")
 def main(args):
-    request = Request.from_args(args)
-    s = ui.acquire_bin(args.name, request)
-    parser = ui.parse_bin(s, request)
-    ui.export_csv(request, parser.meta, parser.leak, parser.channel)
-    ui.plot_acq(parser.leak, parser.meta, request)
+    def callback(x, chunk=None):
+        if chunk is not None:
+            print(f"\nchunk: {chunk + 1}/{args.chunks}")
+        parser = ui.parse(x, request)
+        ui.save(request, parser.leak, parser.channel, parser.meta)
+        ui.plot_acq(parser.leak, parser.meta, request)
+
+    request = Request(args)
+    if hasattr(args, "chunks"):
+        ui.acquire_chunks(request, callback)
+    else:
+        callback(ui.acquire(request))
 
 
 argp = argparse.ArgumentParser(
@@ -61,6 +68,8 @@ argp.add_argument("-s", "--source",
                   help="Acquisition source.")
 argp.add_argument("-p", "--plot", type=int, default=16,
                   help="Count of raw traces to plot.")
+argp.add_argument("-c", "--chunks", type=int, default=None,
+                  help="Count of chunks to acquire.")
 
 if __name__ == "__main__":
     main(argp.parse_args())

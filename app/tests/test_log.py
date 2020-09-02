@@ -35,7 +35,7 @@ class DataTest(unittest.TestCase):
 
     def test_write(self):
         old_data = data.Channel.from_csv(self.data_path_hw_256)
-        old_data.to_csv("_buffer.csv")
+        old_data.write_csv("_buffer.csv", )
         new_data = data.Channel.from_csv("_buffer.csv")
 
         diff_p = (new != old for new, old in zip(new_data.plains, old_data.plains))
@@ -77,7 +77,7 @@ class LeakTest(unittest.TestCase):
 
     def test_write(self):
         old_data = data.Leak.from_csv(self.leak_path_hw_256)
-        old_data.to_csv("_buffer.csv")
+        old_data.write_csv("_buffer.csv", )
         new_data = data.Leak.from_csv("_buffer.csv")
         for new_trace, old_trace in zip(new_data.traces, old_data.traces):
             diff = sum((abs(new - old) for new, old in zip(new_trace, old_trace)))

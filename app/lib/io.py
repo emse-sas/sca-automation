@@ -3,11 +3,6 @@ import os
 import serial
 
 
-class Sources:
-    FILE = "file"
-    SERIAL = "serial"
-
-
 def read_serial(ser, terminator=b"\n", n=8):
     """Reads data from serial port.
 
@@ -34,7 +29,7 @@ def read_serial(ser, terminator=b"\n", n=8):
     return bytes(s)
 
 
-def write_serial(s, ser, flush):
+def write_serial(s, ser, flush=False):
     if flush:
         ser.flush()
     ser.write(s)
@@ -51,6 +46,20 @@ def acquire_serial(port, cmd, baud=921_600, terminator=b"\n", path=None, write=T
     with open(path, "wb+") as file:
         file.write(s)
     return s
+
+
+def acquire_chunks(port, cmd, callback, count=1, baud=921_600, terminator=b"\n", path=None, write=True):
+    path = path or port
+    with serial.Serial(port, baud, parity=serial.PARITY_NONE, xonxoff=False) as ser:
+        for chunk in range(count):
+            write_serial(f"{cmd}\n".encode(), ser, flush=True)
+            s = read_serial(ser, terminator=terminator)
+            callback(s, chunk)
+            if not write:
+                return s
+            split = os.path.splitext(path)
+            with open(f"{split[0]}_{chunk}{split[1]}", "wb+") as file:
+                file.write(s)
 
 
 def read_file(path):

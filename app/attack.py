@@ -33,8 +33,8 @@ from lib.data import Request
 
 @operation_decorator("attack.py", "\nexiting...")
 def main(args):
-    request = Request.from_args(args)
-    leak, channel, meta = ui.import_csv(request)
+    request = Request(args)
+    leak, channel, meta = ui.load(request)
     traces, _, _ = ui.filter_traces(leak)
     handler = ui.init_handler(channel, traces, model=args.model)
     ui.plot_cor(handler, request)

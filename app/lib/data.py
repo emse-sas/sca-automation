@@ -10,13 +10,17 @@ retrieve it in the entity classes.
 Examples
 --------
 
->>> from lib import read
->>> s = read.source("/dev/ttyUSB1", 256, "hw", False)
->>> parser = log.Parser.from_bytes(s)
+>>> from lib import io
+>>> from lib.data import Request, Parser
+>>> request = Request(256)
+>>> s = io.acquire_serial("/dev/ttyUSB1", request.command("sca"))
+>>> parser = Parser(s)
 
->>> from lib import read
->>> s = read.file("path/to/binary/file")
->>> parser = log.Parser.from_bytes(s)
+>>> from lib import io
+>>> from lib.data import Request, Parser
+>>> request = Request(256)
+>>> s = io.read_file("/path/to/file.bin")
+>>> parser = Parser(s)
 
 All the entity classes of the module provide CSV support
 to allow processing acquisition data without parsing.
@@ -25,16 +29,442 @@ It also provides formatting data in a more human-readable format.
 Examples
 --------
 >>> from lib import data
->>> meta = data.Meta.from_csv("path/to/meta.csv")
->>> leak = data.Leak.from_csv("path/to/leak.csv")
+>>> meta = data.Meta("path/to/meta.csv")
+>>> leak = data.Leak("path/to/leak.csv")
 >>> # some processing on meta
->>> meta.to_csv("path/to/meta.csv")
+>>> meta.write_csv("path/to/meta.csv",)
 
 """
 
 import csv
+import math
 from warnings import warn
 from lib.utils import decode_hamming, check_hex
+from collections.abc import *
+
+
+class Serializable:
+    def write_csv(self, path: str, append: bool) -> None:
+        pass
+
+
+class Deserializable:
+    def read_csv(self, path: str, count: int, start: int) -> None:
+        pass
+
+
+class Channel(MutableSequence, Reversible, Sized, Serializable, Deserializable):
+    """Encryption channel data.
+
+    This class is designed to represent AES 128 encryption data
+    for each trace acquired.
+
+    data are represented as 32-bit hexadecimal strings
+    in order to accelerate IO operations on the encrypted block.
+
+    Attributes
+    ----------
+    plains: list[str]
+        Hexadecimal plain data of each trace.
+    ciphers: list[str]
+        Hexadecimal cipher data of each trace.
+    keys: list[str]
+        Hexadecimal key data of each trace.
+
+    Raises
+    ------
+    ValueError
+        If the three list attributes does not have the same length.
+
+    """
+
+    STR_MAX_LINES = 32
+
+    def __init__(self, path=None, count=None, start=0):
+        """Imports encryption data from CSV file.
+
+        Parameters
+        ----------
+        path : str
+            Path to the CSV to read.
+        count : int, optional
+            Count of rows to read.
+        start: int, optional
+            Index of first row to read.
+        Returns
+        -------
+        Channel
+            Imported encryption data.
+        """
+        self.plains = []
+        self.ciphers = []
+        self.keys = []
+
+        if not path:
+            return
+
+        self.read_csv(path, count, start)
+
+    def __getitem__(self, item):
+        return self.plains[item], self.ciphers[item], self.keys[item]
+
+    def __setitem__(self, item, value):
+        plain, cipher, key = value
+        self.plains[item] = plain
+        self.ciphers[item] = cipher
+        self.keys[item] = key
+
+    def __delitem__(self, item):
+        del self.plains[item]
+        del self.ciphers[item]
+        del self.keys[item]
+
+    def __len__(self):
+        return len(self.plains)
+
+    def __iter__(self):
+        return zip(self.plains, self.ciphers, self.keys)
+
+    def __reversed__(self):
+        return zip(reversed(self.plains), reversed(self.ciphers), reversed(self.keys))
+
+    def __repr__(self):
+        return f"{type(self).__name__}({self.plains!r}, {self.ciphers!r}, {self.keys!r})"
+
+    def __str__(self):
+        n = len(self.plains[0]) + 4
+        ret = f"{'plains':<{n}s}{'ciphers':<{n}s}{'keys':<{n}s}"
+        for d, (plain, cipher, key) in enumerate(self):
+            if d == Channel.STR_MAX_LINES:
+                return ret + f"\n{len(self) - d} more..."
+            ret += f"\n{plain:<{n}s}{cipher:<{n}s}{key:<{n}s}"
+        return ret
+
+    def __iadd__(self, other):
+        self.plains += other.plains
+        self.ciphers += other.ciphers
+        self.keys += other.keys
+        return self
+
+    def clear(self):
+        """Clears all the attributes.
+
+        """
+        self.plains.clear()
+        self.ciphers.clear()
+        self.keys.clear()
+
+    def append(self, item):
+        plain, cipher, key = item
+        self.plains.append(plain)
+        self.ciphers.append(cipher)
+        self.keys.append(key)
+
+    def pop(self, **kwargs):
+        self.plains.pop()
+        self.ciphers.pop()
+        self.keys.pop()
+
+    def insert(self, index: int, item):
+        plain, cipher, key = item
+        self.plains.insert(index, plain)
+        self.ciphers.insert(index, cipher)
+        self.keys.insert(index, key)
+
+    def write_csv(self, path, append=False):
+        """Exports encryption data to a CSV file.
+
+        Parameters
+        ----------
+        path : str
+            Path to the CSV file to write.
+        append : bool, optional
+            True to append the data to an existing file.
+        """
+        try:
+            file = open(path, "x+" if append else "w+", newline="")
+            append = False
+        except FileExistsError:
+            file = open(path, "a+")
+        writer = csv.DictWriter(file, [Keywords.PLAIN, Keywords.CIPHER, Keywords.KEY], delimiter=";")
+        if not append:
+            writer.writeheader()
+        for plain, cipher, key in self:
+            writer.writerow({Keywords.PLAIN: plain,
+                             Keywords.CIPHER: cipher,
+                             Keywords.KEY: key})
+        file.close()
+
+    def read_csv(self, path=None, count=None, start=0):
+        count = count or math.inf
+        with open(path, "r", newline="") as file:
+            reader = csv.DictReader(file, delimiter=";")
+            for d, row in enumerate(reader):
+                if d - 1 < start:
+                    continue
+                if d - 1 >= count + start:
+                    break
+                self.plains.append(row[Keywords.PLAIN])
+                self.ciphers.append(row[Keywords.CIPHER])
+                self.keys.append(row[Keywords.KEY])
+
+        if len(self.plains) != len(self.ciphers) or len(self.plains) != len(self.keys):
+            raise ValueError("Inconsistent plains, cipher and keys length")
+
+
+class Leak(MutableSequence, Reversible, Sized, Serializable, Deserializable):
+    """Side-channel leakage data.
+
+    This class represents the power consumption traces
+    acquired during encryption in order to process these.
+
+    Attributes
+    ----------
+    samples: list[int]
+        Count of samples for each traces.
+    traces: list[list[int]]
+        Power consumption leakage signal for each acquisition.
+
+    """
+
+    STR_MAX_LINES = 32
+
+    def __init__(self, path=None, count=None, start=0):
+        """Imports leakage data from CSV.
+
+        Parameters
+        ----------
+        path : str
+            Path to the CSV to read.
+        count : int, optional
+            Count of rows to read.
+        start: int, optional
+            Index of first row to read.
+        Returns
+        -------
+        Leak
+            Imported leak data.
+        """
+
+        self.traces = []
+        self.samples = []
+        if not path:
+            return
+        self.read_csv(path, count, start)
+
+    def __getitem__(self, item):
+        return self.traces[item]
+
+    def __setitem__(self, item, value):
+        self.traces[item] = value
+        self.samples[item] = len(value)
+
+    def __delitem__(self, item):
+        del self.traces[item]
+        del self.samples[item]
+
+    def __len__(self):
+        return len(self.traces)
+
+    def __iter__(self):
+        return iter(self.traces)
+
+    def __reversed__(self):
+        return iter(reversed(self.traces))
+
+    def __repr__(self):
+        return f"{type(self).__name__}({self.traces!r})"
+
+    def __str__(self):
+        ret = f"{'no.':<16s}traces"
+        for d, trace in enumerate(self):
+            if d == Leak.STR_MAX_LINES:
+                return ret + f"\n{len(self) - d} more..."
+            ret += f"\n{d:<16d}"
+            for t in trace:
+                ret += f"{t:<4d}"
+        return ret
+
+    def __iadd__(self, other):
+        self.traces += other.traces
+        self.samples += other.samples
+        return self
+
+    def clear(self):
+        self.traces.clear()
+        self.samples.clear()
+
+    def append(self, item):
+        self.traces.append(item)
+        self.samples.append(len(item))
+
+    def pop(self, **kwargs):
+        self.traces.pop()
+        self.samples.pop()
+
+    def insert(self, index, item):
+        self.traces.insert(index, item)
+        self.samples.insert(index, len(item))
+
+    def write_csv(self, path, append=False):
+        """Exports leakage data to CSV.
+
+        Parameters
+        ----------
+        path : str
+            Path to the CSV file to write.
+        append : bool, optional
+            True to append the data to an existing file.
+        """
+        with open(path, "a+" if append else "w+", newline="") as file:
+            writer = csv.writer(file, delimiter=";")
+            writer.writerows(self.traces)
+
+    def read_csv(self, path, count=None, start=0):
+        count = count or math.inf
+        with open(path, "r", newline="") as file:
+            reader = csv.reader(file, delimiter=";")
+            for d, row in enumerate(reader):
+                if d < start:
+                    continue
+                if d >= count + start:
+                    break
+                self.traces.append(list(map(lambda x: int(x), row)))
+                self.samples.append(len(self.traces[-1]))
+
+
+class Meta(Serializable, Deserializable):
+    """Meta-data of acquisition.
+
+   This class is designed to represent additional infos
+   about the current side-channel acquisition run.
+
+    Attributes
+    ----------
+    mode : str
+        Encryption mode.
+    direction : str
+        Encryption direction, either encrypt or decrypt.
+    target : int
+        Sensors calibration target value.
+    sensors : int
+        Count of sensors.
+    iterations : int
+        Requested count of traces.
+    offset : int
+        If the traces are ASCII encoded, code offset
+    """
+
+    def __init__(self, path=None, count=None, start=0):
+        """Imports meta-data from CSV file.
+
+        If the file is empty returns an empty meta data object.
+
+        Parameters
+        ----------
+        path : str
+            Path to the CSV to read.
+
+        Returns
+        -------
+        Meta
+            Imported meta-data.
+        """
+
+        self.mode = None
+        self.direction = None
+        self.target = 0
+        self.sensors = 0
+        self.iterations = 0
+        self.offset = 0
+
+        if not path:
+            return
+
+        self.read_csv(path, count, start)
+
+    def __repr__(self):
+        return f"{type(self).__name__}(" \
+               f"{self.mode!r}, " \
+               f"{self.direction!r}, " \
+               f"{self.target!r}, " \
+               f"{self.sensors!r}, " \
+               f"{self.iterations!r}, " \
+               f"{self.offset!r})"
+
+    def __str__(self):
+        dl = str(Keywords.DELIMITER, 'ascii')
+        return f"{Keywords.MODE}{dl} {self.mode}\n" \
+               f"{Keywords.DIRECTION}{dl} {self.direction}\n" \
+               f"{Keywords.TARGET}{dl} {self.target}\n" \
+               f"{Keywords.SENSORS}{dl} {self.sensors}\n" \
+               f"{Keywords.ITERATIONS}{dl} {self.iterations}\n" \
+               f"{Keywords.OFFSET}{dl} {self.offset}"
+
+    def clear(self):
+        """Resets meta-data.
+
+        """
+        self.mode = None
+        self.direction = None
+        self.target = 0
+        self.sensors = 0
+        self.iterations = 0
+        self.offset = 0
+
+    def write_csv(self, path, append=False):
+        """Exports meta-data to a CSV file.
+
+        Parameters
+        ----------
+        path : str
+            Path to the CSV file to write.
+        append : bool, optional
+        """
+        try:
+            file = open(path, "x+" if append else "w+", newline="")
+        except FileExistsError:
+            meta = Meta(path)
+            self.iterations += meta.iterations
+            file = open(path, "w+", newline="")
+
+        fieldnames = [Keywords.MODE,
+                      Keywords.DIRECTION,
+                      Keywords.TARGET,
+                      Keywords.SENSORS,
+                      Keywords.ITERATIONS,
+                      Keywords.OFFSET]
+        writer = csv.DictWriter(file, fieldnames, delimiter=";")
+        writer.writeheader()
+        writer.writerow({Keywords.MODE: self.mode,
+                         Keywords.DIRECTION: self.direction,
+                         Keywords.TARGET: self.target,
+                         Keywords.SENSORS: self.sensors,
+                         Keywords.ITERATIONS: self.iterations,
+                         Keywords.OFFSET: self.offset})
+        file.close()
+
+    def read_csv(self, path, count=None, start=0):
+        with open(path, "r", newline="") as file:
+            reader = csv.DictReader(file, delimiter=";")
+            try:
+                row = next(reader)
+            except StopIteration:
+                return
+            self.mode = row[Keywords.MODE]
+            self.direction = row[Keywords.DIRECTION]
+            self.target = int(row[Keywords.TARGET])
+            self.sensors = int(row[Keywords.SENSORS])
+            self.iterations = int(row[Keywords.ITERATIONS])
+            self.offset = int(row[Keywords.OFFSET])
+
+            count = count or math.inf
+            for d, row in enumerate(reader):
+                if d < start:
+                    continue
+                if d >= count + start:
+                    break
+                self.iterations += int(row[Keywords.ITERATIONS])
 
 
 class Request:
@@ -48,14 +478,20 @@ class Request:
 
     Attributes
     ----------
+    name : str
+        Serial port id or file prefix according to the source mode.
     iterations : int
         Requested count of traces.
     mode : str
         Encryption mode.
     direction : str
         Encrypt direction.
-    source : bool
-        True if an acquisition from serial port is requested.
+    source : str
+        Source mode.
+    verbose : True
+        True to perform verbose acquisition.
+    chunks : int, optional
+        Count of chunks to acquire or None if not performing chunk acquisition
     """
 
     ACQ_CMD_NAME = "sca"
@@ -72,32 +508,7 @@ class Request:
         FILE = "file"
         SERIAL = "serial"
 
-    def __init__(self, iterations,
-                 source=Sources.FILE,
-                 direction=Directions.ENCRYPT,
-                 mode=Modes.HARDWARE,
-                 verbose=False):
-        """Initializes a request with attributes.
-
-        Attributes
-        ----------
-        iterations : int
-            Requested count of traces.
-        source : str, optional
-            Acquisition source.
-        mode : str, optional
-            Encryption mode.
-        inverse : bool, optional
-            True if encryption direction is decrypt.
-        """
-        self.source = source
-        self.iterations = iterations
-        self.mode = mode
-        self.direction = direction
-        self.verbose = verbose
-
-    @classmethod
-    def from_args(cls, args):
+    def __init__(self, args):
         """Initializes a request with a previously parsed command.
 
         Parameters
@@ -106,31 +517,26 @@ class Request:
             Parsed arguments.
 
         """
-        ret = Request(args.iterations)
+        self.name = args.name
+        self.iterations = args.iterations
+        self.source = Request.Sources.FILE
+        self.mode = Request.Modes.HARDWARE
+        self.direction = Request.Directions.ENCRYPT
+        self.verbose = False
+        self.chunks = None
+
         if hasattr(args, "source"):
-            ret.source = args.source
+            self.source = args.source
         if hasattr(args, "mode"):
-            ret.mode = args.mode
+            self.mode = args.mode
         if hasattr(args, "direction"):
-            ret.direction = args.direction
+            self.direction = args.direction
         if hasattr(args, "verbose"):
-            ret.verbose = args.verbose
+            self.verbose = args.verbose
+        if hasattr(args, "chunks"):
+            self.chunks = args.chunks
 
-        return ret
-
-    @classmethod
-    def from_meta(cls, meta):
-        """Initializes a request with command line arguments.
-
-        Parameters
-        ----------
-        meta : sca-automation.lib.log.Meta
-            Meta-data.
-
-        """
-        return Request(meta.iterations, mode=meta.mode, direction=meta.direction)
-
-    def filename(self, prefix, suffix=""):
+    def filename(self, prefix=None, suffix=""):
         """Creates a filename based on the request.
 
         This method allows to consistently name the files
@@ -142,6 +548,8 @@ class Request:
             Prefix of the filename.
         suffix : str, optional
             Suffix of the filename.
+        chunks : int, optional
+            Count of chunks.
 
         Returns
         -------
@@ -149,7 +557,7 @@ class Request:
             The complete filename.
 
         """
-        return f"{prefix}_{self.mode}_{self.direction}_{self.iterations}{suffix}"
+        return f"{prefix or self.name}_{self.mode}_{self.direction}_{self.iterations * (self.chunks or 1)}{suffix}"
 
     def command(self, name):
         return "{}{}{}{}{}".format(name,
@@ -220,8 +628,7 @@ class Keywords:
         self.idx = 0
         self.meta = meta
         self.value = ""
-        if not meta:
-            self.__build_metawords()
+        self.__build_metawords()
         self.__build_datawords(inv, verbose)
         self.reset()
 
@@ -258,403 +665,6 @@ class Keywords:
         self.datawords += [Keywords.SAMPLES, Keywords.WEIGHTS] if verbose else [Keywords.SAMPLES, Keywords.CODE]
 
 
-class Channel:
-    """Encryption channel data.
-
-    This class is designed to represent AES 128 encryption data
-    for each trace acquired.
-
-    data are represented as 32-bit hexadecimal strings
-    in order to accelerate IO operations on the encrypted block.
-
-    Attributes
-    ----------
-    plains: list[str]
-        Hexadecimal plain data of each trace.
-    ciphers: list[str]
-        Hexadecimal cipher data of each trace.
-    keys: list[str]
-        Hexadecimal key data of each trace.
-
-    Raises
-    ------
-    ValueError
-        If the three list attributes does not have the same length.
-
-    """
-
-    STR_MAX_LINES = 32
-
-    def __init__(self, plains=None, ciphers=None, keys=None):
-        """Initializes an object by giving attributes values
-
-        Parameters
-        ----------
-        plains: list[str], optional
-            Plains words for each trace.
-        ciphers: list[str], optional
-            Cipher words for each trace.
-        keys: list[str], optional
-            Keys words for each trace.
-
-        """
-        self.plains = plains or []
-        self.ciphers = ciphers or []
-        self.keys = keys or []
-
-        if len(self.plains) != len(self.ciphers) or len(self.plains) != len(self.keys):
-            raise ValueError("Inconsistent plains, cipher and keys length")
-
-    def __getitem__(self, item):
-        return self.plains[item], self.ciphers[item], self.keys[item]
-
-    def __setitem__(self, item, value):
-        plain, cipher, key = value
-        self.plains[item] = plain
-        self.ciphers[item] = cipher
-        self.keys[item] = key
-
-    def __delitem__(self, item):
-        del self.plains[item]
-        del self.ciphers[item]
-        del self.keys[item]
-
-    def __len__(self):
-        return len(self.plains)
-
-    def __iter__(self):
-        return zip(self.plains, self.ciphers, self.keys)
-
-    def __reversed__(self):
-        return zip(reversed(self.plains), reversed(self.ciphers), reversed(self.keys))
-
-    def __repr__(self):
-        return f"{type(self).__name__}({self.plains!r}, {self.ciphers!r}, {self.keys!r})"
-
-    def __str__(self):
-        n = len(self.plains[0]) + 4
-        ret = f"{'plains':<{n}s}{'ciphers':<{n}s}{'keys':<{n}s}"
-        for d, (plain, cipher, key) in enumerate(self):
-            if d == Channel.STR_MAX_LINES:
-                return ret + f"\n{len(self) - d} more..."
-            ret += f"\n{plain:<{n}s}{cipher:<{n}s}{key:<{n}s}"
-        return ret
-
-    def __iadd__(self, other):
-        self.plains += other.plains
-        self.ciphers += other.ciphers
-        self.keys += other.keys
-        return self
-
-    def clear(self):
-        """Clears all the attributes.
-
-        """
-        self.plains.clear()
-        self.ciphers.clear()
-        self.keys.clear()
-
-    def append(self, item):
-        plain, cipher, key = item
-        self.plains.append(plain)
-        self.ciphers.append(cipher)
-        self.keys.append(key)
-
-    def pop(self):
-        self.plains.pop()
-        self.ciphers.pop()
-        self.keys.pop()
-
-    def to_csv(self, path):
-        """Exports encryption data to a CSV file.
-
-        Parameters
-        ----------
-        path : str
-            Path to the CSV file to write.
-
-        """
-        with open(path, "w", newline="") as file:
-            writer = csv.DictWriter(file, [Keywords.PLAIN, Keywords.CIPHER, Keywords.KEY], delimiter=";")
-            writer.writeheader()
-            for plain, cipher, key in self:
-                writer.writerow({Keywords.PLAIN: plain,
-                                 Keywords.CIPHER: cipher,
-                                 Keywords.KEY: key})
-
-    @classmethod
-    def from_csv(cls, path):
-        """Imports encryption data from CSV file.
-
-        Parameters
-        ----------
-        path : str
-            Path to the CSV to read.
-
-        Returns
-        -------
-        Channel
-            Imported encryption data.
-        """
-        plains = []
-        ciphers = []
-        keys = []
-        with open(path, "r", newline="") as file:
-            reader = csv.DictReader(file, delimiter=";")
-            for row in reader:
-                plains.append(row[Keywords.PLAIN])
-                ciphers.append(row[Keywords.CIPHER])
-                keys.append(row[Keywords.KEY])
-
-        return Channel(plains, ciphers, keys)
-
-
-class Meta:
-    """Meta-data of acquisition.
-
-   This class is designed to represent additional infos
-   about the current side-channel acquisition run.
-
-    Attributes
-    ----------
-    mode : str
-        Encryption mode.
-    direction : str
-        Encryption direction, either encrypt or decrypt.
-    target : int
-        Sensors calibration target value.
-    sensors : int
-        Count of sensors.
-    iterations : int
-        Requested count of traces.
-    offset : int
-        If the traces are ASCII encoded, code offset
-    """
-
-    def __init__(self, mode=None, direction=None, target=0, sensors=0, iterations=0, offset=0):
-        """Construct an object with given meta-data
-
-        Parameters
-        ----------
-        mode : str, optional
-            Encryption mode.
-        direction : str, optional
-            Encryption direction, either encrypt or decrypt.
-        target : int, optional
-            Sensors calibration target value.
-        sensors : int, optional
-            Count of sensors.
-        iterations : int, optional
-            Requested count of traces.
-        offset : int, optional
-            If the traces are ASCII encoded, code offset.
-        """
-        self.mode = mode
-        self.direction = direction
-        self.target = target
-        self.sensors = sensors
-        self.iterations = iterations
-        self.offset = offset
-
-    def __repr__(self):
-        return f"{type(self).__name__}(" \
-               f"{self.mode!r}, " \
-               f"{self.direction!r}, " \
-               f"{self.target!r}, " \
-               f"{self.sensors!r}, " \
-               f"{self.iterations!r}, " \
-               f"{self.offset!r})"
-
-    def __str__(self):
-        dl = str(Keywords.DELIMITER, 'ascii')
-        return f"{Keywords.MODE}{dl} {self.mode}\n" \
-               f"{Keywords.DIRECTION}{dl} {self.direction}\n" \
-               f"{Keywords.TARGET}{dl} {self.target}\n" \
-               f"{Keywords.SENSORS}{dl} {self.sensors}\n" \
-               f"{Keywords.ITERATIONS}{dl} {self.iterations}\n" \
-               f"{Keywords.OFFSET}{dl} {self.offset}"
-
-    def clear(self):
-        """Resets meta-data.
-
-        """
-        self.mode = None
-        self.direction = None
-        self.target = 0
-        self.sensors = 0
-        self.iterations = 0
-        self.offset = 0
-
-    def to_csv(self, path):
-        """Exports meta-data to a CSV file.
-
-        Parameters
-        ----------
-        path : str
-            Path to the CSV file to write.
-
-        """
-        with open(path, "w", newline="") as file:
-            fieldnames = [Keywords.MODE,
-                          Keywords.DIRECTION,
-                          Keywords.TARGET,
-                          Keywords.SENSORS,
-                          Keywords.ITERATIONS,
-                          Keywords.OFFSET]
-            writer = csv.DictWriter(file, fieldnames, delimiter=";")
-            writer.writeheader()
-            writer.writerow({Keywords.MODE: self.mode,
-                             Keywords.DIRECTION: self.direction,
-                             Keywords.TARGET: self.target,
-                             Keywords.SENSORS: self.sensors,
-                             Keywords.ITERATIONS: self.iterations,
-                             Keywords.OFFSET: self.offset})
-
-    @classmethod
-    def from_csv(cls, path):
-        """Imports meta-data from CSV file.
-
-        If the file is empty returns an empty meta data object.
-
-        Parameters
-        ----------
-        path : str
-            Path to the CSV to read.
-
-        Returns
-        -------
-        Meta
-            Imported meta-data.
-        """
-        with open(path, "r", newline="") as file:
-            reader = csv.DictReader(file, delimiter=";")
-            try:
-                row = next(reader)
-            except StopIteration:
-                return None
-        return Meta(row[Keywords.MODE],
-                    row[Keywords.DIRECTION],
-                    int(row[Keywords.TARGET]),
-                    int(row[Keywords.SENSORS]),
-                    int(row[Keywords.ITERATIONS]),
-                    int(row[Keywords.OFFSET]))
-
-
-class Leak:
-    """Side-channel leakage data.
-
-    This class represents the power consumption traces
-    acquired during encryption in order to process these.
-
-    Attributes
-    ----------
-    samples: list[int]
-        Count of samples for each traces.
-    traces: list[list[int]]
-        Power consumption leakage signal for each acquisition.
-
-    """
-    STR_MAX_LINES = 32
-
-    def __init__(self, traces=None):
-        """Parses raw traces data.
-
-        Parameters
-        ----------
-        traces : list[list[int]], optional
-            Power consumption leakage signal for each acquisition.
-
-        """
-        self.samples = list(map(len, traces)) if traces else []
-        self.traces = traces or []
-
-    def __getitem__(self, item):
-        return self.traces[item]
-
-    def __setitem__(self, item, value):
-        self.traces[item] = value
-        self.samples[item] = len(value)
-
-    def __delitem__(self, item):
-        del self.traces[item]
-        del self.samples[item]
-
-    def __len__(self):
-        return len(self.traces)
-
-    def __iter__(self):
-        return iter(self.traces)
-
-    def __reversed__(self):
-        return iter(reversed(self.traces))
-
-    def __repr__(self):
-        return f"{type(self).__name__}({self.traces!r})"
-
-    def __str__(self):
-        ret = f"{'no.':<16s}traces"
-        for d, trace in enumerate(self):
-            if d == Leak.STR_MAX_LINES:
-                return ret + f"\n{len(self) - d} more..."
-            ret += f"\n{d:<16d}"
-            for t in trace:
-                ret += f"{t:<4d}"
-        return ret
-
-    def __iadd__(self, other):
-        self.traces += other.traces
-        self.samples += other.samples
-        return self
-
-    def clear(self):
-        self.traces.clear()
-        self.samples.clear()
-
-    def append(self, item):
-        self.traces.append(item)
-        self.samples.append(len(item))
-
-    def pop(self):
-        self.traces.pop()
-        self.samples.pop()
-
-    def to_csv(self, path):
-        """Exports leakage data to CSV.
-
-        Parameters
-        ----------
-        path : str
-            Path to the CSV file to write.
-
-        """
-        with open(path, "w", newline="") as file:
-            writer = csv.writer(file, delimiter=";")
-            writer.writerows(self.traces)
-
-    @classmethod
-    def from_csv(cls, path):
-        """Imports leakage data from CSV.
-
-        Parameters
-        ----------
-        path : str
-            Path to the CSV to read.
-
-        Returns
-        -------
-        Leak
-            Imported leak data.
-        """
-        traces = []
-        with open(path, "r", newline="") as file:
-            reader = csv.reader(file, delimiter=";")
-            for row in reader:
-                if not row:
-                    continue
-                traces.append(list(map(lambda x: int(x), row)))
-        return Leak(traces)
-
-
 class Parser:
     """Binary data parser.
 
@@ -666,7 +676,7 @@ class Parser:
     ----------
     leak : Leak
         Leakage data.
-    data : Channel
+    channel : Channel
         Encryption data.
     meta : Meta
         Meta-data.
@@ -677,43 +687,25 @@ class Parser:
 
     """
 
-    def __init__(self, leak=None, data=None, meta=None):
-        """Initializes an object with given attributes
-
-        Parameters
-        ----------
-        leak : Leak
-            Leakage data.
-        data : Channel
-            Encryption data.
-        meta : Meta
-            Meta-data.
-
-        """
-        self.leak = leak or Leak()
-        self.channel = data or Channel()
-        self.meta = meta or Meta()
-
-        if len(self.leak) != len(self.channel) or len(self.channel) > self.meta.iterations:
-            raise ValueError("Incompatible leaks and data lengths")
-
-    @classmethod
-    def from_bytes(cls, s, direction=Request.Directions.ENCRYPT):
+    def __init__(self, s=b"", direction=Request.Directions.ENCRYPT):
         """Initializes an object with binary data.
-        
+
         Parameters
         ----------
         s : bytes
             Binary data.
-        direction : bool
-            True if encryption direction is decrypt.
+        direction : str
+            Encryption direction.
         Returns
         -------
         Parser
             Parser initialized with data.
 
         """
-        return Parser().parse_bytes(s, direction)
+        self.leak = Leak()
+        self.channel = Channel()
+        self.meta = Meta()
+        self.parse(s, direction)
 
     def pop(self):
         """Pops acquired value until data lengths matches.
@@ -760,7 +752,7 @@ class Parser:
         self.meta.clear()
         self.channel.clear()
 
-    def parse_bytes(self, s, direction=Request.Directions.ENCRYPT):
+    def parse(self, s, direction=Request.Directions.ENCRYPT):
         """Parses the given bytes to retrieve acquisition data.
 
         If inv`` is not specified the parser will infer the
@@ -770,8 +762,8 @@ class Parser:
         ----------
         s : bytes
             Binary data.
-        direction : bool
-            True if encryption direction is decrypt.
+        direction : str
+            Encryption direction.
 
         Returns
         -------
