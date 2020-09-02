@@ -1,14 +1,14 @@
 import argparse
 
-import core
+import ui
 
 from lib.utils import operation_decorator
 
 
 @operation_decorator("setup.py", "\nexiting...")
 def main():
-    core.create_logs_dir()
-    core.create_images_dir()
+    ui.create_logs_dir()
+    ui.create_images_dir()
 
 
 argp = argparse.ArgumentParser(

@@ -27,33 +27,40 @@ acquired from the SoC via serial port.
 
 import argparse
 
-import core
+import ui
 from lib.utils import operation_decorator
+from lib.data import Request
 
 
 @operation_decorator("acquire.py", "\nexiting...")
 def main(args):
-    request = core.Request.from_args(args)
-    s = core.acquire_bin(args.source, request)
-    parser = core.parse_bin(s, request)
-    core.export_csv(request, parser.meta, parser.leak, parser.data)
-    core.plot_acq(parser.leak, parser.meta, request)
+    request = Request.from_args(args)
+    s = ui.acquire_bin(args.name, request)
+    parser = ui.parse_bin(s, request)
+    ui.export_csv(request, parser.meta, parser.leak, parser.channel)
+    ui.plot_acq(parser.leak, parser.meta, request)
 
 
 argp = argparse.ArgumentParser(
     description="Acquire data from SoC and export it.")
 argp.add_argument("iterations", type=int,
                   help="Requested count of traces.")
-argp.add_argument("source", type=str,
-                  help="Binary data acquisition source.")
-argp.add_argument("-m", "--mode", choices=core.MODES, default=core.MODES[0],
+argp.add_argument("name", type=str,
+                  help="Acquisition source name.")
+argp.add_argument("-m", "--mode",
+                  choices=[Request.Modes.HARDWARE, Request.Modes.SOFTWARE],
+                  default=Request.Modes.HARDWARE,
                   help="Encryption mode.")
+argp.add_argument("-d", "--direction",
+                  choices=[Request.Directions.ENCRYPT, Request.Directions.DECRYPT],
+                  default=Request.Directions.ENCRYPT,
+                  help="Encryption direction.")
+argp.add_argument("-s", "--source",
+                  choices=[Request.Sources.FILE, Request.Sources.SERIAL],
+                  default=Request.Sources.FILE,
+                  help="Acquisition source.")
 argp.add_argument("-p", "--plot", type=int, default=16,
                   help="Count of raw traces to plot.")
-argp.add_argument("-i", "--inv", action="store_true",
-                  help="Perform inverse encryption.")
-argp.add_argument("-s", "--serial", action="store_true",
-                  help="Acquisition from serials sources.")
 
 if __name__ == "__main__":
     main(argp.parse_args())

@@ -9,11 +9,11 @@ to retrieve attack results in a reasonable amount of time.
 
 Examples
 --------
->>> from lib import log, cpa, aes, traces as tr
+>>> from lib import data, cpa, aes, traces as tr
 >>> import numpy as np
->>> meta = log.Meta.from_csv("path/to/meta.csv")
->>> data = log.Data.from_csv("path/to/data.csv")
->>> leak = log.Leak.from_csv("path/to/leak.csv")
+>>> meta = data.Meta.from_csv("path/to/meta.csv")
+>>> data = data.Channel.from_csv("path/to/data.csv")
+>>> leak = data.Leak.from_csv("path/to/leak.csv")
 >>> blocks = np.array([aes.words_to_block(block) for block in data.plains], dtype=np.uint8)
 >>> key = aes.words_to_block(data.keys[0])
 >>> traces = np.array(tr.crop(leak.traces))

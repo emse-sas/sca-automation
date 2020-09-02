@@ -4,9 +4,9 @@ from math import sqrt
 
 from numpy.linalg import norm
 
-from lib import log, aes
+from lib import data, aes
 
-LOG_PATH = os.path.join("..", *["data", "acquisition"])
+LOG_PATH = os.path.join("..", *["..", "data", "acquisition"])
 
 
 class DataTest(unittest.TestCase):
@@ -15,7 +15,7 @@ class DataTest(unittest.TestCase):
         self.data_path_hw_65536 = os.path.join(LOG_PATH, *["hw", "data_hw_65536.csv"])
 
     def test_read(self):
-        data = log.Data.from_csv(self.data_path_hw_256)
+        data = data.Channel.from_csv(self.data_path_hw_256)
         n = len(data.plains)
         self.assertEqual(n, len(data.ciphers), "ciphers len mismatch")
         self.assertEqual(n, len(data.keys), "keys len mismatch")
@@ -27,16 +27,16 @@ class DataTest(unittest.TestCase):
             cipher = aes.words_to_block(cipher)
             self.assertEqual(norm(handler.encrypt(plain) - cipher), 0, "incorrect encryption")
 
-        data = log.Data.from_csv(self.data_path_hw_65536)
+        data = data.Channel.from_csv(self.data_path_hw_65536)
         n = len(data.plains)
         self.assertEqual(n, len(data.ciphers), "ciphers len mismatch")
         self.assertEqual(n, len(data.keys), "keys len mismatch")
         self.assertGreaterEqual(n, 65536 * 0.8, "< 80% of plains retrieved")
 
     def test_write(self):
-        old_data = log.Data.from_csv(self.data_path_hw_256)
+        old_data = data.Channel.from_csv(self.data_path_hw_256)
         old_data.to_csv("_buffer.csv")
-        new_data = log.Data.from_csv("_buffer.csv")
+        new_data = data.Channel.from_csv("_buffer.csv")
 
         diff_p = (new != old for new, old in zip(new_data.plains, old_data.plains))
         diff_c = (new != old for new, old in zip(new_data.ciphers, old_data.ciphers))
@@ -55,11 +55,11 @@ class LeakTest(unittest.TestCase):
         self.leak_path_hw_65536 = os.path.join(LOG_PATH, *["hw", "leak_hw_65536.csv"])
 
     def test_read(self):
-        leak = log.Leak.from_csv(self.leak_path_hw_256)
+        leak = data.Leak.from_csv(self.leak_path_hw_256)
         n = len(leak.traces)
         self.assertEqual(n, 256)
 
-        leak = log.Leak.from_csv(self.leak_path_hw_65536)
+        leak = data.Leak.from_csv(self.leak_path_hw_65536)
         n = len(leak.traces)
         self.assertGreaterEqual(n, 65536 * 0.8, "< 80% of traces retrieved")
         m = [len(trace) for trace in leak.traces]
@@ -76,9 +76,9 @@ class LeakTest(unittest.TestCase):
         self.assertLess(abs(m_min - m_avg), 3 * m_dev)
 
     def test_write(self):
-        old_data = log.Leak.from_csv(self.leak_path_hw_256)
+        old_data = data.Leak.from_csv(self.leak_path_hw_256)
         old_data.to_csv("_buffer.csv")
-        new_data = log.Leak.from_csv("_buffer.csv")
+        new_data = data.Leak.from_csv("_buffer.csv")
         for new_trace, old_trace in zip(new_data.traces, old_data.traces):
             diff = sum((abs(new - old) for new, old in zip(new_trace, old_trace)))
             self.assertEqual(diff, 0)
@@ -92,15 +92,15 @@ class ParserTest(unittest.TestCase):
         self.cmd_path_hw_65536 = os.path.join(LOG_PATH, *["hw", "cmd_hw_65536.log"])
 
     def test_parse(self):
-        parser = log.Parser.from_bytes(log.read.file(self.cmd_path_hw_256))
+        parser = data.Parser.from_bytes(read.file(self.cmd_path_hw_256))
         n = len(parser.leak.traces)
-        self.assertEqual(n, len(parser.data.plains), "plains len mismatch")
+        self.assertEqual(n, len(parser.channel.plains), "plains len mismatch")
         self.assertEqual(n, parser.meta.iterations, "iterations mismatch")
         self.assertEqual(n, 256, "traces len mismatch")
 
-        parser = log.Parser.from_bytes(log.read.file(self.cmd_path_hw_65536))
+        parser = data.Parser.from_bytes(read.file(self.cmd_path_hw_65536))
         n = len(parser.leak.traces)
-        self.assertEqual(n, len(parser.data.plains), "plains len mismatch")
+        self.assertEqual(n, len(parser.channel.plains), "plains len mismatch")
         self.assertEqual(n, parser.meta.iterations, "iterations mismatch")
         self.assertGreaterEqual(n, 65536 * 0.8, "< 80% of traces retrieved")
 

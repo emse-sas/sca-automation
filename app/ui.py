@@ -12,14 +12,19 @@ of an application based on the library :
 """
 
 import os
+from itertools import product
+
 import matplotlib.pyplot as plt
 import numpy as np
-from itertools import product
+import serial
 from scipy import fft, signal
-from lib import log, aes, cpa, traces as tr
-from lib import utils
+
+from lib import data, aes, cpa, utils, io
+from lib import traces as tr
+from lib.data import Keywords, Request
 
 MODES = ["hw", "sw"]  # available encryption sources
+SOURCES = ["serial", "file"]
 F_SAMPLING = 200e6  # sensors sampling frequency
 ACQ_DIR = "acquisition"  # label for the acquisition directory
 COR_DIR = "correlation"  # label for the correlation  directory
@@ -30,96 +35,6 @@ DATA_PATH_ACQ = os.path.join(DATA_PATH, ACQ_DIR)
 DATA_PATH_COR = os.path.join(DATA_PATH, COR_DIR)
 IMG_PATH_ACQ = os.path.join(IMG_PATH, ACQ_DIR)
 IMG_PATH_COR = os.path.join(IMG_PATH, COR_DIR)
-
-
-class Request:
-    """Data processing request.
-
-    This class provides a simple abstraction to wrap
-    file naming arguments during acquisition, import or export.
-
-    The these arguments combined together form a *data request*
-    specifying all the characteristics of the target data-set.
-
-    Attributes
-    ----------
-    iterations : int
-        Requested count of traces.
-    mode : str
-        Encryption mode.
-    inv : bool
-        True if encryption direction is decrypt.
-    serial : bool
-        True if an acquisition from serial port is requested.
-    """
-
-    def __init__(self, iterations, mode, inv, serial):
-        """Initializes a request with attributes.
-
-        Attributes
-        ----------
-        iterations : int
-            Requested count of traces.
-        mode : str
-            Encryption mode.
-        inv : bool
-            True if encryption direction is decrypt.
-        serial : bool
-            True if an acquisition from serial port is requested.
-        """
-        self.iterations = iterations
-        self.mode = mode
-        self.inv = inv
-        self.serial = serial
-
-    @classmethod
-    def from_args(cls, args):
-        """Initializes a request with command line args.
-
-        Parameters
-        ----------
-        args
-            Parsed arguments.
-
-        """
-        try:
-            return Request(args.iterations, args.mode, args.inv, args.serial)
-        except AttributeError:
-            return Request(args.iterations, args.mode, 0, False)
-
-    @classmethod
-    def from_meta(cls, meta):
-        """Initializes a request with command line arguments.
-
-        Parameters
-        ----------
-        meta : sca-automation.lib.log.Meta
-            Meta-data.
-
-        """
-        return Request(meta.iterations, meta.mode, meta.direction == "decrypt", False)
-
-    def filename(self, prefix, suffix=""):
-        """Creates a filename based on the request.
-
-        This method allows to consistently name the files
-        according to request's characteristics.
-
-        Parameters
-        ----------
-        prefix : str
-            Prefix of the filename.
-        suffix : str, optional
-            Suffix of the filename.
-
-        Returns
-        -------
-        str :
-            The complete filename.
-
-        """
-        iv = "_iv" if self.inv else ""
-        return f"{prefix}_{self.mode}{iv}_{self.iterations}{suffix}"
 
 
 @utils.operation_decorator("acquiring bytes", "acquisition successful!")
@@ -141,7 +56,7 @@ def acquire_bin(source, request, path=None):
     Parameters
     ----------
     source : str
-        Serial channel or file prefix.
+        Serial port id or file prefix according to the request source.
     request : sca-automation.core.Request
         Acquisition request.
     path : str, optional
@@ -154,14 +69,16 @@ def acquire_bin(source, request, path=None):
 
     """
     path = path or os.path.join(DATA_PATH_ACQ, request.mode)
-    print(f"sources: {source}")
-    if request.serial:
-        s = log.read.serial(source, request.iterations,
-                            request.mode, request.inv)
-        log.write.bytes(s, os.path.join(path, request.filename("cmd", ".log")))
+    print(f"source: {source}")
+    if request.source == Request.Sources.SERIAL:
+        s = io.acquire_serial(source, request.command(Request.ACQ_CMD_NAME),
+                              terminator=Keywords.END_ACQ_TAG,
+                              path=os.path.join(path, request.filename("raw", ".bin")))
+    elif request.source == Request.Sources.FILE:
+        s = io.read_file(os.path.join(path, request.filename(source, ".bin")))
     else:
-        s = log.read.file(os.path.join(path, request.filename(source, ".log")))
-    print(f"buffer size: {utils.format_sizeof(len(s))}")
+        raise ValueError(f"unrecognized request source: {request.source}")
+    print(f"buffer size: {utils.format_sizeof(len(s or []))}")
     return s
 
 
@@ -182,13 +99,13 @@ def parse_bin(s, request):
         Parser initialized with binary data.
 
     """
-    parser = log.Parser.from_bytes(s, request.inv)
+    parser = data.Parser.from_bytes(s, request.direction)
     print(f"traces parsed: {parser.meta.iterations}/{request.iterations}")
     return parser
 
 
 @utils.operation_decorator("exporting data", "export successful!")
-def export_csv(request, meta=None, leak=None, data=None, path=None):
+def export_csv(request, meta=None, leak=None, channel=None, path=None):
     """Exports parser data to CSV files.
 
     If ``iterations`` and ``mode`` are not specified
@@ -205,15 +122,15 @@ def export_csv(request, meta=None, leak=None, data=None, path=None):
         Meta-data.
     leak : sca-automation.lib.log.Leak, optional
         Leakage data.
-    data : sca-automation.lib.log.Data, optional
+    channel : sca-automation.lib.log.Channel, optional
         Encryption data.
     path : str, optional
         Path of CSV files.
 
     """
     path = path or os.path.join(DATA_PATH_ACQ, request.mode)
-    if data:
-        data.to_csv(os.path.join(path, request.filename("data", ".csv")))
+    if channel:
+        channel.to_csv(os.path.join(path, request.filename("channel", ".csv")))
     if leak:
         leak.to_csv(os.path.join(path, request.filename("leak", ".csv")))
     if meta:
@@ -242,15 +159,12 @@ def import_csv(request, path=None):
         Meta-data.
     """
     path = path or os.path.join(DATA_PATH_ACQ, request.mode)
-    data = log.Data.from_csv(os.path.join(
-        path, request.filename("data", ".csv")))
-    leak = log.Leak.from_csv(os.path.join(
-        path, request.filename("leak", ".csv")))
-    meta = log.Meta.from_csv(os.path.join(
-        path, request.filename("meta", ".csv")))
+    channel = data.Channel.from_csv(os.path.join(path, request.filename("channel", ".csv")))
+    leak = data.Leak.from_csv(os.path.join(path, request.filename("leak", ".csv")))
+    meta = data.Meta.from_csv(os.path.join(path, request.filename("meta", ".csv")))
     iterations = meta.iterations if meta else "--"
     print(f"traces imported: {iterations}/{request.iterations}")
-    return leak, data, meta
+    return leak, channel, meta
 
 
 @utils.operation_decorator("processing traces", "processing successful!")

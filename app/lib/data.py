@@ -9,9 +9,13 @@ retrieve it in the entity classes.
 
 Examples
 --------
->>> from lib import log
->>> s = log.read.serial("com5", 256, "hw", False)
->>> s = log.read.file("path/to/binary/file")
+
+>>> from lib import read
+>>> s = read.source("/dev/ttyUSB1", 256, "hw", False)
+>>> parser = log.Parser.from_bytes(s)
+
+>>> from lib import read
+>>> s = read.file("path/to/binary/file")
 >>> parser = log.Parser.from_bytes(s)
 
 All the entity classes of the module provide CSV support
@@ -20,9 +24,9 @@ It also provides formatting data in a more human-readable format.
 
 Examples
 --------
->>> from lib import log
->>> meta = log.Meta.from_csv("path/to/meta.csv")
->>> leak = log.Leak.from_csv("path/to/leak.csv")
+>>> from lib import data
+>>> meta = data.Meta.from_csv("path/to/meta.csv")
+>>> leak = data.Leak.from_csv("path/to/leak.csv")
 >>> # some processing on meta
 >>> meta.to_csv("path/to/meta.csv")
 
@@ -30,106 +34,129 @@ Examples
 
 import csv
 from warnings import warn
-import serial
-
-
 from lib.utils import decode_hamming, check_hex
 
-START_TRACE = b"\xfe\xfe\xfe\xfe"  # Start traces tag
-END_ACQ = b"\xff\xff\xff\xff"  # End acquisition tag
-ACQ_CMD = "sca"
 
+class Request:
+    """Data processing request.
 
-class read:
-    """Namespace for binary read operations.
+    This class provides a simple abstraction to wrap
+    file naming arguments during acquisition, import or export.
 
+    The these arguments combined together form a *data request*
+    specifying all the characteristics of the target data-set.
+
+    Attributes
+    ----------
+    iterations : int
+        Requested count of traces.
+    mode : str
+        Encryption mode.
+    direction : str
+        Encrypt direction.
+    source : bool
+        True if an acquisition from serial port is requested.
     """
 
-    @classmethod
-    def file(cls, log_path) -> bytes:
-        """Reads binary data from file.
+    ACQ_CMD_NAME = "sca"
 
-        Parameters
+    class Modes:
+        HARDWARE = "hw"
+        SOFTWARE = "sw"
+
+    class Directions:
+        ENCRYPT = "enc"
+        DECRYPT = "dec"
+
+    class Sources:
+        FILE = "file"
+        SERIAL = "serial"
+
+    def __init__(self, iterations,
+                 source=Sources.FILE,
+                 direction=Directions.ENCRYPT,
+                 mode=Modes.HARDWARE,
+                 verbose=False):
+        """Initializes a request with attributes.
+
+        Attributes
         ----------
-        log_path : str
-            Path to the file to read.
-        Returns
-        -------
-        bytes
-            Binary content of the file.
-        """
-        with open(log_path, "rb") as log_file:
-            s = log_file.read()
-        return s
-
-    @classmethod
-    def serial(cls, port, iterations, mode, inv, verbose=False):
-        """Launches acquisition and reads data from serial port.
-
-        This method sends the side-channel acquisition command
-        to the SoC and then reads the serial output.
-
-        Parameters
-        ----------
-        port : str
-            Serial port to read.
         iterations : int
             Requested count of traces.
-        mode : str
+        source : str, optional
+            Acquisition source.
+        mode : str, optional
             Encryption mode.
-        inv : bool
+        inverse : bool, optional
             True if encryption direction is decrypt.
-        verbose :
-            If false, the traces data will be compressed using
-            hamming weight encoding.
-
-        Returns
-        -------
-        bytes
-            Binary data from the serial port.
-
-        See Also
-        --------
-        sca-automation.lib.utils.decode_hamming : Decode hamming weight.
-
         """
-        cmd = (ACQ_CMD,
-               " -t %d" % iterations,
-               " -v" if verbose else "",
-               " -h" if mode == "hw" else "",
-               " -i" if inv else ""
-               )
-        with serial.Serial(port, 921_600, parity=serial.PARITY_NONE, xonxoff=False) as ser:
-            ser.flush()
-            ser.write(("%s%s%s%s%s\n" % cmd).encode())
-            s = ser.read_all()
-            while s[-8:].find(END_ACQ) == -1:
-                while ser.in_waiting == 0:
-                    continue
-                while ser.in_waiting != 0:
-                    s += ser.read_all()
-        return s
-
-
-class write:
-    """Namespace for binary write operations.
-
-    """
+        self.source = source
+        self.iterations = iterations
+        self.mode = mode
+        self.direction = direction
+        self.verbose = verbose
 
     @classmethod
-    def bytes(cls, s, path):
-        """Writes binary data to a file.
+    def from_args(cls, args):
+        """Initializes a request with a previously parsed command.
 
         Parameters
         ----------
-        s : bytes
-            Binary data to write.
-        path :
-            Path to file.
+        args
+            Parsed arguments.
 
         """
-        with open(path, "wb+") as log_file:
-            log_file.write(s)
+        ret = Request(args.iterations)
+        if hasattr(args, "source"):
+            ret.source = args.source
+        if hasattr(args, "mode"):
+            ret.mode = args.mode
+        if hasattr(args, "direction"):
+            ret.direction = args.direction
+        if hasattr(args, "verbose"):
+            ret.verbose = args.verbose
+
+        return ret
+
+    @classmethod
+    def from_meta(cls, meta):
+        """Initializes a request with command line arguments.
+
+        Parameters
+        ----------
+        meta : sca-automation.lib.log.Meta
+            Meta-data.
+
+        """
+        return Request(meta.iterations, mode=meta.mode, direction=meta.direction)
+
+    def filename(self, prefix, suffix=""):
+        """Creates a filename based on the request.
+
+        This method allows to consistently name the files
+        according to request's characteristics.
+
+        Parameters
+        ----------
+        prefix : str
+            Prefix of the filename.
+        suffix : str, optional
+            Suffix of the filename.
+
+        Returns
+        -------
+        str :
+            The complete filename.
+
+        """
+        return f"{prefix}_{self.mode}_{self.direction}_{self.iterations}{suffix}"
+
+    def command(self, name):
+        return "{}{}{}{}{}".format(name,
+                                   " -t %d" % self.iterations,
+                                   " -v" if self.verbose else "",
+                                   " -h" if self.mode == Request.Modes.HARDWARE else "",
+                                   " -i" if self.direction == Request.Directions.DECRYPT else "")
 
 
 class Keywords:
@@ -175,7 +202,10 @@ class Keywords:
     WEIGHTS = "weights"
     OFFSET = "offset"
     ITERATIONS = "iterations"
+
     DELIMITER = b":"
+    START_TRACE_TAG = b"\xfe\xfe\xfe\xfe"
+    END_ACQ_TAG = b"\xff\xff\xff\xff"
 
     def __init__(self, meta=False, inv=False, verbose=False):
         """Initializes a new keyword iterator.
@@ -228,7 +258,7 @@ class Keywords:
         self.datawords += [Keywords.SAMPLES, Keywords.WEIGHTS] if verbose else [Keywords.SAMPLES, Keywords.CODE]
 
 
-class Data:
+class Channel:
     """Encryption channel data.
 
     This class is designed to represent AES 128 encryption data
@@ -240,11 +270,11 @@ class Data:
     Attributes
     ----------
     plains: list[str]
-        Plains words for each trace.
+        Hexadecimal plain data of each trace.
     ciphers: list[str]
-        Cipher words for each trace.
+        Hexadecimal cipher data of each trace.
     keys: list[str]
-        Keys words for each trace.
+        Hexadecimal key data of each trace.
 
     Raises
     ------
@@ -305,7 +335,7 @@ class Data:
         n = len(self.plains[0]) + 4
         ret = f"{'plains':<{n}s}{'ciphers':<{n}s}{'keys':<{n}s}"
         for d, (plain, cipher, key) in enumerate(self):
-            if d == Data.STR_MAX_LINES:
+            if d == Channel.STR_MAX_LINES:
                 return ret + f"\n{len(self) - d} more..."
             ret += f"\n{plain:<{n}s}{cipher:<{n}s}{key:<{n}s}"
         return ret
@@ -363,7 +393,7 @@ class Data:
 
         Returns
         -------
-        Data
+        Channel
             Imported encryption data.
         """
         plains = []
@@ -376,7 +406,7 @@ class Data:
                 ciphers.append(row[Keywords.CIPHER])
                 keys.append(row[Keywords.KEY])
 
-        return Data(plains, ciphers, keys)
+        return Channel(plains, ciphers, keys)
 
 
 class Meta:
@@ -636,7 +666,7 @@ class Parser:
     ----------
     leak : Leak
         Leakage data.
-    data : Data
+    data : Channel
         Encryption data.
     meta : Meta
         Meta-data.
@@ -654,28 +684,28 @@ class Parser:
         ----------
         leak : Leak
             Leakage data.
-        data : Data
+        data : Channel
             Encryption data.
         meta : Meta
             Meta-data.
 
         """
         self.leak = leak or Leak()
-        self.data = data or Data()
+        self.channel = data or Channel()
         self.meta = meta or Meta()
 
-        if len(self.leak) != len(self.data) or len(self.data) > self.meta.iterations:
+        if len(self.leak) != len(self.channel) or len(self.channel) > self.meta.iterations:
             raise ValueError("Incompatible leaks and data lengths")
 
     @classmethod
-    def from_bytes(cls, s, inv=False):
+    def from_bytes(cls, s, direction=Request.Directions.ENCRYPT):
         """Initializes an object with binary data.
         
         Parameters
         ----------
         s : bytes
             Binary data.
-        inv : bool
+        direction : bool
             True if encryption direction is decrypt.
         Returns
         -------
@@ -683,7 +713,7 @@ class Parser:
             Parser initialized with data.
 
         """
-        return Parser().parse_bytes(s, inv)
+        return Parser().parse_bytes(s, direction)
 
     def pop(self):
         """Pops acquired value until data lengths matches.
@@ -698,14 +728,14 @@ class Parser:
             Reference to self.
         """
         lens = list(map(len, [
-            self.data.keys, self.data.plains, self.data.ciphers, self.leak.samples, self.leak.traces
+            self.channel.keys, self.channel.plains, self.channel.ciphers, self.leak.samples, self.leak.traces
         ]))
         n_min = min(lens)
         n_max = max(lens)
 
         if n_max == n_min:
             self.leak.pop()
-            self.data.pop()
+            self.channel.pop()
             self.meta.iterations -= 1
             return
 
@@ -713,12 +743,12 @@ class Parser:
             self.leak.samples.pop()
         while len(self.leak.traces) != n_min:
             self.leak.traces.pop()
-        while len(self.data.keys) != n_min:
-            self.data.keys.pop()
-        while len(self.data.plains) != n_min:
-            self.data.plains.pop()
-        while len(self.data.ciphers) != n_min:
-            self.data.ciphers.pop()
+        while len(self.channel.keys) != n_min:
+            self.channel.keys.pop()
+        while len(self.channel.plains) != n_min:
+            self.channel.plains.pop()
+        while len(self.channel.ciphers) != n_min:
+            self.channel.ciphers.pop()
 
         return self
 
@@ -728,9 +758,9 @@ class Parser:
         """
         self.leak.clear()
         self.meta.clear()
-        self.data.clear()
+        self.channel.clear()
 
-    def parse_bytes(self, s, inv=False):
+    def parse_bytes(self, s, direction=Request.Directions.ENCRYPT):
         """Parses the given bytes to retrieve acquisition data.
 
         If inv`` is not specified the parser will infer the
@@ -740,7 +770,7 @@ class Parser:
         ----------
         s : bytes
             Binary data.
-        inv : bool
+        direction : bool
             True if encryption direction is decrypt.
 
         Returns
@@ -748,13 +778,13 @@ class Parser:
         Parser
             Reference to self.
         """
-        keywords = Keywords(inv=inv)
+        keywords = Keywords(inv=direction == Request.Directions.DECRYPT)
         expected = next(keywords)
         valid = True
         lines = s.split(b"\r\n")
         for idx, line in enumerate(lines):
             if valid is False:
-                valid = line == START_TRACE
+                valid = line == Keywords.START_TRACE_TAG
                 continue
             try:
                 if self.__parse_line(line, expected):
@@ -767,8 +797,8 @@ class Parser:
                 valid = False
                 self.pop()
 
-        if len(self.data.keys) == 1:
-            self.data.keys = [self.data.keys[0]] * len(self.data)
+        if len(self.channel.keys) == 1:
+            self.channel.keys = [self.channel.keys[0]] * len(self.channel)
         self.meta.iterations += len(self.leak.traces)
         return self
 
@@ -776,7 +806,7 @@ class Parser:
         return decode_hamming(c, self.meta.offset)
 
     def __parse_line(self, line, expected):
-        if line in (END_ACQ, START_TRACE):
+        if line in (Keywords.END_ACQ_TAG, Keywords.START_TRACE_TAG):
             return False
         split = line.strip().split(Keywords.DELIMITER)
         try:
@@ -793,7 +823,7 @@ class Parser:
         elif keyword in (Keywords.SENSORS, Keywords.TARGET):
             setattr(self.meta, keyword, int(data))
         elif keyword in (Keywords.KEY, Keywords.PLAIN, Keywords.CIPHER):
-            getattr(self.data, keyword).append(check_hex(data.replace(b" ", b"")))
+            getattr(self.channel, keyword).append(check_hex(data.replace(b" ", b"")))
         elif keyword == Keywords.SAMPLES:
             self.leak.samples.append(int(data))
         elif keyword == Keywords.CODE:

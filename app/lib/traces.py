@@ -5,11 +5,16 @@ function for power consumption signals.
 
 Examples
 --------
->>> from lib import log, traces as tr
+>>> from lib import data, read, traces as tr
 >>> from numpy import np
->>> s = log.read.file("path/to/binary/file")
->>> parser = log.Parser.from_bytes(s)
+>>> s = read.file("path/to/binary/file")
+>>> parser = data.Parser.from_bytes(s)
 >>> traces = np.array(tr.crop(parser.leak.traces))
+
+>>> from lib import data, read, traces as tr
+>>> from numpy import np
+>>> s = read.file("path/to/binary/file")
+>>> parser = data.Parser.from_bytes(s)
 >>> traces = np.array(tr.pad(parser.leak.traces))
 
 """
@@ -107,14 +112,15 @@ def sync(traces, step=1, stop=None):
     for trace in traces:
         strided = np.lib.stride_tricks.as_strided(trace, shape, strides_pos)
         try:
-            buffer = list(map(lambda shift: stats.pearsonr(ref, strided[shift])[0], shifts))
+            buffer = _pearsonr_from_ref(ref, strided, shifts)
         except ValueError:
             continue
+
         argmax_pos = np.int(np.argmax(buffer))
         max_pos = buffer[argmax_pos]
         strided = np.lib.stride_tricks.as_strided(trace, shape, strides_neg)
         try:
-            buffer = list(map(lambda shift: stats.pearsonr(ref, strided[shift])[0], shifts))
+            buffer = _pearsonr_from_ref(ref, strided, shifts)
         except ValueError:
             continue
         argmax_neg = np.int(np.argmax(buffer))
@@ -130,3 +136,7 @@ def sync(traces, step=1, stop=None):
     trace[:] = np.roll(trace, np.argmax(buffer) - stop)
 
     return traces
+
+
+def _pearsonr_from_ref(ref, strided, shifts):
+    return list(map(lambda shift: stats.pearsonr(ref, strided[shift])[0], shifts))

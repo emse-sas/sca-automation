@@ -1,17 +1,17 @@
 import argparse
 
-import core
+import ui
 from lib.utils import operation_decorator
 
 
 @operation_decorator("clean.py", "\nexiting...")
 def main(args):
     if args.log:
-        core.remove_logs()
+        ui.remove_logs()
     if args.acq:
-        core.remove_acquisition_images()
+        ui.remove_acquisition_images()
     if args.cor:
-        core.remove_correlation_images()
+        ui.remove_correlation_images()
 
 
 argp = argparse.ArgumentParser(
