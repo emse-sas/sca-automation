@@ -107,7 +107,7 @@ def try_create_dir(path):
         pass
 
 
-def operation_decorator(title, message):
+def operation_decorator(title, message=None):
     """Executes a function and prints messages and duration.
 
     Parameters
@@ -131,7 +131,8 @@ def operation_decorator(title, message):
             t_start = time.perf_counter()
             result = function(*args, **kwargs)
             t_end = time.perf_counter()
-            print(f"{message}\nelapsed: {str(timedelta(seconds=t_end - t_start))}")
+            if message:
+                print(f"{message}\n{'elapsed':<16} {timedelta(seconds=t_end - t_start)}")
             return result
 
         return wrapper

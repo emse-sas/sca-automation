@@ -33,11 +33,19 @@ from lib.data import Request
 
 @operation_decorator("attack.py", "\nexiting...")
 def main(args):
+    @operation_decorator("process chunk", "\nsuccess...")
+    def callback(channel, leak, meta, chunk=None):
+        h = handler
+        if chunk is not None:
+            print(f"\nchunk: {chunk + 1}/{args.chunks}")
+        print(f"traces imported: {len(channel)}/{request.iterations}")
+        traces, _, _ = ui.filter_traces(leak)
+        h, key = ui.update_handler(channel, traces, model=args.model, handler=h)
+        ui.plot_cor(h, key, request, meta=meta)
+
+    handler = None
     request = Request(args)
-    leak, channel, meta = ui.load(request)
-    traces, _, _ = ui.filter_traces(leak)
-    handler = ui.init_handler(channel, traces, model=args.model)
-    ui.plot_cor(handler, request)
+    ui.load(request, callback)
 
 
 np.set_printoptions(formatter={"int": hex})
@@ -51,6 +59,8 @@ argp.add_argument("-m", "--mode",
                   choices=[Request.Modes.HARDWARE, Request.Modes.SOFTWARE],
                   default=Request.Modes.HARDWARE,
                   help="Encryption mode.")
+argp.add_argument("-c", "--chunks", type=int, default=None,
+                  help="Count of chunks to acquire.")
 
 if __name__ == "__main__":
     main(argp.parse_args())

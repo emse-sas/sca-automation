@@ -54,49 +54,49 @@ class Handler:
         Value of power consumption for each hypothesis and class.
     lens: np.ndarray
         Count of traces per class.
-    means: np.ndarray
+    sums: np.ndarray
         Average trace per class.
-    devs: np.ndarray
+    sums2: np.ndarray
         Standard deviation trace per class.
-    mean: np.ndarray
+    sum: np.ndarray
         Average trace for all classes.
-    dev: np.ndarray
+    sum2: np.ndarray
         Standard deviation trace for all classes.
 
     """
 
-    def __init__(self, blocks, key, traces, model=Models.SBOX):
+    def __init__(self, blocks, traces, model=Models.SBOX):
         """Allocates memory, accumulates traces and initialize model.
 
         Parameters
         ----------
         blocks : np.ndarray
             Encrypted data blocks for each trace.
-        key : np.ndarray
-            Key data block for all the traces.
         traces : np.ndarray
             Traces matrix.
         model : int
             Model index.
 
         """
-        n, m = traces.shape
-        self.blocks = blocks
-        self.key = key
+        _, m = traces.shape
+        self.n = 0
+        self.m = m
         self.hyp = np.empty((COUNT_HYP, COUNT_CLS), dtype=np.uint8)
         self.lens = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_CLS), dtype=np.int)
-        self.means = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_CLS, m))
-        self.devs = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_CLS, m))
-        self.mean = np.zeros(m)
-        self.dev = np.zeros(m)
+        self.sums = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_CLS, m))
+        self.sums2 = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_CLS, m))
+        self.sum = np.zeros(m)
+        self.sum2 = np.zeros(m)
 
-        self.accumulate(traces).init_model(model)
+        self.accumulate(blocks, traces).init_model(model)
 
-    def accumulate(self, traces):
+    def accumulate(self, blocks, traces):
         """Sorts traces by class and compute means and deviation.
 
         Parameters
         ----------
+        blocks : np.ndarray
+            Encrypted data blocks for each trace.
         traces : np.ndarray
             Traces matrix.
 
@@ -106,26 +106,16 @@ class Handler:
             Reference to self.
 
         """
-        n, m = traces.shape
-        bt = zip(self.blocks, traces)
-        for i, j, (block, trace) in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN), bt):
+        n, _ = traces.shape
+        self.n += n
+        for i, j, (block, trace) in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN), zip(blocks, traces)):
             k = block[i, j]
             self.lens[i, j, k] += 1
-            self.means[i, j, k] += trace
-            self.devs[i, j, k] += np.square(trace)
+            self.sums[i, j, k] += trace
+            self.sums2[i, j, k] += np.square(trace)
 
-        for i, j, k in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN), range(COUNT_CLS)):
-            if self.lens[i, j, k] == 0:
-                continue
-            self.means[i, j, k] /= self.lens[i, j, k]
-            self.devs[i, j, k] /= self.lens[i, j, k]
-            self.devs[i, j, k] -= np.square(self.means[i, j, k])
-            self.devs[i, j, k] = np.sqrt(self.devs[i, j, k])
-
-        self.mean = np.sum(traces, axis=0) / n
-        self.dev = np.sum(traces * traces, axis=0) / n
-        self.dev -= np.square(self.mean)
-        self.dev = np.sqrt(self.dev)
+        self.sum = np.sum(traces, axis=0)
+        self.sum2 = np.sum(traces * traces, axis=0)
         return self
 
     def init_model(self, model):
@@ -158,26 +148,34 @@ class Handler:
             Temporal correlation per block position and hypothesis.
 
         """
-        n = len(self.blocks)
-        _, _, _, m = self.means.shape
+        n, m = self.n, self.m
         ret = np.empty((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_HYP, m))
-        for i, j, h in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN), range(COUNT_HYP)):
-            y = np.array(self.hyp[h] * self.lens[i, j], dtype=np.float)
-            y_mean = np.sum(y) / n
-            y_std = np.sqrt(np.sum(self.hyp[h] * y) / n - y_mean * y_mean)
-            xy = np.sum(y.reshape((COUNT_HYP, 1)) * self.means[i, j], axis=0) / n
-            ret[i, j, h] = ((xy - self.mean * y_mean) / self.dev) / y_std
-            ret[i, j, h] = np.nan_to_num(ret[i, j, h])
+        mean = self.sum / n
+        dev = self.sum2 / n
+        dev -= np.square(mean)
+        dev = np.sqrt(dev)
+
+        for i, j in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN)):
+            mean_ij = np.nan_to_num(self.sums[i, j] / self.lens[i, j].reshape((COUNT_HYP, 1)))
+            for h in range(COUNT_HYP):
+                y = np.array(self.hyp[h] * self.lens[i, j], dtype=np.float)
+                y_mean = np.sum(y) / n
+                y_dev = np.sqrt(np.sum(self.hyp[h] * y) / n - y_mean * y_mean)
+                xy = np.sum(y.reshape((COUNT_HYP, 1)) * mean_ij, axis=0) / n
+                ret[i, j, h] = ((xy - mean * y_mean) / dev) / y_dev
+                ret[i, j, h] = np.nan_to_num(ret[i, j, h])
 
         return ret
 
-    def guess_stats(self, cor):
+    @classmethod
+    def guess_stats(cls, cor, key):
         """Computes the best guess key from correlation data.
 
         Parameters
         ----------
         cor : np.ndarray
             Temporal correlation per block position and hypothesis.
+        key : np.ndarray
 
         Returns
         -------
@@ -195,7 +193,7 @@ class Handler:
         """
         maxs = np.max(cor, axis=3)
         guess = np.argmax(maxs, axis=2)
-        exact = guess == self.key
+        exact = guess == key
         return guess, maxs, exact
 
     def guess_envelope(self, cor):
@@ -225,7 +223,7 @@ class Handler:
         correlations : Compute temporal correlation.
 
         """
-        _, _, _, m = self.means.shape
+        _, _, _, m = self.sums.shape
         cor_max = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, m))
         cor_min = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, m))
         for i, j, t in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN), range(m)):

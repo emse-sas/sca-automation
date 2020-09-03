@@ -3,7 +3,7 @@ import os
 import serial
 
 
-def read_serial(ser, terminator=b"\n", n=8):
+def _read_serial(ser, terminator=b"\n", n=8):
     """Reads data from serial port.
 
     Parameters
@@ -29,40 +29,38 @@ def read_serial(ser, terminator=b"\n", n=8):
     return bytes(s)
 
 
-def write_serial(s, ser, flush=False):
+def _write_serial(s, ser, flush=False):
     if flush:
         ser.flush()
     ser.write(s)
     return ser
 
 
-def acquire_serial(port, cmd, baud=921_600, terminator=b"\n", path=None, write=True):
-    path = path or port
-    with serial.Serial(port, baud, parity=serial.PARITY_NONE, xonxoff=False) as ser:
-        write_serial(f"{cmd}\n".encode(), ser, flush=True)
-        s = read_serial(ser, terminator=terminator)
-    if not write:
-        return s
+def read_file(path):
+    with open(path, "rb") as file:
+        s = file.read()
+    return s
+
+
+def write_file(path, s):
     with open(path, "wb+") as file:
         file.write(s)
     return s
 
 
-def acquire_chunks(port, cmd, callback, count=1, baud=921_600, terminator=b"\n", path=None, write=True):
-    path = path or port
+def acquire_serial(port, cmd, baud=921_600, terminator=b"\n"):
+    with serial.Serial(port, baud, parity=serial.PARITY_NONE, xonxoff=False) as ser:
+        _write_serial(f"{cmd}\n".encode(), ser, flush=True)
+        s = _read_serial(ser, terminator=terminator)
+    return s
+
+
+def acquire_chunks(port, cmd, count, process, prepare=None, baud=921_600, terminator=b"\n"):
+    prepare = prepare or (lambda x, c: (x, c))
+    s = None
     with serial.Serial(port, baud, parity=serial.PARITY_NONE, xonxoff=False) as ser:
         for chunk in range(count):
-            write_serial(f"{cmd}\n".encode(), ser, flush=True)
-            s = read_serial(ser, terminator=terminator)
-            callback(s, chunk)
-            if not write:
-                return s
-            split = os.path.splitext(path)
-            with open(f"{split[0]}_{chunk}{split[1]}", "wb+") as file:
-                file.write(s)
-
-
-def read_file(path):
-    with open(path, "rb") as file:
-        s = file.read()
-    return s
+            prepare(s, chunk)
+            _write_serial(f"{cmd}\n".encode(), ser, flush=True)
+            s = _read_serial(ser, terminator=terminator)
+            process(s, chunk)

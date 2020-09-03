@@ -26,26 +26,59 @@ acquired from the SoC via serial port.
 """
 
 import argparse
+import datetime
+import os
+
+import numpy as np
 
 import ui
+from lib import utils, data
 from lib.utils import operation_decorator
 from lib.data import Request
+from lib import traces as tr
+from scipy import fft, signal
 
 
 @operation_decorator("acquire.py", "\nexiting...")
 def main(args):
-    def callback(x, chunk=None):
+    f_nyq = 200e6 / 2
+    order = 4
+    w = 1e6 / f_nyq
+    b0, a0, *_ = signal.butter(order, w, btype="highpass", output="ba")
+
+    w0 = 49e6 / f_nyq
+    w1 = 51e6 / f_nyq
+    b1, a1, *_ = signal.butter(order, [w0, w1], btype="bandstop", output="ba")
+
+    @operation_decorator("start acquisition")
+    def prepare(_, chunk=None):
         if chunk is not None:
-            print(f"\nchunk: {chunk + 1}/{args.chunks}")
-        parser = ui.parse(x, request)
-        ui.save(request, parser.leak, parser.channel, parser.meta)
-        ui.plot_acq(parser.leak, parser.meta, request)
+            print(f"{'chunk':<16}{chunk + 1}/{args.chunks}")
+            print(f"{'requested':<16}{(chunk + 1) * request.iterations}/{request.iterations * request.chunks}")
+        print(f"{'started':<16}{datetime.datetime.now():%Y-%m-%d %H:%M:%S}")
+
+    @operation_decorator("start processing", "\nprocessing successful!")
+    def process(x, chunk=None):
+        print(f"{'started':<16}{datetime.datetime.now():%Y-%m-%d %H:%M:%S}")
+        parser = data.Parser(x, request.direction)
+        ui.save(request, x, parser.leak, parser.channel, parser.meta, chunk=chunk, path=savepath)
+        print(f"{'size':<16}{utils.format_sizeof(len(x or []))}")
+        print(f"{'parsed':<16}{parser.meta.iterations}/{request.iterations}")
+
+        traces = np.array(tr.adjust(parser.leak.traces, trace))
+        mean = ui.update_sum(trace, traces) / (chunk + 1) / request.iterations
+        mean = signal.filtfilt(b0, a0, mean)
+        mean = signal.filtfilt(b1, a1, mean)
+        spectrum = np.absolute(fft.fft(mean - np.mean(mean)))
+        ui.plot_acq(traces, mean, spectrum, parser.meta, request, path=savepath)
 
     request = Request(args)
-    if hasattr(args, "chunks"):
-        ui.acquire_chunks(request, callback)
-    else:
-        callback(ui.acquire(request))
+    savepath, loadpath = ui.init(request, args.path)
+    trace = None
+    print(request)
+    print(f"{'load path':<16}{os.path.abspath(loadpath)}")
+    print(f"{'save path':<16}{os.path.abspath(savepath)}")
+    ui.acquire(request, process, prepare=prepare, path=loadpath)
 
 
 argp = argparse.ArgumentParser(
@@ -70,6 +103,8 @@ argp.add_argument("-p", "--plot", type=int, default=16,
                   help="Count of raw traces to plot.")
 argp.add_argument("-c", "--chunks", type=int, default=None,
                   help="Count of chunks to acquire.")
+argp.add_argument("--path", type=str, default=ui.DEFAULT_DIR,
+                  help="Path where to save files.")
 
 if __name__ == "__main__":
     main(argp.parse_args())

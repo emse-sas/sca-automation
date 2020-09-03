@@ -25,6 +25,7 @@ from lib.data import Keywords, Request
 MODES = ["hw", "sw"]  # available encryption sources
 SOURCES = ["serial", "file"]
 F_SAMPLING = 200e6  # sensors sampling frequency
+DEFAULT_DIR = os.path.join("..", "data")
 ACQ_DIR = "acquisition"  # label for the acquisition directory
 COR_DIR = "correlation"  # label for the correlation  directory
 DATA_PATH = os.path.join("..", "data")
@@ -36,8 +37,24 @@ IMG_PATH_ACQ = os.path.join(IMG_PATH, ACQ_DIR)
 IMG_PATH_COR = os.path.join(IMG_PATH, COR_DIR)
 
 
-@utils.operation_decorator("acquiring bytes", "acquisition successful!")
-def acquire(request, path=None):
+def init(request, path=DEFAULT_DIR):
+    count = 0
+    loadpath = None
+    if request.source == Request.Sources.FILE:
+        loadpath = path
+        path = os.sep.join(path.split(os.sep)[:-1])
+    while True:
+        try:
+            savepath = os.path.join(path, f"{count}")
+            os.mkdir(savepath)
+            break
+        except FileExistsError:
+            count += 1
+    return savepath, loadpath or savepath
+
+
+@utils.operation_decorator("acquiring bytes", "\nacquisition successful!")
+def acquire(request, process, prepare=None, path=DEFAULT_DIR):
     """Acquires binary data from serial or file.
 
     If ``sources`` is a serial channel such as ``COM1``,
@@ -59,70 +76,39 @@ def acquire(request, path=None):
 
     path : str, optional
         Export or sources path.
-
     Returns
     -------
     bytes
-        Binary data string
+        Binary data string if no callback is provided else None
 
     """
-    path = path or os.path.join(DATA_PATH_ACQ, request.mode)
-    print(f"source: {request.name}")
+    cmd = request.command(Request.ACQ_CMD_NAME)
+    terminator = Keywords.END_ACQ_TAG
+    filepath = os.path.join(path, request.filename(suffix=".bin"))
     if request.source == Request.Sources.SERIAL:
-        s = io.acquire_serial(request.name,
-                              request.command(Request.ACQ_CMD_NAME),
-                              terminator=Keywords.END_ACQ_TAG,
-                              path=os.path.join(path, request.filename("raw", ".bin")))
+        if request.chunks:
+            io.acquire_chunks(request.name, cmd, request.chunks, process, prepare, terminator=terminator)
+        else:
+            prepare(None, None)
+            s = io.acquire_serial(request.name, cmd, terminator=terminator)
+            process(s, None)
     elif request.source == Request.Sources.FILE:
-        s = io.read_file(os.path.join(path, request.filename(request.name, ".bin")))
+        if request.chunks:
+            for chunk in range(request.chunks):
+                filepath = os.path.join(path, request.filename(request.name, f"_{chunk}.bin"))
+                prepare(None, chunk)
+                s = io.read_file(filepath)
+                process(s, chunk)
+        else:
+            prepare(None, None)
+            s = io.read_file(filepath)
+            process(s, None)
     else:
         raise ValueError(f"unrecognized request source: {request.source}")
-    print(f"buffer size: {utils.format_sizeof(len(s or []))}")
-    return s
-
-
-@utils.operation_decorator("acquiring chunks", "acquisition successful!")
-def acquire_chunks(request, callback, path=None):
-    path = path or os.path.join(DATA_PATH_ACQ, request.mode)
-    print(f"source: {request.name}")
-    if request.source == Request.Sources.SERIAL:
-        s = io.acquire_chunks(request.name, request.command(Request.ACQ_CMD_NAME), callback,
-                              count=request.chunks,
-                              terminator=Keywords.END_ACQ_TAG,
-                              path=os.path.join(path, request.filename("raw", ".bin")))
-    elif request.source == Request.Sources.FILE:
-        for chunk in range(request.chunks):
-            s = io.read_file(os.path.join(path, request.filename(request.name, f"_{chunk}.bin")))
-            callback(s, chunk)
-    else:
-        raise ValueError(f"unrecognized request source: {request.source}")
-    return s
-
-
-@utils.operation_decorator("parsing bytes", "parsing successful!")
-def parse(s, request):
-    """Parses binary data.
-
-    Parameters
-    ----------
-    s : bytes
-        Binary data string.
-    request : sca-automation.core.Request
-        Acquisition request.
-
-    Returns
-    -------
-    Parser
-        Parser initialized with binary data.
-
-    """
-    parser = data.Parser(s, request.direction)
-    print(f"traces parsed: {parser.meta.iterations}/{request.iterations}")
-    return parser
 
 
 @utils.operation_decorator("saving data", "export successful!")
-def save(request, leak=None, channel=None, meta=None, path=None):
+def save(request, s=None, leak=None, channel=None, meta=None, chunk=None, path=DEFAULT_DIR):
     """Exports CSV data to CSV files.
 
     If ``iterations`` and ``mode`` are not specified
@@ -135,6 +121,7 @@ def save(request, leak=None, channel=None, meta=None, path=None):
     ----------
     request : sca-automation.core.Request
         Acquisition request.
+    s : bytes, optional
     meta : sca-automation.lib.log.Meta, optional
         Meta-data.
     leak : sca-automation.lib.log.Leak, optional
@@ -146,7 +133,8 @@ def save(request, leak=None, channel=None, meta=None, path=None):
 
     """
     append = request.chunks is not None
-    path = path or os.path.join(DATA_PATH_ACQ, request.mode)
+    if s:
+        io.write_file(os.path.join(path, request.filename(suffix=f"_{chunk}.bin" if chunk else ".bin")), s)
     if channel:
         channel.write_csv(os.path.join(path, request.filename("channel", ".csv")), append)
     if leak:
@@ -156,7 +144,7 @@ def save(request, leak=None, channel=None, meta=None, path=None):
 
 
 @utils.operation_decorator("loading data", "import successful!")
-def load(request, path=None):
+def load(request, callback=None, path=None):
     """Imports CSV files and parse data.
 
     Parameters
@@ -165,39 +153,31 @@ def load(request, path=None):
         Acquisition request.
     path : str, optional
         Path of CSV files.
-
+    callback : function, optional
+        Function to be executed after loading
     Returns
     -------
 
+    channel : sca-automation.lib.log.Data
+        Encryption data.
     leak : sca-automation.lib.log.Leak
         Leakage data.
-    data : sca-automation.lib.log.Data
-        Encryption data.
     meta : sca-automation.lib.log.Meta
         Meta-data.
     """
     path = path or os.path.join(DATA_PATH_ACQ, request.mode)
+    meta = data.Meta(os.path.join(path, request.filename("meta", ".csv")))
+    count = request.iterations
+    if request.chunks:
+        for chunk in range(request.chunks):
+            start = chunk * count
+            channel = data.Channel(os.path.join(path, request.filename("channel", ".csv")), count, start)
+            leak = data.Leak(os.path.join(path, request.filename("leak", ".csv")), count, start)
+            callback(channel, leak, meta, chunk)
+        return
     channel = data.Channel(os.path.join(path, request.filename("channel", ".csv")))
     leak = data.Leak(os.path.join(path, request.filename("leak", ".csv")))
-    meta = data.Meta(os.path.join(path, request.filename("meta", ".csv")))
-    iterations = meta.iterations if meta else "--"
-    print(f"traces imported: {iterations}/{request.iterations}")
-    return leak, channel, meta
-
-
-@utils.operation_decorator("loading data", "import successful!")
-def load_chunks(request, callback, path=None):
-    path = path or os.path.join(DATA_PATH_ACQ, request.mode)
-    count = request.iterations
-    for chunk in range(request.chunks):
-        print(f"chunk: {chunk}/{request.chunks}")
-        start = chunk * count
-        channel = data.Channel(os.path.join(path, request.filename("channel", ".csv")), count, start)
-        leak = data.Leak(os.path.join(path, request.filename("leak", ".csv")), count, start)
-        meta = data.Meta(os.path.join(path, request.filename("meta", ".csv")), count, start)
-        iterations = meta.iterations if meta else "--"
-        print(f"traces imported: {iterations}/{request.iterations}")
-        callback(channel, leak, meta, chunk)
+    callback(channel, leak, meta, None)
 
 
 @utils.operation_decorator("processing traces", "processing successful!")
@@ -232,7 +212,7 @@ def filter_traces(leak):
 
 
 @utils.operation_decorator("creating handler", "handler successfully create!")
-def init_handler(channel, traces, model):
+def update_handler(channel, traces, model, handler=None):
     """Creates a correlation handler.
 
     Parameters
@@ -249,7 +229,9 @@ def init_handler(channel, traces, model):
     sca-automation.lib.cpa.Handler
         Handler initialized to perform correlation over ``traces``.
 
+
     """
+
     key = aes.words_to_block(channel.keys[0])
     if model == cpa.Models.SBOX:
         blocks = [aes.words_to_block(block) for block in channel.plains]
@@ -258,11 +240,20 @@ def init_handler(channel, traces, model):
         blocks = [aes.words_to_block(block) for block in channel.ciphers]
     else:
         return
-    return cpa.Handler(np.array(blocks), key, traces, model=model)
+    if handler:
+        return handler.accumulate(blocks, traces), key
+    return cpa.Handler(np.array(blocks), traces, model=model), key
+
+
+def update_sum(x, traces):
+    if x is None:
+        x = np.zeros((traces.shape[1]))
+    x += np.sum(traces, axis=0)
+    return x
 
 
 @utils.operation_decorator("plotting data", "plot successful!")
-def plot_acq(leak, meta, request, path=None, limit=16):
+def plot_acq(traces, mean, spectrum, meta, request, path=DEFAULT_DIR, limit=16):
     """Process acquisition data, plots and saves images.
 
     Parameters
@@ -291,16 +282,23 @@ def plot_acq(leak, meta, request, path=None, limit=16):
         Spectrum's frequencies.
 
     """
-    traces = np.array(tr.crop(leak.traces))
-    mean = traces.mean(axis=0)
-    spectrum = np.absolute(fft.fft(mean - np.mean(mean)))
+
+    order = 4
+    w = 5e6 / (F_SAMPLING / 2)
+    b, a, *_ = signal.butter(order, w, btype="highpass", output="ba")
+    filtered = signal.filtfilt(b, a, mean)
+
+    order = 4
+    w0 = 49e6 / (F_SAMPLING / 2)
+    w1 = 51e6 / (F_SAMPLING / 2)
+    b, a, *_ = signal.butter(order, [w0, w1], btype="bandstop", output="ba")
+    filtered = signal.filtfilt(b, a, filtered)
     freq = np.fft.fftfreq(spectrum.size, 1.0 / F_SAMPLING)
     n, m = traces.shape
     freq = freq[:spectrum.size // 2] / 1e6
     f = np.argsort(freq)
 
     meta = meta or request
-    path = path or os.path.join(IMG_PATH_ACQ, meta.mode)
     infos = f"(iterations: {meta.iterations}, samples: {m}, sensors: {meta.sensors})"
     plt.rcParams["figure.figsize"] = (16, 9)
 
@@ -330,7 +328,7 @@ def plot_acq(leak, meta, request, path=None, limit=16):
 
 
 @utils.operation_decorator("plotting data", "plot successful!")
-def plot_cor(handler, request, meta=None, path=None):
+def plot_cor(handler, key, request, meta=None, path=None):
     """Plots temporal correlations and save images.
 
     Parameters
@@ -346,9 +344,8 @@ def plot_cor(handler, request, meta=None, path=None):
 
     """
     cor = handler.correlations()
-    guess, maxs, exact = handler.guess_stats(cor)
+    guess, maxs, exact = cpa.Handler.guess_stats(cor, key)
     cor_max, cor_min = handler.guess_envelope(cor)
-    key = handler.key
     _, _, m = cor_max.shape
 
     meta = meta or request

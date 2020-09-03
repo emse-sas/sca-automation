@@ -75,6 +75,17 @@ def pad(traces, fill=0, end=None):
     return [trace + [fill] * (m - read) for trace, read in zip(traces, samples)]
 
 
+def adjust(traces=None, ref=None, fill=0):
+    if ref is None:
+        return crop(traces)
+    m = len(traces)
+    n = len(ref)
+    if m > n:
+        return crop(traces, end=n)
+    elif n > m:
+        return pad(traces, end=n, fill=fill)
+
+
 def sync(traces, step=1, stop=None):
     """Synchronize trace signals by correlating them
 

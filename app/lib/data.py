@@ -38,6 +38,7 @@ Examples
 
 import csv
 import math
+import os
 from warnings import warn
 from lib.utils import decode_hamming, check_hex
 from collections.abc import *
@@ -517,7 +518,7 @@ class Request:
             Parsed arguments.
 
         """
-        self.name = args.name
+        self.name = None
         self.iterations = args.iterations
         self.source = Request.Sources.FILE
         self.mode = Request.Modes.HARDWARE
@@ -525,6 +526,8 @@ class Request:
         self.verbose = False
         self.chunks = None
 
+        if hasattr(args, "name"):
+            self.name = args.name
         if hasattr(args, "source"):
             self.source = args.source
         if hasattr(args, "mode"):
@@ -535,6 +538,25 @@ class Request:
             self.verbose = args.verbose
         if hasattr(args, "chunks"):
             self.chunks = args.chunks
+
+    def __repr__(self):
+        return f"{type(self).__name__}" \
+               f"({self.name}, " \
+               f"{self.iterations}, " \
+               f"{self.source}," \
+               f" {self.mode}," \
+               f" {self.direction}, " \
+               f"{self.verbose}," \
+               f" {self.chunks})"
+
+    def __str__(self):
+        return f"{'name':<16}{self.name}\n" \
+               f"{'iterations':<16}{self.iterations}\n" \
+               f"{'source':<16}{self.source}\n" \
+               f"{'mode':<16}{self.mode}\n" \
+               f"{'direction':<16}{self.direction}\n" \
+               f"{'verbose':<16}{self.verbose}\n" \
+               f"{'chunks':<16}{self.chunks}"
 
     def filename(self, prefix=None, suffix=""):
         """Creates a filename based on the request.
@@ -548,8 +570,6 @@ class Request:
             Prefix of the filename.
         suffix : str, optional
             Suffix of the filename.
-        chunks : int, optional
-            Count of chunks.
 
         Returns
         -------
@@ -557,7 +577,8 @@ class Request:
             The complete filename.
 
         """
-        return f"{prefix or self.name}_{self.mode}_{self.direction}_{self.iterations * (self.chunks or 1)}{suffix}"
+        iterations = self.iterations * (self.chunks or 1)
+        return f"{prefix or self.name.split(os.sep)[-1]}_{self.mode}_{self.direction}_{iterations}{suffix}"
 
     def command(self, name):
         return "{}{}{}{}{}".format(name,
