@@ -82,7 +82,7 @@ argp.add_argument("-m", "--mode",
                   help="Encryption mode.")
 argp.add_argument("--chunks", type=int, default=None,
                   help="Count of chunks to acquire.")
-argp.add_argument("--path", type=str, default=ui.actions.DEFAULT_DIR,
+argp.add_argument("--path", type=str, default=ui.actions.DEFAULT_DATA_PATH,
                   help="Path where to save files.")
 argp.add_argument("--model", type=int,
                   help="Leakage model.")

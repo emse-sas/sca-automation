@@ -17,7 +17,8 @@ from datetime import timedelta
 from lib import data, io
 from lib.data import Keywords, Request
 
-DEFAULT_DIR = os.path.join("../..", "data")
+DEFAULT_DATA_DIR = "data"
+DEFAULT_DATA_PATH = os.path.join("..", DEFAULT_DATA_DIR)
 
 
 def timed(title, message=None):
@@ -74,24 +75,27 @@ def sizeof(num, suffix="B"):
     return f"{num:.1f}{'Yi'}{suffix}"
 
 
-def init(request, path=DEFAULT_DIR):
+def init(request, path=DEFAULT_DATA_PATH):
     count = 0
     loadpath = None
     if request.source == Request.Sources.FILE:
         loadpath = path
         path = os.sep.join(path.split(os.sep)[:-1])
     while True:
+        savepath = os.path.join(path, f"{count}")
         try:
-            savepath = os.path.join(path, f"{count}")
             os.mkdir(savepath)
             break
         except FileExistsError:
             count += 1
+        except FileNotFoundError:
+            os.mkdir(savepath.split(os.sep)[-1])
+
     return savepath, loadpath or savepath
 
 
 @timed("acquiring bytes", "\nacquisition successful!")
-def acquire(request, process, prepare=None, path=DEFAULT_DIR):
+def acquire(request, process, prepare=None, path=DEFAULT_DATA_PATH):
     """Acquires binary data from serial or file.
 
     If ``sources`` is a serial channel such as ``COM1``,
@@ -145,7 +149,7 @@ def acquire(request, process, prepare=None, path=DEFAULT_DIR):
 
 
 @timed("saving data", "export successful!")
-def save(request, s=None, leak=None, channel=None, meta=None, chunk=None, path=DEFAULT_DIR):
+def save(request, s=None, leak=None, channel=None, meta=None, raw=None, chunk=None, path=DEFAULT_DATA_PATH):
     """Exports CSV data to CSV files.
 
     If ``iterations`` and ``mode`` are not specified
@@ -178,10 +182,12 @@ def save(request, s=None, leak=None, channel=None, meta=None, chunk=None, path=D
         leak.write_csv(os.path.join(path, request.filename("leak", ".csv")), append)
     if meta:
         meta.write_csv(os.path.join(path, request.filename("meta", ".csv")), append)
+    if raw:
+        raw.write_csv(os.path.join(path, request.filename("raw", ".csv")), append)
 
 
 @timed("loading data", "\nimport successful!")
-def load(request, process, prepare=None, path=DEFAULT_DIR):
+def load(request, process, prepare=None, path=DEFAULT_DATA_PATH):
     """Imports CSV files and parse data.
 
     Parameters

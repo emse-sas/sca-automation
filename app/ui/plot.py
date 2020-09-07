@@ -7,10 +7,11 @@ import numpy as np
 
 from lib.aes import BLOCK_LEN
 from lib.cpa import COUNT_HYP, Handler
-from ui.actions import timed, DEFAULT_DIR
+from ui.actions import timed, DEFAULT_DATA_PATH
 
 plt.rcParams["figure.figsize"] = (16, 9)
 plt.rcParams["figure.titlesize"] = "x-large"
+
 
 def presented(title, xlabel, ylabel):
     """Performs plot methods and formatting.
@@ -92,7 +93,7 @@ def temporal(ax, cor_guess, cor_key, guess, key, exact):
 
 
 @timed("plotting data", "plot successful!")
-def acquisition(traces, trace, spectrum, meta, request, path=DEFAULT_DIR, limit=16):
+def acquisition(traces, trace, spectrum, meta, request, path=DEFAULT_DATA_PATH, limit=16):
     """Process acquisition data, plots and saves images.
 
     Parameters
@@ -150,7 +151,7 @@ def acquisition(traces, trace, spectrum, meta, request, path=DEFAULT_DIR, limit=
 
 
 @timed("plotting data", "plot successful!")
-def correlations(cor, key, request, maxs, handler, path=DEFAULT_DIR):
+def correlations(cor, key, request, maxs, handler, path=DEFAULT_DATA_PATH):
     """Plots temporal correlations and save images.
 
     Parameters

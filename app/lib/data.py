@@ -524,6 +524,8 @@ class Request:
         self.direction = Request.Directions.ENCRYPT
         self.verbose = False
         self.chunks = None
+        self.start = -1
+        self.end = -1
 
         if hasattr(args, "name"):
             self.name = args.name
@@ -537,6 +539,10 @@ class Request:
             self.verbose = args.verbose
         if hasattr(args, "chunks"):
             self.chunks = args.chunks
+        if hasattr(args, "start"):
+            self.start = args.start
+        if hasattr(args, "end"):
+            self.end = args.end
 
     def __repr__(self):
         return f"{type(self).__name__}" \
@@ -580,11 +586,15 @@ class Request:
         return f"{prefix or self.name.split(os.sep)[-1]}_{self.mode}_{self.direction}_{iterations}{suffix}"
 
     def command(self, name):
-        return "{}{}{}{}{}".format(name,
-                                   " -t %d" % self.iterations,
-                                   " -v" if self.verbose else "",
-                                   " -h" if self.mode == Request.Modes.HARDWARE else "",
-                                   " -i" if self.direction == Request.Directions.DECRYPT else "")
+        return "{}{}{}{}{}{}{}{}".format(name,
+                                         " -t %d" % self.iterations,
+                                         " -v" if self.verbose else "",
+                                         " -h" if self.mode == Request.Modes.HARDWARE else "",
+                                         " -i" if self.direction == Request.Directions.DECRYPT else "",
+                                         " -r",
+                                         " -s %d" % self.start,
+                                         " -e %d" % self.end
+                                         )
 
 
 class Keywords:
@@ -632,10 +642,11 @@ class Keywords:
     ITERATIONS = "iterations"
 
     DELIMITER = b":"
+    START_RAW_TAG = b"\xfd\xfd\xfd\xfd"
     START_TRACE_TAG = b"\xfe\xfe\xfe\xfe"
     END_ACQ_TAG = b"\xff\xff\xff\xff"
 
-    def __init__(self, meta=False, inv=False, verbose=False):
+    def __init__(self, meta=False, inv=False, verbose=False, raw=False):
         """Initializes a new keyword iterator.
 
         Parameters
@@ -649,7 +660,7 @@ class Keywords:
         self.meta = meta
         self.value = ""
         self.__build_metawords()
-        self.__build_datawords(inv, verbose)
+        self.__build_datawords(inv, verbose, raw)
         self.reset()
 
     def __iter__(self):
@@ -680,9 +691,14 @@ class Keywords:
     def __build_metawords(self):
         self.metawords = [Keywords.SENSORS, Keywords.TARGET, Keywords.MODE, Keywords.DIRECTION, Keywords.KEY]
 
-    def __build_datawords(self, inv, verbose):
-        self.datawords = [Keywords.CIPHER, Keywords.PLAIN] if inv else [Keywords.PLAIN, Keywords.CIPHER]
-        self.datawords += [Keywords.SAMPLES, Keywords.WEIGHTS] if verbose else [Keywords.SAMPLES, Keywords.CODE]
+    def __build_datawords(self, inv, verbose, raw):
+        keywords = [Keywords.SAMPLES, Keywords.WEIGHTS] if verbose else [Keywords.SAMPLES, Keywords.CODE]
+        datawords = [Keywords.CIPHER, Keywords.PLAIN] if inv else [Keywords.PLAIN, Keywords.CIPHER]
+        if raw:
+            self.datawords = keywords + datawords
+        else:
+            self.datawords = datawords
+        self.datawords += keywords
 
 
 class Parser:
@@ -723,6 +739,7 @@ class Parser:
 
         """
         self.leak = Leak()
+        self.raw = Leak()
         self.channel = Channel()
         self.meta = Meta()
         self.parse(s, direction)
@@ -740,21 +757,29 @@ class Parser:
             Reference to self.
         """
         lens = list(map(len, [
-            self.channel.keys, self.channel.plains, self.channel.ciphers, self.leak.samples, self.leak.traces
+            self.channel.keys, self.channel.plains, self.channel.ciphers, self.leak.samples, self.leak.traces,
+            self.raw.samples, self.raw.traces
         ]))
         n_min = min(lens)
         n_max = max(lens)
 
-        if n_max == n_min:
+        if n_max == n_min and n_max != 0:
+            self.raw.pop()
             self.leak.pop()
             self.channel.pop()
             self.meta.iterations -= 1
+            return
+        elif n_max == 0:
             return
 
         while len(self.leak.samples) != n_min:
             self.leak.samples.pop()
         while len(self.leak.traces) != n_min:
             self.leak.traces.pop()
+        while len(self.raw.samples) != n_min:
+            self.raw.samples.pop()
+        while len(self.raw.traces) != n_min:
+            self.raw.traces.pop()
         while len(self.channel.keys) != n_min:
             self.channel.keys.pop()
         while len(self.channel.plains) != n_min:
@@ -768,6 +793,7 @@ class Parser:
         """Clears all the parser data.
 
         """
+        self.raw.clear()
         self.leak.clear()
         self.meta.clear()
         self.channel.clear()
@@ -790,16 +816,20 @@ class Parser:
         Parser
             Reference to self.
         """
-        keywords = Keywords(inv=direction == Request.Directions.DECRYPT)
+        keywords = Keywords(inv=direction == Request.Directions.DECRYPT, raw=True)
         expected = next(keywords)
         valid = True
+        raw = False
         lines = s.split(b"\r\n")
         for idx, line in enumerate(lines):
             if valid is False:
                 valid = line == Keywords.START_TRACE_TAG
+
+            if line in (Keywords.END_ACQ_TAG, Keywords.START_TRACE_TAG, Keywords.START_RAW_TAG):
+                raw = (line == Keywords.START_RAW_TAG) or not (line == Keywords.START_TRACE_TAG)
                 continue
             try:
-                if self.__parse_line(line, expected):
+                if self.__parse_line(line, expected, raw):
                     expected = next(keywords)
             except (ValueError, UnicodeDecodeError, RuntimeError) as e:
                 args = (e, len(self.leak.traces), idx, line)
@@ -814,9 +844,7 @@ class Parser:
         self.meta.iterations += len(self.channel)
         return self
 
-    def __parse_line(self, line, expected):
-        if line in (Keywords.END_ACQ_TAG, Keywords.START_TRACE_TAG):
-            return False
+    def __parse_line(self, line, expected, raw):
         split = line.strip().split(Keywords.DELIMITER)
         try:
             keyword = str(split[0], "ascii").strip()
@@ -827,6 +855,7 @@ class Parser:
         if keyword != expected:
             raise RuntimeError("expected %s keyword not %s" % (expected, keyword))
 
+        leak = self.raw if raw else self.leak
         if keyword in (Keywords.MODE, Keywords.DIRECTION):
             setattr(self.meta, keyword, str(data, "ascii"))
         elif keyword in (Keywords.SENSORS, Keywords.TARGET):
@@ -834,11 +863,11 @@ class Parser:
         elif keyword in (Keywords.KEY, Keywords.PLAIN, Keywords.CIPHER):
             getattr(self.channel, keyword).append(f"{int(data.replace(b' ', b''), 16):x}")
         elif keyword == Keywords.SAMPLES:
-            self.leak.samples.append(int(data))
+            leak.samples.append(int(data))
         elif keyword == Keywords.CODE:
-            self.leak.traces.append(list(map(lambda c: int(c) + self.meta.offset, line[(len(Keywords.CODE) + 2):])))
+            leak.traces.append(list(map(lambda c: int(c) + self.meta.offset, line[(len(Keywords.CODE) + 2):])))
         elif keyword == Keywords.WEIGHTS:
-            self.leak.traces.append(list(map(int, data.split(b","))))
+            leak.traces.append(list(map(int, data.split(b","))))
         else:
             return False
 
@@ -846,8 +875,8 @@ class Parser:
             self.meta.offset = self.meta.sensors * self.meta.target - ord("P")
 
         if keyword in (Keywords.CODE, Keywords.WEIGHTS):
-            n = self.leak.samples[-1]
-            m = len(self.leak.traces[-1])
+            n = leak.samples[-1]
+            m = len(leak.traces[-1])
             if m != n:
                 raise RuntimeError("trace lengths mismatch %d != %d" % (m, n))
 

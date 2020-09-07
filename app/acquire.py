@@ -63,7 +63,7 @@ def main(args):
     def process(x, chunk=None):
         print(f"{'started':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")
         parser = data.Parser(x, request.direction)
-        ui.save(request, x, parser.leak, parser.channel, parser.meta, chunk=chunk, path=savepath)
+        ui.save(request, x, parser.leak, parser.channel, parser.meta, parser.raw, chunk=chunk, path=savepath)
         print(f"{'size':<16}{ui.sizeof(len(x or []))}")
         print(f"{'parsed':<16}{len(parser.channel)}/{request.iterations}")
 
@@ -99,7 +99,7 @@ argp.add_argument("-d", "--direction",
                   help="Encryption direction.")
 argp.add_argument("--chunks", type=int, default=None,
                   help="Count of chunks to acquire.")
-argp.add_argument("--path", type=str, default=ui.actions.DEFAULT_DIR,
+argp.add_argument("--path", type=str, default=ui.actions.DEFAULT_DATA_PATH,
                   help="Path where to save files.")
 argp.add_argument("-s", "--source",
                   choices=[Request.Sources.FILE, Request.Sources.SERIAL],
@@ -107,6 +107,10 @@ argp.add_argument("-s", "--source",
                   help="Acquisition source.")
 argp.add_argument("-p", "--plot", type=int, default=16,
                   help="Count of raw traces to plot.")
+argp.add_argument("--start", type=int, default=-1,
+                  help="Start time sample index of each trace.")
+argp.add_argument("--end", type=int, default=-1,
+                  help="End time sample index of each trace.")
 
 if __name__ == "__main__":
     main(argp.parse_args())
