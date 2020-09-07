@@ -85,11 +85,8 @@
               <p class="caption"><span class="caption-text">Application</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#module-app.clean">clean.py</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="#module-app.setup">setup.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#clean-py">clean.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#setup-py">setup.py</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#module-app.acquire">acquire.py</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
@@ -100,16 +97,16 @@
 <li class="toctree-l2"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="#module-app.core">core module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#core-module">core module</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Library</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="library.html">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="library.html#module-app.lib.aes">lib.aes module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="library.html#module-app.lib.cpa">lib.cpa module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="library.html#module-app.lib.log">lib.log module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="library.html#lib-log-module">lib.log module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="library.html#module-app.lib.traces">lib.traces module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="library.html#module-app.lib.utils">lib.utils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="library.html#lib-utils-module">lib.utils module</a></li>
 </ul>
 
             
@@ -178,48 +175,11 @@
   <div class="section" id="module-app">
 <span id="overview"></span><h1>Overview<a class="headerlink" href="#module-app" title="Permalink to this headline">¶</a></h1>
 </div>
-<div class="section" id="module-app.clean">
-<span id="clean-py"></span><h1>clean.py<a class="headerlink" href="#module-app.clean" title="Permalink to this headline">¶</a></h1>
-<dl class="py function">
-<dt id="app.clean.main">
-<code class="sig-prename descclassname">app.clean.</code><code class="sig-name descname">main</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.clean.main" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<p><p>Clean the data and the medias produced by the application.</p>
-</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">clean</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">l</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">a</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">c</span><span class="p">]</span>
-</pre></div>
+<div class="section" id="clean-py">
+<h1>clean.py<a class="headerlink" href="#clean-py" title="Permalink to this headline">¶</a></h1>
 </div>
-<div class="section" id="Named Arguments">
-<h2>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h2>
-<dl class="option-list">
-<dt><kbd>-l, --log</kbd></dt>
-<dd><p>Remove log files.</p>
-<p>Default: False</p>
-</dd>
-<dt><kbd>-a, --acq</kbd></dt>
-<dd><p>Remove acquisition images.</p>
-<p>Default: False</p>
-</dd>
-<dt><kbd>-c, --cor</kbd></dt>
-<dd><p>Remove correlation images.</p>
-<p>Default: False</p>
-</dd>
-</dl>
-</div>
-</div>
-<div class="section" id="module-app.setup">
-<span id="setup-py"></span><h1>setup.py<a class="headerlink" href="#module-app.setup" title="Permalink to this headline">¶</a></h1>
-<dl class="py function">
-<dt id="app.setup.main">
-<code class="sig-prename descclassname">app.setup.</code><code class="sig-name descname">main</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#app.setup.main" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<p><p>Create directories and data for the application.</p>
-</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">setup</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span>
-</pre></div>
-</div>
+<div class="section" id="setup-py">
+<h1>setup.py<a class="headerlink" href="#setup-py" title="Permalink to this headline">¶</a></h1>
 </div>
 <div class="section" id="module-app.acquire">
 <span id="acquire-py"></span><h1>acquire.py<a class="headerlink" href="#module-app.acquire" title="Permalink to this headline">¶</a></h1>
@@ -247,7 +207,9 @@ acquired from the SoC via serial port.</p>
 
 <p><p>Acquire data from SoC and export it.</p>
 </p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">acquire</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">m</span> <span class="p">{</span><span class="n">hw</span><span class="p">,</span><span class="n">sw</span><span class="p">}]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span> <span class="n">PLOT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">i</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">s</span><span class="p">]</span> <span class="n">iterations</span> <span class="n">source</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">acquire</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">m</span> <span class="p">{</span><span class="n">hw</span><span class="p">,</span><span class="n">sw</span><span class="p">}]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span> <span class="p">{</span><span class="n">enc</span><span class="p">,</span><span class="n">dec</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">chunks</span> <span class="n">CHUNKS</span><span class="p">]</span>
+                  <span class="p">[</span><span class="o">--</span><span class="n">path</span> <span class="n">PATH</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">s</span> <span class="p">{</span><span class="n">file</span><span class="p">,</span><span class="n">serial</span><span class="p">}]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span> <span class="n">PLOT</span><span class="p">]</span>
+                  <span class="n">iterations</span> <span class="n">name</span>
 </pre></div>
 </div>
 <div class="section" id="Positional Arguments">
@@ -256,8 +218,8 @@ acquired from the SoC via serial port.</p>
 <dt><kbd>iterations</kbd></dt>
 <dd><p>Requested count of traces.</p>
 </dd>
-<dt><kbd>source</kbd></dt>
-<dd><p>Binary data acquisition source.</p>
+<dt><kbd>name</kbd></dt>
+<dd><p>Acquisition source name.</p>
 </dd>
 </dl>
 </div>
@@ -269,17 +231,26 @@ acquired from the SoC via serial port.</p>
 <p>Encryption mode.</p>
 <p>Default: “hw”</p>
 </dd>
+<dt><kbd>-d, --direction</kbd></dt>
+<dd><p>Possible choices: enc, dec</p>
+<p>Encryption direction.</p>
+<p>Default: “enc”</p>
+</dd>
+<dt><kbd>--chunks</kbd></dt>
+<dd><p>Count of chunks to acquire.</p>
+</dd>
+<dt><kbd>--path</kbd></dt>
+<dd><p>Path where to save files.</p>
+<p>Default: “../../data”</p>
+</dd>
+<dt><kbd>-s, --source</kbd></dt>
+<dd><p>Possible choices: file, serial</p>
+<p>Acquisition source.</p>
+<p>Default: “file”</p>
+</dd>
 <dt><kbd>-p, --plot</kbd></dt>
 <dd><p>Count of raw traces to plot.</p>
 <p>Default: 16</p>
-</dd>
-<dt><kbd>-i, --inv</kbd></dt>
-<dd><p>Perform inverse encryption.</p>
-<p>Default: False</p>
-</dd>
-<dt><kbd>-s, --serial</kbd></dt>
-<dd><p>Acquisition from serials sources.</p>
-<p>Default: False</p>
 </dd>
 </dl>
 </div>
@@ -308,7 +279,9 @@ on 1024 software traces.</p>
 
 <p><p>Load acquisition data and perform a side-channel attack.</p>
 </p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">attack</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">m</span> <span class="p">{</span><span class="n">hw</span><span class="p">,</span><span class="n">sw</span><span class="p">}]</span> <span class="n">iterations</span> <span class="n">model</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">attack</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">m</span> <span class="p">{</span><span class="n">hw</span><span class="p">,</span><span class="n">sw</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">chunks</span> <span class="n">CHUNKS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">path</span> <span class="n">PATH</span><span class="p">]</span>
+                 <span class="p">[</span><span class="o">--</span><span class="n">model</span> <span class="n">MODEL</span><span class="p">]</span>
+                 <span class="n">iterations</span> <span class="n">name</span>
 </pre></div>
 </div>
 <div class="section" id="Positional Arguments">
@@ -317,8 +290,8 @@ on 1024 software traces.</p>
 <dt><kbd>iterations</kbd></dt>
 <dd><p>Requested count of traces.</p>
 </dd>
-<dt><kbd>model</kbd></dt>
-<dd><p>Leakage model.</p>
+<dt><kbd>name</kbd></dt>
+<dd><p>Acquisition source name.</p>
 </dd>
 </dl>
 </div>
@@ -330,326 +303,21 @@ on 1024 software traces.</p>
 <p>Encryption mode.</p>
 <p>Default: “hw”</p>
 </dd>
+<dt><kbd>--chunks</kbd></dt>
+<dd><p>Count of chunks to acquire.</p>
+</dd>
+<dt><kbd>--path</kbd></dt>
+<dd><p>Path where to save files.</p>
+<p>Default: “../../data”</p>
+</dd>
+<dt><kbd>--model</kbd></dt>
+<dd><p>Leakage model.</p>
+</dd>
 </dl>
 </div>
 </div>
-<div class="section" id="module-app.core">
-<span id="core-module"></span><h1>core module<a class="headerlink" href="#module-app.core" title="Permalink to this headline">¶</a></h1>
-<p>High-level API module.</p>
-<p>This module provides core features to ease the writing
-of an application based on the library :</p>
-<ul class="simple">
-<li><p>Display application status</p></li>
-<li><p>Measure timing performance</p></li>
-<li><p>Acquire, import and export data</p></li>
-<li><p>Perform data filtering and plots</p></li>
-<li><p>Perform files creation and deletion routines</p></li>
-</ul>
-<dl class="py class">
-<dt id="app.core.Request">
-<em class="property">class </em><code class="sig-prename descclassname">app.core.</code><code class="sig-name descname">Request</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">iterations</span></em>, <em class="sig-param"><span class="n">mode</span></em>, <em class="sig-param"><span class="n">inv</span></em>, <em class="sig-param"><span class="n">serial</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.core.Request" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Data processing request.</p>
-<p>This class provides a simple abstraction to wrap
-file naming arguments during acquisition, import or export.</p>
-<p>The these arguments combined together form a <em>data request</em>
-specifying all the characteristics of the target data-set.</p>
-<dl class="py attribute">
-<dt id="app.core.Request.iterations">
-<code class="sig-name descname">iterations</code><a class="headerlink" href="#app.core.Request.iterations" title="Permalink to this definition">¶</a></dt>
-<dd><p>Requested count of traces.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="app.core.Request.mode">
-<code class="sig-name descname">mode</code><a class="headerlink" href="#app.core.Request.mode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Encryption mode.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>str</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="app.core.Request.inv">
-<code class="sig-name descname">inv</code><a class="headerlink" href="#app.core.Request.inv" title="Permalink to this definition">¶</a></dt>
-<dd><p>True if encryption direction is decrypt.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt id="app.core.Request.serial">
-<code class="sig-name descname">serial</code><a class="headerlink" href="#app.core.Request.serial" title="Permalink to this definition">¶</a></dt>
-<dd><p>True if an acquisition from serial port is requested.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="app.core.Request.from_args">
-<em class="property">classmethod </em><code class="sig-name descname">from_args</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.core.Request.from_args" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initializes a request with command line args.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>args</strong> – Parsed arguments.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="app.core.Request.from_meta">
-<em class="property">classmethod </em><code class="sig-name descname">from_meta</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">meta</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.core.Request.from_meta" title="Permalink to this definition">¶</a></dt>
-<dd><p>Initializes a request with command line arguments.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>meta</strong> (<em>sca-automation.lib.log.Meta</em>) – Meta-data.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="app.core.Request.filename">
-<code class="sig-name descname">filename</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">prefix</span></em>, <em class="sig-param"><span class="n">suffix</span><span class="o">=</span><span class="default_value">''</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.core.Request.filename" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates a filename based on the request.</p>
-<p>This method allows to consistently name the files
-according to request’s characteristics.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>prefix</strong> (<em>str</em>) – Prefix of the filename.</p></li>
-<li><p><strong>suffix</strong> (<em>str</em><em>, </em><em>optional</em>) – Suffix of the filename.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The complete filename.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>str</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py function">
-<dt id="app.core.acquire_bin">
-<code class="sig-prename descclassname">app.core.</code><code class="sig-name descname">acquire_bin</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">source</span></em>, <em class="sig-param"><span class="n">request</span></em>, <em class="sig-param"><span class="n">path</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.core.acquire_bin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Acquires binary data from serial or file.</p>
-<p>If <code class="docutils literal notranslate"><span class="pre">sources</span></code> is a serial channel such as <code class="docutils literal notranslate"><span class="pre">COM1</span></code>,
-the acquired data is write-back to a log file.
-<code class="docutils literal notranslate"><span class="pre">path</span></code> must be the path of the write-back file.</p>
-<p>Otherwise, it reads the file with the prefix given by <code class="docutils literal notranslate"><span class="pre">sources</span></code>.
-Therefore <code class="docutils literal notranslate"><span class="pre">path</span></code> must be the path of the file to read.</p>
-<p class="rubric">Notes</p>
-<ul class="simple">
-<li><p>The default path is the data path created by <code class="docutils literal notranslate"><span class="pre">setup.py</span></code>.</p></li>
-</ul>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>source</strong> (<em>str</em>) – Serial channel or file prefix.</p></li>
-<li><p><strong>request</strong> (<em>sca-automation.core.Request</em>) – Acquisition request.</p></li>
-<li><p><strong>path</strong> (<em>str</em><em>, </em><em>optional</em>) – Export or sources path.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Binary data string</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>bytes</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="app.core.parse_bin">
-<code class="sig-prename descclassname">app.core.</code><code class="sig-name descname">parse_bin</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">s</span></em>, <em class="sig-param"><span class="n">request</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.core.parse_bin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Parses binary data.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>s</strong> (<em>bytes</em>) – Binary data string.</p></li>
-<li><p><strong>request</strong> (<em>sca-automation.core.Request</em>) – Acquisition request.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Parser initialized with binary data.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="library.html#app.lib.log.Parser" title="app.lib.log.Parser">Parser</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="app.core.export_csv">
-<code class="sig-prename descclassname">app.core.</code><code class="sig-name descname">export_csv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">request</span></em>, <em class="sig-param"><span class="n">meta</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">leak</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">data</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">path</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.core.export_csv" title="Permalink to this definition">¶</a></dt>
-<dd><p>Exports parser data to CSV files.</p>
-<p>If <code class="docutils literal notranslate"><span class="pre">iterations</span></code> and <code class="docutils literal notranslate"><span class="pre">mode</span></code> are not specified
-<code class="docutils literal notranslate"><span class="pre">meta</span></code> must be given.</p>
-<p>Otherwise these parameters must represent the expected values
-received by the SoC in order to track unexpected behavior.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>request</strong> (<em>sca-automation.core.Request</em>) – Acquisition request.</p></li>
-<li><p><strong>meta</strong> (<em>sca-automation.lib.log.Meta</em><em>, </em><em>optional</em>) – Meta-data.</p></li>
-<li><p><strong>leak</strong> (<em>sca-automation.lib.log.Leak</em><em>, </em><em>optional</em>) – Leakage data.</p></li>
-<li><p><strong>data</strong> (<em>sca-automation.lib.log.Data</em><em>, </em><em>optional</em>) – Encryption data.</p></li>
-<li><p><strong>path</strong> (<em>str</em><em>, </em><em>optional</em>) – Path of CSV files.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="app.core.import_csv">
-<code class="sig-prename descclassname">app.core.</code><code class="sig-name descname">import_csv</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">request</span></em>, <em class="sig-param"><span class="n">path</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.core.import_csv" title="Permalink to this definition">¶</a></dt>
-<dd><p>Imports CSV files and parse data.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>request</strong> (<em>sca-automation.core.Request</em>) – Acquisition request.</p></li>
-<li><p><strong>path</strong> (<em>str</em><em>, </em><em>optional</em>) – Path of CSV files.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><strong>leak</strong> (<em>sca-automation.lib.log.Leak</em>) – Leakage data.</p></li>
-<li><p><strong>data</strong> (<em>sca-automation.lib.log.Data</em>) – Encryption data.</p></li>
-<li><p><strong>meta</strong> (<em>sca-automation.lib.log.Meta</em>) – Meta-data.</p></li>
-</ul>
-</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="app.core.filter_traces">
-<code class="sig-prename descclassname">app.core.</code><code class="sig-name descname">filter_traces</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">leak</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.core.filter_traces" title="Permalink to this definition">¶</a></dt>
-<dd><p>Filters raw traces to ease correlation.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>leak</strong> (<em>sca-automation.lib.log.Leak</em>) – Leakage data.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><strong>traces</strong> (<em>np.ndarray</em>) – Filtered traces matrix.</p></li>
-<li><p><strong>b</strong> (<em>np.ndarray</em>) – Filter’s denominator coefficients.</p></li>
-<li><p><strong>a</strong> (<em>np.ndarray</em>) – Filter’s numerator coefficients.</p></li>
-</ul>
-</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="app.core.init_handler">
-<code class="sig-prename descclassname">app.core.</code><code class="sig-name descname">init_handler</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em>, <em class="sig-param"><span class="n">traces</span></em>, <em class="sig-param"><span class="n">model</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.core.init_handler" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates a correlation handler.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> (<em>sca-automation.lib.log.Data</em>) – Encryption data.</p></li>
-<li><p><strong>traces</strong> (<em>np.ndarray</em>) – Traces matrix.</p></li>
-<li><p><strong>model</strong> (<em>int</em>) – Model index.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>Handler initialized to perform correlation over <code class="docutils literal notranslate"><span class="pre">traces</span></code>.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>sca-automation.lib.cpa.Handler</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="app.core.plot_acq">
-<code class="sig-prename descclassname">app.core.</code><code class="sig-name descname">plot_acq</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">leak</span></em>, <em class="sig-param"><span class="n">meta</span></em>, <em class="sig-param"><span class="n">request</span></em>, <em class="sig-param"><span class="n">path</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">limit</span><span class="o">=</span><span class="default_value">16</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.core.plot_acq" title="Permalink to this definition">¶</a></dt>
-<dd><p>Process acquisition data, plots and saves images.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>leak</strong> (<em>sca-automation.lib.log.Leak</em>) – Leakage data.</p></li>
-<li><p><strong>request</strong> (<em>sca-automation.core.Request</em>) – Acquisition request.
-Encryption mode.</p></li>
-<li><p><strong>meta</strong> (<em>sca-automation.lib.log.Meta</em>) – Meta-data.</p></li>
-<li><p><strong>path</strong> (<em>str</em>) – Images saving path.</p></li>
-<li><p><strong>limit</strong> (<em>int</em>) – Count of raw acquisition curves to plot.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><strong>traces</strong> (<em>np.ndarray</em>) – Traces matrix.</p></li>
-<li><p><strong>mean</strong> (<em>np.ndarray</em>) – Average trace.</p></li>
-<li><p><strong>spectrum</strong> (<em>np.ndarray</em>) – Spectrum of the average.</p></li>
-<li><p><strong>freq</strong> (<em>np.ndarray</em>) – Spectrum’s frequencies.</p></li>
-</ul>
-</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="app.core.plot_cor">
-<code class="sig-prename descclassname">app.core.</code><code class="sig-name descname">plot_cor</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">handler</span></em>, <em class="sig-param"><span class="n">request</span></em>, <em class="sig-param"><span class="n">meta</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">path</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.core.plot_cor" title="Permalink to this definition">¶</a></dt>
-<dd><p>Plots temporal correlations and save images.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>handler</strong> (<em>sca-automation.lib.cpa.Handler</em>) – Initialized handler.</p></li>
-<li><p><strong>request</strong> (<em>sca-automation.core.Request</em>) – Acquisition request.</p></li>
-<li><p><strong>meta</strong> (<em>sca-automation.lib.log.Meta</em>) – Meta-data.</p></li>
-<li><p><strong>path</strong> (<em>str</em>) – Images saving path.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt id="app.core.remove_logs">
-<code class="sig-prename descclassname">app.core.</code><code class="sig-name descname">remove_logs</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#app.core.remove_logs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Removes all the log files, CSV and binary.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt id="app.core.remove_acquisition_images">
-<code class="sig-prename descclassname">app.core.</code><code class="sig-name descname">remove_acquisition_images</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#app.core.remove_acquisition_images" title="Permalink to this definition">¶</a></dt>
-<dd><p>Removes all the acquisition images.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt id="app.core.remove_correlation_images">
-<code class="sig-prename descclassname">app.core.</code><code class="sig-name descname">remove_correlation_images</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#app.core.remove_correlation_images" title="Permalink to this definition">¶</a></dt>
-<dd><p>Removes all the correlations images.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt id="app.core.create_logs_dir">
-<code class="sig-prename descclassname">app.core.</code><code class="sig-name descname">create_logs_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#app.core.create_logs_dir" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates data directories.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt id="app.core.create_images_dir">
-<code class="sig-prename descclassname">app.core.</code><code class="sig-name descname">create_images_dir</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#app.core.create_images_dir" title="Permalink to this definition">¶</a></dt>
-<dd><p>Creates images directories.</p>
-</dd></dl>
-
+<div class="section" id="core-module">
+<h1>core module<a class="headerlink" href="#core-module" title="Permalink to this headline">¶</a></h1>
 </div>
 
 
