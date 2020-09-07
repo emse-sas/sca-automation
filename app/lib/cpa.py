@@ -50,7 +50,7 @@ class Handler:
         Encrypted data blocks for each trace.
     key: np.ndarray
         Key data block for all the traces.
-    hyp: np.ndarray
+    hypothesis: np.ndarray
         Value of power consumption for each hypothesis and class.
     lens: np.ndarray
         Count of traces per class.
@@ -65,7 +65,7 @@ class Handler:
 
     """
 
-    def __init__(self, blocks, traces, model=Models.SBOX):
+    def __init__(self, blocks=None, traces=None, samples=None, model=Models.SBOX):
         """Allocates memory, accumulates traces and initialize model.
 
         Parameters
@@ -78,17 +78,31 @@ class Handler:
             Model index.
 
         """
-        _, m = traces.shape
-        self.n = 0
-        self.m = m
-        self.hyp = np.empty((COUNT_HYP, COUNT_CLS), dtype=np.uint8)
-        self.lens = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_CLS), dtype=np.int)
-        self.sums = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_CLS, m))
-        self.sums2 = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_CLS, m))
-        self.sum = np.zeros(m)
-        self.sum2 = np.zeros(m)
+        self.iterations = 0
+        self.samples = None
+        self.hypothesis = None
+        self.model = model
+        self.lens = None
+        self.sums = None
+        self.sums2 = None
+        self.sum = None
+        self.sum2 = None
 
-        self.accumulate(blocks, traces).init_model(model)
+        if traces is not None and blocks is not None:
+            self.clear(traces.shape[1]).set_model(model).accumulate(blocks, traces)
+        else:
+            self.clear(samples or 0).set_model(model)
+
+    def clear(self, samples):
+        self.iterations = 0
+        self.samples = samples
+        self.hypothesis = np.zeros((COUNT_HYP, COUNT_CLS), dtype=np.uint8)
+        self.lens = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_CLS), dtype=np.int)
+        self.sums = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_CLS, samples), dtype=np.float)
+        self.sums2 = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_CLS, samples), dtype=np.float)
+        self.sum = np.zeros(samples, dtype=np.float)
+        self.sum2 = np.zeros(samples, dtype=np.float)
+        return self.set_model(self.model)
 
     def accumulate(self, blocks, traces):
         """Sorts traces by class and compute means and deviation.
@@ -106,19 +120,17 @@ class Handler:
             Reference to self.
 
         """
-        n, _ = traces.shape
-        self.n += n
         for i, j, (block, trace) in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN), zip(blocks, traces)):
             k = block[i, j]
             self.lens[i, j, k] += 1
             self.sums[i, j, k] += trace
             self.sums2[i, j, k] += np.square(trace)
-
-        self.sum = np.sum(traces, axis=0)
-        self.sum2 = np.sum(traces * traces, axis=0)
+        self.iterations += traces.shape[0]
+        self.sum += np.sum(traces, axis=0)
+        self.sum2 += np.sum(traces * traces, axis=0)
         return self
 
-    def init_model(self, model):
+    def set_model(self, model):
         """Initializes power consumption model.
 
         Parameters
@@ -134,9 +146,9 @@ class Handler:
         """
         for h, k in product(range(COUNT_HYP), range(COUNT_CLS)):
             if model == Models.SBOX:
-                self.hyp[h, k] = bin(aes.S_BOX[k ^ h] ^ k).count("1")
+                self.hypothesis[h, k] = bin(aes.S_BOX[k ^ h] ^ k).count("1")
             elif model == Models.INV_SBOX:
-                self.hyp[h, k] = bin(aes.INV_S_BOX[k ^ h] ^ k).count("1")
+                self.hypothesis[h, k] = bin(aes.INV_S_BOX[k ^ h] ^ k).count("1")
         return self
 
     def correlations(self):
@@ -148,19 +160,19 @@ class Handler:
             Temporal correlation per block position and hypothesis.
 
         """
-        n, m = self.n, self.m
-        ret = np.empty((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_HYP, m))
+        n = self.iterations
+        ret = np.empty((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_HYP, self.samples))
         mean = self.sum / n
         dev = self.sum2 / n
         dev -= np.square(mean)
         dev = np.sqrt(dev)
 
         for i, j in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN)):
-            mean_ij = np.nan_to_num(self.sums[i, j] / self.lens[i, j].reshape((COUNT_HYP, 1)))
+            mean_ij = np.nan_to_num(self.sums[i, j] / self.lens[i, j].reshape((COUNT_CLS, 1)))
             for h in range(COUNT_HYP):
-                y = np.array(self.hyp[h] * self.lens[i, j], dtype=np.float)
+                y = np.array(self.hypothesis[h] * self.lens[i, j], dtype=np.float)
                 y_mean = np.sum(y) / n
-                y_dev = np.sqrt(np.sum(self.hyp[h] * y) / n - y_mean * y_mean)
+                y_dev = np.sqrt(np.sum(self.hypothesis[h] * y) / n - y_mean * y_mean)
                 xy = np.sum(y.reshape((COUNT_HYP, 1)) * mean_ij, axis=0) / n
                 ret[i, j, h] = ((xy - mean * y_mean) / dev) / y_dev
                 ret[i, j, h] = np.nan_to_num(ret[i, j, h])
@@ -196,7 +208,8 @@ class Handler:
         exact = guess == key
         return guess, maxs, exact
 
-    def guess_envelope(self, cor):
+    @classmethod
+    def guess_envelope(cls, cor):
         """Computes the envelope of correlation.
 
         The envelope consists on two curves representing
@@ -223,11 +236,5 @@ class Handler:
         correlations : Compute temporal correlation.
 
         """
-        _, _, _, m = self.sums.shape
-        cor_max = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, m))
-        cor_min = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, m))
-        for i, j, t in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN), range(m)):
-            cor_max[i, j, t] = np.max(cor[i, j, :, t])
-            cor_min[i, j, t] = np.min(cor[i, j, :, t])
-
-        return cor_max, cor_min
+        cor = np.moveaxis(cor, (0, 1, 2, 3), (0, 1, 3, 2))
+        return np.max(cor, axis=3), np.min(cor, axis=3)

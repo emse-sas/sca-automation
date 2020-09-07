@@ -21,31 +21,52 @@ The second example do the same except it will launch the attack
 on 1024 software traces.
 
 """
-
 import argparse
+import os
+from datetime import datetime
 
 import numpy as np
-
-import ui
-from lib.utils import operation_decorator
+import ui.actions
+import ui.update
+import ui.plot
 from lib.data import Request
+from lib.cpa import Handler
+from lib import traces as tr
+from scipy import signal
 
 
-@operation_decorator("attack.py", "\nexiting...")
+@ui.actions.timed("attack.py", "\nexiting...")
 def main(args):
-    @operation_decorator("process chunk", "\nsuccess...")
-    def callback(channel, leak, meta, chunk=None):
-        h = handler
-        if chunk is not None:
-            print(f"\nchunk: {chunk + 1}/{args.chunks}")
-        print(f"traces imported: {len(channel)}/{request.iterations}")
-        traces, _, _ = ui.filter_traces(leak)
-        h, key = ui.update_handler(channel, traces, model=args.model, handler=h)
-        ui.plot_cor(h, key, request, meta=meta)
+    f_c = 13e6
+    order = 4
+    w = f_c / (200e6 / 2)
+    b, a, *_ = signal.butter(order, w, btype="highpass", output="ba")
 
-    handler = None
+    @ui.actions.timed("start acquisition")
+    def prepare(*_, chunk=None):
+        if chunk is not None:
+            print(f"{'chunk':<16}{chunk + 1}/{args.chunks}")
+            print(f"{'requested':<16}{(chunk + 1) * request.iterations}/{request.iterations * request.chunks}")
+
+    @ui.actions.timed("start processing", "\nprocessing successful!")
+    def process(channel, leak, meta, _):
+        m = handler.samples if handler.samples else None
+        print(f"{'started':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")
+        traces = np.array(tr.adjust(leak.traces, m), dtype=np.float)
+        for trace in traces:
+            trace[:] = signal.filtfilt(b, a, trace)
+        key = ui.update.handler(channel, traces, model=args.model, current=handler)
+        print(f"{'imported':<16}{meta.iterations}/{request.iterations}")
+        cor = handler.correlations()
+        ui.plot.correlations(cor, key, request, maxs, handler, path=loadpath)
+
+    maxs = []
+    handler = Handler(model=args.model)
     request = Request(args)
-    ui.load(request, callback)
+    _, loadpath = ui.init(request, args.path)
+    print(request)
+    print(f"{'load path':<16}{os.path.abspath(loadpath)}")
+    ui.actions.load(request, process, prepare, path=loadpath)
 
 
 np.set_printoptions(formatter={"int": hex})
@@ -53,14 +74,18 @@ argp = argparse.ArgumentParser(
     description="Load acquisition data and perform a side-channel attack.")
 argp.add_argument("iterations", type=int,
                   help="Requested count of traces.")
-argp.add_argument("model", type=int,
-                  help="Leakage model.")
+argp.add_argument("name", type=str,
+                  help="Acquisition source name.")
 argp.add_argument("-m", "--mode",
                   choices=[Request.Modes.HARDWARE, Request.Modes.SOFTWARE],
                   default=Request.Modes.HARDWARE,
                   help="Encryption mode.")
-argp.add_argument("-c", "--chunks", type=int, default=None,
+argp.add_argument("--chunks", type=int, default=None,
                   help="Count of chunks to acquire.")
+argp.add_argument("--path", type=str, default=ui.actions.DEFAULT_DIR,
+                  help="Path where to save files.")
+argp.add_argument("--model", type=int,
+                  help="Leakage model.")
 
 if __name__ == "__main__":
     main(argp.parse_args())

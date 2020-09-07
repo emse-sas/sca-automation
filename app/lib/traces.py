@@ -75,15 +75,15 @@ def pad(traces, fill=0, end=None):
     return [trace + [fill] * (m - read) for trace, read in zip(traces, samples)]
 
 
-def adjust(traces=None, ref=None, fill=0):
-    if ref is None:
-        return crop(traces)
-    m = len(traces)
-    n = len(ref)
+def adjust(traces, n=None, fill=0):
+    cropped = crop(traces)
+    m = len(cropped[0])
+    if not n or m == n:
+        return cropped
     if m > n:
-        return crop(traces, end=n)
+        return crop(cropped, end=n)
     elif n > m:
-        return pad(traces, end=n, fill=fill)
+        return pad(cropped, end=n, fill=fill)
 
 
 def sync(traces, step=1, stop=None):

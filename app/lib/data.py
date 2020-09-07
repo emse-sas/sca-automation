@@ -40,7 +40,6 @@ import csv
 import math
 import os
 from warnings import warn
-from lib.utils import decode_hamming, check_hex
 from collections.abc import *
 
 
@@ -201,9 +200,9 @@ class Channel(MutableSequence, Reversible, Sized, Serializable, Deserializable):
         with open(path, "r", newline="") as file:
             reader = csv.DictReader(file, delimiter=";")
             for d, row in enumerate(reader):
-                if d - 1 < start:
+                if d < start:
                     continue
-                if d - 1 >= count + start:
+                if d >= count + start:
                     break
                 self.plains.append(row[Keywords.PLAIN])
                 self.ciphers.append(row[Keywords.CIPHER])
@@ -509,7 +508,7 @@ class Request:
         FILE = "file"
         SERIAL = "serial"
 
-    def __init__(self, args):
+    def __init__(self, args=None):
         """Initializes a request with a previously parsed command.
 
         Parameters
@@ -543,11 +542,11 @@ class Request:
         return f"{type(self).__name__}" \
                f"({self.name}, " \
                f"{self.iterations}, " \
-               f"{self.source}," \
-               f" {self.mode}," \
-               f" {self.direction}, " \
-               f"{self.verbose}," \
-               f" {self.chunks})"
+               f"{self.source}, " \
+               f"{self.mode}, " \
+               f"{self.direction}, " \
+               f"{self.verbose}, " \
+               f"{self.chunks})"
 
     def __str__(self):
         return f"{'name':<16}{self.name}\n" \
@@ -812,11 +811,8 @@ class Parser:
 
         if len(self.channel.keys) == 1:
             self.channel.keys = [self.channel.keys[0]] * len(self.channel)
-        self.meta.iterations += len(self.leak.traces)
+        self.meta.iterations += len(self.channel)
         return self
-
-    def __decode_hamming(self, c):
-        return decode_hamming(c, self.meta.offset)
 
     def __parse_line(self, line, expected):
         if line in (Keywords.END_ACQ_TAG, Keywords.START_TRACE_TAG):
@@ -836,18 +832,18 @@ class Parser:
         elif keyword in (Keywords.SENSORS, Keywords.TARGET):
             setattr(self.meta, keyword, int(data))
         elif keyword in (Keywords.KEY, Keywords.PLAIN, Keywords.CIPHER):
-            getattr(self.channel, keyword).append(check_hex(data.replace(b" ", b"")))
+            getattr(self.channel, keyword).append(f"{int(data.replace(b' ', b''), 16):x}")
         elif keyword == Keywords.SAMPLES:
             self.leak.samples.append(int(data))
         elif keyword == Keywords.CODE:
-            self.leak.traces.append(list(map(self.__decode_hamming, line[(len(Keywords.CODE) + 2):])))
+            self.leak.traces.append(list(map(lambda c: int(c) + self.meta.offset, line[(len(Keywords.CODE) + 2):])))
         elif keyword == Keywords.WEIGHTS:
             self.leak.traces.append(list(map(int, data.split(b","))))
         else:
             return False
 
         if keyword == Keywords.TARGET:
-            self.meta.offset = self.meta.sensors * self.meta.target
+            self.meta.offset = self.meta.sensors * self.meta.target - ord("P")
 
         if keyword in (Keywords.CODE, Keywords.WEIGHTS):
             n = self.leak.samples[-1]
