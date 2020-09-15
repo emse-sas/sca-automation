@@ -3,7 +3,7 @@ import os
 import serial
 
 
-def _read_serial(ser, terminator=b"\n", n=8):
+def _read_serial(ser, terminator=b"\n", n=16):
     """Reads data from serial port.
 
     Parameters

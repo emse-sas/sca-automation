@@ -149,7 +149,7 @@ def acquire(request, process, prepare=None, path=DEFAULT_DATA_PATH):
 
 
 @timed("saving data", "export successful!")
-def save(request, s=None, leak=None, channel=None, meta=None, raw=None, chunk=None, path=DEFAULT_DATA_PATH):
+def save(request, s=None, leak=None, channel=None, meta=None, noise=None, chunk=None, path=DEFAULT_DATA_PATH):
     """Exports CSV data to CSV files.
 
     If ``iterations`` and ``mode`` are not specified
@@ -175,15 +175,15 @@ def save(request, s=None, leak=None, channel=None, meta=None, raw=None, chunk=No
     """
     append = request.chunks is not None
     if s:
-        io.write_file(os.path.join(path, request.filename(suffix=f"_{chunk}.bin" if chunk else ".bin")), s)
+        io.write_file(os.path.join(path, request.filename(suffix=f"_{chunk}.bin" if chunk is not None else ".bin")), s)
     if channel:
         channel.write_csv(os.path.join(path, request.filename("channel", ".csv")), append)
     if leak:
         leak.write_csv(os.path.join(path, request.filename("leak", ".csv")), append)
     if meta:
         meta.write_csv(os.path.join(path, request.filename("meta", ".csv")), append)
-    if raw:
-        raw.write_csv(os.path.join(path, request.filename("raw", ".csv")), append)
+    if noise:
+        noise.write_csv(os.path.join(path, request.filename("noise", ".csv")), append)
 
 
 @timed("loading data", "\nimport successful!")
