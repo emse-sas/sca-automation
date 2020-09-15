@@ -163,7 +163,8 @@ class Channel(MutableSequence, Reversible, Sized, Serializable, Deserializable):
     def pop(self, **kwargs):
         self.plains.pop()
         self.ciphers.pop()
-        self.keys.pop()
+        if len(self.keys) > 1 and len(self.keys) == len(self.plains):
+            self.keys.pop()
 
     def insert(self, index: int, item):
         plain, cipher, key = item
@@ -651,7 +652,7 @@ class Keywords:
     START_RAW_TAG = b"\xfd\xfd\xfd\xfd"
     START_TRACE_TAG = b"\xfe\xfe\xfe\xfe"
     END_ACQ_TAG = b"\xff\xff\xff\xff"
-    END_LINE_TAG = b";;\r\n"
+    END_LINE_TAG = b";;\n"
 
     def __init__(self, meta=False, inv=False, verbose=False, noise=False):
         """Initializes a new keyword iterator.
@@ -730,7 +731,7 @@ class Parser:
 
     """
 
-    def __init__(self, s=b"", direction=Request.Directions.ENCRYPT, noise=False):
+    def __init__(self, s=b"", direction=Request.Directions.ENCRYPT, noise=False, verbose=False):
         """Initializes an object with binary data.
 
         Parameters
@@ -749,7 +750,7 @@ class Parser:
         self.noise = Leak()
         self.channel = Channel()
         self.meta = Meta()
-        self.parse(s, direction, noise)
+        self.parse(s, direction=direction, noise=noise, verbose=verbose)
 
     def pop(self):
         """Pops acquired value until data lengths matches.
@@ -764,14 +765,15 @@ class Parser:
             Reference to self.
         """
         lens = list(map(len, [
-            self.channel.keys, self.channel.plains, self.channel.ciphers, self.leak.samples, self.leak.traces,
-            self.noise.samples, self.noise.traces
+            self.channel.plains, self.channel.ciphers, self.leak.samples, self.leak.traces,
+            self.noise.samples or self.leak.samples, self.noise.traces or self.leak.samples
         ]))
         n_min = min(lens)
         n_max = max(lens)
 
         if n_max == n_min and n_max != 0:
-            self.noise.pop()
+            if len(self.noise.samples) > 0 or len(self.noise.traces) > 0:
+                self.noise.pop()
             self.leak.pop()
             self.channel.pop()
             self.meta.iterations -= 1
@@ -785,7 +787,7 @@ class Parser:
             self.leak.traces.pop()
         while len(self.noise.samples) != n_min:
             self.noise.samples.pop()
-        while len(self.noise.traces) != n_min:
+        while len(self.noise) > 0 and len(self.noise.traces) != n_min:
             self.noise.traces.pop()
         while len(self.channel.keys) != n_min:
             self.channel.keys.pop()
@@ -805,7 +807,7 @@ class Parser:
         self.meta.clear()
         self.channel.clear()
 
-    def parse(self, s, direction=Request.Directions.ENCRYPT, noise=False):
+    def parse(self, s, direction=Request.Directions.ENCRYPT, noise=False, verbose=False):
         """Parses the given bytes to retrieve acquisition data.
 
         If inv`` is not specified the parser will infer the
@@ -825,23 +827,23 @@ class Parser:
         Parser
             Reference to self.
         """
-        keywords = Keywords(inv=direction == Request.Directions.DECRYPT, noise=noise)
+        keywords = Keywords(inv=direction == Request.Directions.DECRYPT, noise=noise, verbose=verbose)
         expected = next(keywords)
         valid = True
-        noise = False
-        lines = s.split(Keywords.END_LINE_TAG)
+        noised = False
+        lines = s.replace(b"\r\n", b"\n").split(Keywords.END_LINE_TAG)
         for idx, line in enumerate(lines):
-            if valid is False:
-                valid = line == Keywords.START_TRACE_TAG
-
             if line in (Keywords.END_ACQ_TAG, Keywords.START_TRACE_TAG, Keywords.START_RAW_TAG):
-                noise = (line == Keywords.START_RAW_TAG) or not (line == Keywords.START_TRACE_TAG)
+                if valid is False:
+                    valid = line == Keywords.START_TRACE_TAG
+                if noise:
+                    noised = (line == Keywords.START_RAW_TAG) or not (line == Keywords.START_TRACE_TAG)
                 continue
             try:
-                if self.__parse_line(line, expected, noise):
+                if self.__parse_line(line, expected, noised):
                     expected = next(keywords)
             except (ValueError, UnicodeDecodeError, RuntimeError) as e:
-                args = (e, len(self.leak.traces), idx, line)
+                args = (e, len(self.leak.traces), idx + 1, line)
                 warn("parsing error\nerror: {}\niteration: {:d}\nline {:d}: {}".format(*args))
                 keywords.reset(keywords.meta)
                 expected = next(keywords)
@@ -874,14 +876,14 @@ class Parser:
         elif keyword == Keywords.SAMPLES:
             leak.samples.append(int(data))
         elif keyword == Keywords.CODE:
-            leak.traces.append(list(map(self.__decode_weight, line[(len(Keywords.CODE) + 2):])))
+            leak.traces.append(list(map(int, line[(len(Keywords.CODE) + 2):])))
         elif keyword == Keywords.WEIGHTS:
-            leak.traces.append(list(map(int, data.split(b","))))
+            leak.traces.append(list(map(int, data.strip().split(b","))))
         else:
             return False
 
         if keyword == Keywords.TARGET:
-            self.meta.offset = self.meta.sensors * self.meta.target - ord("P")
+            self.meta.offset = self.meta.sensors * self.meta.target
 
         if keyword in (Keywords.CODE, Keywords.WEIGHTS):
             n = leak.samples[-1]
@@ -892,7 +894,4 @@ class Parser:
         return True
 
     def __decode_weight(self, c):
-        if c != 255:
-            return int(c) + self.meta.offset - ord('P')
-        else:
-            return 10
+        return int(c) if self.meta.offset >= 128 else int(c) + self.meta.offset - ord('P')

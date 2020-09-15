@@ -62,7 +62,7 @@ def main(args):
     @ui.actions.timed("start processing", "\nprocessing successful!")
     def process(x, chunk=None):
         print(f"{'started':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")
-        parser = data.Parser(x, request.direction)
+        parser = data.Parser(x, direction=request.direction, verbose=request.verbose)
         ui.save(request, x, parser.leak, parser.channel, parser.meta, parser.noise, chunk=chunk, path=savepath)
         print(f"{'size':<16}{ui.sizeof(len(x or []))}")
         print(f"{'parsed':<16}{len(parser.channel)}/{request.iterations}")
@@ -110,6 +110,8 @@ argp.add_argument("-p", "--plot", type=int, default=16,
 argp.add_argument("--start", type=int,
                   help="Start time sample index of each trace.")
 argp.add_argument("--end", type=int,
+                  help="End time sample index of each trace.")
+argp.add_argument("-v", "--verbose", action="store_true",
                   help="End time sample index of each trace.")
 
 if __name__ == "__main__":
