@@ -843,7 +843,7 @@ class Parser:
                 if self.__parse_line(line, expected, noised):
                     expected = next(keywords)
             except (ValueError, UnicodeDecodeError, RuntimeError) as e:
-                args = (e, len(self.leak.traces), idx + 1, line)
+                args = (e, len(self.leak.traces), idx, line)
                 warn("parsing error\nerror: {}\niteration: {:d}\nline {:d}: {}".format(*args))
                 keywords.reset(keywords.meta)
                 expected = next(keywords)
