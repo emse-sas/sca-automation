@@ -120,6 +120,9 @@ def sync(traces, step=1, stop=None):
     stop = min(stop or m, m)
     shifts = list(range(0, stop, step))
 
+    def _pearsonr_from_ref(r, st, sh):
+        return list(map(lambda s: stats.pearsonr(r, st[s])[0], sh))
+
     for trace in traces:
         strided = np.lib.stride_tricks.as_strided(trace, shape, strides_pos)
         try:
@@ -147,7 +150,3 @@ def sync(traces, step=1, stop=None):
     trace[:] = np.roll(trace, np.argmax(buffer) - stop)
 
     return traces
-
-
-def _pearsonr_from_ref(ref, strided, shifts):
-    return list(map(lambda shift: stats.pearsonr(ref, strided[shift])[0], shifts))

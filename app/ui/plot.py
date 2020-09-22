@@ -69,8 +69,11 @@ def fft(ax, freq, spectrum, f):
     return ax.plot(freq[f], spectrum[f], color="red", label="Spectrum average")
 
 
-def iterations(ax, scale, guess, key, maxs):
+def iterations(ax, scale, guess, key, maxs, request):
+    _, n = maxs.shape
     ax.set(xlabel="Traces acquired", ylabel="Pearson Correlation")
+    ax.set_xlim([1, request.iterations * request.chunks])
+    scale = scale[:n]
     for h in range(COUNT_HYP):
         if h == key and h == guess:
             ax.plot(scale, maxs[h], color="r", zorder=10)
@@ -123,9 +126,9 @@ def acquisition(traces, trace, spectrum, meta, request, path=DEFAULT_DATA_PATH, 
 
     """
     meta = meta or request
-    annotation = f"{'parsed':<16}{meta.iterations}\n" \
-                 f"{'samples':<16}{traces.shape[1]}\n" \
-                 f"{request}"
+    annotation = f"{'samples':<16}{traces.shape[1]}\n" \
+                 f"{request}\n" \
+                 f"{meta}"
 
     gs_kw = dict(left=0.2, hspace=0.2)
     fig, ax = plt.subplots(constrained_layout=False, gridspec_kw=gs_kw)
@@ -133,7 +136,6 @@ def acquisition(traces, trace, spectrum, meta, request, path=DEFAULT_DATA_PATH, 
     annotate(ax, annotation)
     fig.suptitle("Raw power consumptions")
     fig.legend()
-    fig.show()
     fig.savefig(os.path.join(path, request.filename("raw")))
     plt.close(fig)
 
@@ -146,7 +148,6 @@ def acquisition(traces, trace, spectrum, meta, request, path=DEFAULT_DATA_PATH, 
     fig.suptitle("Filtered power consumptions")
     fig.legend()
     fig.savefig(os.path.join(path, request.filename("average")))
-    fig.show()
     plt.close(fig)
 
 
@@ -166,29 +167,29 @@ def correlations(cor, key, request, maxs, handler, path=DEFAULT_DATA_PATH):
         Images saving path.
 
     """
-    guess, mx, exact = Handler.guess_stats(cor, key)
+    gs, mx, ex = Handler.guess_stats(cor, key)
     cor_max, cor_min = Handler.guess_envelope(cor)
     maxs.append(mx)
     maxs = np.moveaxis(np.array(maxs), (0, 1, 2, 3), (3, 0, 1, 2))
-    scale = np.linspace(0, handler.iterations, handler.iterations // request.iterations)
+    scale = np.linspace(1, handler.iterations, handler.iterations // request.iterations + 1)
     for i, j in product(range(BLOCK_LEN), range(BLOCK_LEN)):
         b = i * BLOCK_LEN + j
         annotation = f"imported: {handler.iterations}\n" \
-                     f"guess correlation: {100 * mx[i, j, guess[i, j]]:.2f}%\n" \
+                     f"guess correlation: {100 * mx[i, j, gs[i, j]]:.2f}%\n" \
                      f"key correlation: {100 * mx[i, j, key[i, j]]:.2f}%\n" \
                      f"{request}"
         gs_kw = dict(left=0.2, hspace=0.2)
         fig, (ax1, ax2) = plt.subplots(2, 1, constrained_layout=False, gridspec_kw=gs_kw)
-        iterations(ax1, scale, guess[i, j], key[i, j], maxs[i, j])
+        iterations(ax1, scale, gs[i, j], key[i, j], maxs[i, j], request)
         ax2.fill_between(range(cor.shape[3]), cor_max[i, j], cor_min[i, j], color="grey")
-        temporal(ax2, cor[i, j, guess[i, j]], cor[i, j, key[i, j]], guess[i, j], key[i, j], exact[i, j])
+        temporal(ax2, cor[i, j, gs[i, j]], cor[i, j, key[i, j]], gs[i, j], key[i, j], ex[i, j])
         annotate(ax1, annotation)
         fig.suptitle(f"Correlation byte {b}")
         fig.legend()
         fig.savefig(os.path.join(path, request.filename("cor", f"_b{b}")))
-        fig.show()
+
         plt.close(fig)
 
-    print(f"exact guess: {np.count_nonzero(exact)}/{BLOCK_LEN * BLOCK_LEN}\n{exact}")
+    print(f"exact guess: {np.count_nonzero(ex)}/{BLOCK_LEN * BLOCK_LEN}\n{ex}")
     print(f"key:\n{key}")
-    print(f"guess:\n{guess}")
+    print(f"guess:\n{gs}")

@@ -394,13 +394,12 @@ class Meta(Serializable, Deserializable):
                f"{self.offset!r})"
 
     def __str__(self):
-        dl = str(Keywords.DELIMITER, 'ascii')
-        return f"{Keywords.MODE}{dl} {self.mode}\n" \
-               f"{Keywords.DIRECTION}{dl} {self.direction}\n" \
-               f"{Keywords.TARGET}{dl} {self.target}\n" \
-               f"{Keywords.SENSORS}{dl} {self.sensors}\n" \
-               f"{Keywords.ITERATIONS}{dl} {self.iterations}\n" \
-               f"{Keywords.OFFSET}{dl} {self.offset}"
+        return f"{Keywords.MODE:<16}{self.mode}\n" \
+               f"{Keywords.DIRECTION:<16}{self.direction}\n" \
+               f"{Keywords.TARGET:<16}{self.target}\n" \
+               f"{Keywords.SENSORS:<16}{self.sensors}\n" \
+               f"{Keywords.ITERATIONS:<16}{self.iterations}\n" \
+               f"{Keywords.OFFSET:<16}{self.offset}"
 
     def clear(self):
         """Resets meta-data.
@@ -566,9 +565,7 @@ class Request:
                f"{'mode':<16}{self.mode}\n" \
                f"{'direction':<16}{self.direction}\n" \
                f"{'verbose':<16}{self.verbose}\n" \
-               f"{'verbose':<16}{self.verbose}\n" \
-               f"{'chunks':<16}{self.chunks}\n" \
-               f"{'noise':<16}{self.noise}"
+               f"{'chunks':<16}{self.chunks}\n"
 
     def filename(self, prefix=None, suffix=""):
         """Creates a filename based on the request.
@@ -892,6 +889,3 @@ class Parser:
                 raise RuntimeError("trace lengths mismatch %d != %d" % (m, n))
 
         return True
-
-    def __decode_weight(self, c):
-        return int(c) if self.meta.offset >= 128 else int(c) + self.meta.offset - ord('P')

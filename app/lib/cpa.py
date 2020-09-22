@@ -146,7 +146,7 @@ class Handler:
         """
         for h, k in product(range(COUNT_HYP), range(COUNT_CLS)):
             if model == Models.SBOX:
-                self.hypothesis[h, k] = bin(aes.S_BOX[k ^ h] ^ k).count("1")
+                self.hypothesis[h, k] = bin(aes.S_BOX[k ^ h]).count("1")
             elif model == Models.INV_SBOX:
                 self.hypothesis[h, k] = bin(aes.INV_S_BOX[k ^ h] ^ k).count("1")
         return self
@@ -203,7 +203,7 @@ class Handler:
         correlations : Compute temporal correlation.
 
         """
-        maxs = np.max(cor, axis=3)
+        maxs = np.amax(cor, axis=3)
         guess = np.argmax(maxs, axis=2)
         exact = guess == key
         return guess, maxs, exact

@@ -56,11 +56,10 @@ def acquire_serial(port, cmd, baud=921_600, terminator=b"\n"):
 
 
 def acquire_chunks(port, cmd, count, process, prepare=None, baud=921_600, terminator=b"\n"):
-    prepare = prepare or (lambda x, c: (x, c))
-    s = None
+    prepare = prepare or (lambda c: c)
     with serial.Serial(port, baud, parity=serial.PARITY_NONE, xonxoff=False) as ser:
         for chunk in range(count):
-            prepare(s, chunk)
+            prepare(chunk)
             _write_serial(f"{cmd}\n".encode(), ser, flush=True)
             s = _read_serial(ser, terminator=terminator)
             process(s, chunk)

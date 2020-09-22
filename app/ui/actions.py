@@ -130,18 +130,18 @@ def acquire(request, process, prepare=None, path=DEFAULT_DATA_PATH):
         if request.chunks:
             io.acquire_chunks(request.name, cmd, request.chunks, process, prepare, terminator=terminator)
         else:
-            prepare(None, None)
+            prepare(None)
             s = io.acquire_serial(request.name, cmd, terminator=terminator)
             process(s, None)
     elif request.source == Request.Sources.FILE:
         if request.chunks:
             for chunk in range(request.chunks):
                 filepath = os.path.join(path, request.filename(request.name, f"_{chunk}.bin"))
-                prepare(None, chunk)
+                prepare(chunk)
                 s = io.read_file(filepath)
                 process(s, chunk)
         else:
-            prepare(None, None)
+            prepare(None)
             s = io.read_file(filepath)
             process(s, None)
     else:
@@ -212,7 +212,7 @@ def load(request, process, prepare=None, path=DEFAULT_DATA_PATH):
     count = request.iterations
     if request.chunks:
         for chunk in range(request.chunks):
-            prepare(None, None, None, chunk)
+            prepare(chunk)
             start = chunk * count
             channel = data.Channel(os.path.join(path, request.filename("channel", ".csv")), count, start)
             leak = data.Leak(os.path.join(path, request.filename("leak", ".csv")), count, start)

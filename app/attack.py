@@ -43,20 +43,20 @@ def main(args):
     b, a, *_ = signal.butter(order, w, btype="highpass", output="ba")
 
     @ui.actions.timed("start acquisition")
-    def prepare(*_, chunk=None):
+    def prepare(chunk=None):
         if chunk is not None:
             print(f"{'chunk':<16}{chunk + 1}/{args.chunks}")
             print(f"{'requested':<16}{(chunk + 1) * request.iterations}/{request.iterations * request.chunks}")
+        print(f"{'started':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")
 
     @ui.actions.timed("start processing", "\nprocessing successful!")
     def process(channel, leak, meta, _):
-        m = handler.samples if handler.samples else None
         print(f"{'started':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")
+        m = handler.samples if handler.samples else None
         traces = np.array(tr.adjust(leak.traces, m), dtype=np.float)
         for trace in traces:
             trace[:] = signal.filtfilt(b, a, trace)
         key = ui.update.handler(channel, traces, model=args.model, current=handler)
-        print(f"{'imported':<16}{meta.iterations}/{request.iterations}")
         cor = handler.correlations()
         ui.plot.correlations(cor, key, request, maxs, handler, path=loadpath)
 

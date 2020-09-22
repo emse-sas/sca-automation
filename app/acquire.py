@@ -45,15 +45,14 @@ from scipy import fft, signal
 def main(args):
     f_nyq = 200e6 / 2
     order = 4
-    w = 13e6 / f_nyq
+    w = 7e5 / f_nyq
     b0, a0, *_ = signal.butter(order, w, btype="highpass", output="ba")
 
-    w0 = 49e6 / f_nyq
-    w1 = 51e6 / f_nyq
-    b1, a1, *_ = signal.butter(order, [w0, w1], btype="bandstop", output="ba")
+    w = 55e6 / f_nyq
+    b1, a1, *_ = signal.butter(order, w, btype="lowpass", output="ba")
 
     @ui.actions.timed("start acquisition")
-    def prepare(_, chunk=None):
+    def prepare(chunk=None):
         if chunk is not None:
             print(f"{'chunk':<16}{chunk + 1}/{args.chunks}")
             print(f"{'requested':<16}{(chunk + 1) * request.iterations}/{request.iterations * request.chunks}")
@@ -68,9 +67,12 @@ def main(args):
         print(f"{'parsed':<16}{len(parser.channel)}/{request.iterations}")
 
         traces = np.array(tr.adjust(parser.leak.traces, trace))
+        for t in traces:
+            t[:] = signal.filtfilt(b0, a0, t)
+            t[:] = signal.filtfilt(b1, a1, t)
+
         mean = ui.update.trace(trace, traces) / ((chunk if chunk else 0 + 1) * request.iterations)
-        mean = signal.filtfilt(b0, a0, mean)
-        mean = signal.filtfilt(b1, a1, mean)
+
         spectrum = np.absolute(fft.fft(mean))
         ui.plot.acquisition(traces, mean, spectrum, parser.meta, request, path=savepath)
 
