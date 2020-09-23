@@ -80,7 +80,13 @@ def init(request, path=DEFAULT_DATA_PATH):
     loadpath = None
     if request.source == Request.Sources.FILE:
         loadpath = path
-        path = os.sep.join(path.split(os.sep)[:-1])
+        path = os.sep.join(path.split(os.sep)[-1])
+
+    try:
+        os.mkdir(path)
+    except FileExistsError:
+        pass
+
     while True:
         savepath = os.path.join(path, f"{count}")
         try:
@@ -88,8 +94,6 @@ def init(request, path=DEFAULT_DATA_PATH):
             break
         except FileExistsError:
             count += 1
-        except FileNotFoundError:
-            os.mkdir(savepath.split(os.sep)[-1])
 
     return savepath, loadpath or savepath
 

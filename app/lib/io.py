@@ -1,6 +1,5 @@
 import os
-
-import serial
+from serial import Serial, PARITY_NONE
 
 
 def _read_serial(ser, terminator=b"\n", n=16):
@@ -49,7 +48,7 @@ def write_file(path, s):
 
 
 def acquire_serial(port, cmd, baud=921_600, terminator=b"\n"):
-    with serial.Serial(port, baud, parity=serial.PARITY_NONE, xonxoff=False) as ser:
+    with Serial(port, baud, parity=PARITY_NONE, xonxoff=False) as ser:
         _write_serial(f"{cmd}\n".encode(), ser, flush=True)
         s = _read_serial(ser, terminator=terminator)
     return s
@@ -57,7 +56,7 @@ def acquire_serial(port, cmd, baud=921_600, terminator=b"\n"):
 
 def acquire_chunks(port, cmd, count, process, prepare=None, baud=921_600, terminator=b"\n"):
     prepare = prepare or (lambda c: c)
-    with serial.Serial(port, baud, parity=serial.PARITY_NONE, xonxoff=False) as ser:
+    with Serial(port, baud, parity=PARITY_NONE, xonxoff=False) as ser:
         for chunk in range(count):
             prepare(chunk)
             _write_serial(f"{cmd}\n".encode(), ser, flush=True)
