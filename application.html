@@ -87,16 +87,8 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#clean-py">clean.py</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#setup-py">setup.py</a></li>
-<li class="toctree-l1"><a class="reference internal" href="#module-app.acquire">acquire.py</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="#module-app.attack">attack.py</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#Positional Arguments">Positional Arguments</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#Named Arguments">Named Arguments</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="#acquire-py">acquire.py</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#attack-py">attack.py</a></li>
 <li class="toctree-l1"><a class="reference internal" href="#core-module">core module</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Library</span></p>
@@ -181,151 +173,11 @@
 <div class="section" id="setup-py">
 <h1>setup.py<a class="headerlink" href="#setup-py" title="Permalink to this headline">¶</a></h1>
 </div>
-<div class="section" id="module-app.acquire">
-<span id="acquire-py"></span><h1>acquire.py<a class="headerlink" href="#module-app.acquire" title="Permalink to this headline">¶</a></h1>
-<p>Export and plot data from SoC.</p>
-<p>The data retrieved from SoC consists on side-channel leakage
-and encryption data in order to later perform correlation.</p>
-<p>The side-channel leakage is plot to evaluate the quality of
-the acquisition.
-The data is exported in 3 separated CSV files.</p>
-<p class="rubric">Examples</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ python acquire.py <span class="m">256</span> COM5
-$ python acquire.py -m sw <span class="m">1024</span> cmd
-</pre></div>
+<div class="section" id="acquire-py">
+<h1>acquire.py<a class="headerlink" href="#acquire-py" title="Permalink to this headline">¶</a></h1>
 </div>
-<p>In the above example, the first line will launch the acquisition
-of 256 hardware traces and read the serial port <code class="docutils literal notranslate"><span class="pre">COM5</span></code>.</p>
-<p>The second line will read the file <code class="docutils literal notranslate"><span class="pre">cmd_hw_1024.log</span></code> located in the
-directory containing the 1024 software traces.</p>
-<p>In the last case, the file must be a valid binary log file previously
-acquired from the SoC via serial port.</p>
-<dl class="py function">
-<dt id="app.acquire.main">
-<code class="sig-prename descclassname">app.acquire.</code><code class="sig-name descname">main</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.acquire.main" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<p><p>Acquire data from SoC and export it.</p>
-</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">acquire</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">m</span> <span class="p">{</span><span class="n">hw</span><span class="p">,</span><span class="n">sw</span><span class="p">}]</span> <span class="p">[</span><span class="o">-</span><span class="n">d</span> <span class="p">{</span><span class="n">enc</span><span class="p">,</span><span class="n">dec</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">chunks</span> <span class="n">CHUNKS</span><span class="p">]</span>
-                  <span class="p">[</span><span class="o">--</span><span class="n">path</span> <span class="n">PATH</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">s</span> <span class="p">{</span><span class="n">file</span><span class="p">,</span><span class="n">serial</span><span class="p">}]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span> <span class="n">PLOT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">start</span> <span class="n">START</span><span class="p">]</span>
-                  <span class="p">[</span><span class="o">--</span><span class="n">end</span> <span class="n">END</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span>
-                  <span class="n">iterations</span> <span class="n">name</span>
-</pre></div>
-</div>
-<div class="section" id="Positional Arguments">
-<h2>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this headline">¶</a></h2>
-<dl class="option-list">
-<dt><kbd>iterations</kbd></dt>
-<dd><p>Requested count of traces.</p>
-</dd>
-<dt><kbd>name</kbd></dt>
-<dd><p>Acquisition source name.</p>
-</dd>
-</dl>
-</div>
-<div class="section" id="Named Arguments">
-<h2>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h2>
-<dl class="option-list">
-<dt><kbd>-m, --mode</kbd></dt>
-<dd><p>Possible choices: hw, sw</p>
-<p>Encryption mode.</p>
-<p>Default: “hw”</p>
-</dd>
-<dt><kbd>-d, --direction</kbd></dt>
-<dd><p>Possible choices: enc, dec</p>
-<p>Encryption direction.</p>
-<p>Default: “enc”</p>
-</dd>
-<dt><kbd>--chunks</kbd></dt>
-<dd><p>Count of chunks to acquire.</p>
-</dd>
-<dt><kbd>--path</kbd></dt>
-<dd><p>Path where to save files.</p>
-<p>Default: “../data”</p>
-</dd>
-<dt><kbd>-s, --source</kbd></dt>
-<dd><p>Possible choices: file, serial</p>
-<p>Acquisition source.</p>
-<p>Default: “file”</p>
-</dd>
-<dt><kbd>-p, --plot</kbd></dt>
-<dd><p>Count of raw traces to plot.</p>
-<p>Default: 16</p>
-</dd>
-<dt><kbd>--start</kbd></dt>
-<dd><p>Start time sample index of each trace.</p>
-</dd>
-<dt><kbd>--end</kbd></dt>
-<dd><p>End time sample index of each trace.</p>
-</dd>
-<dt><kbd>-v, --verbose</kbd></dt>
-<dd><p>End time sample index of each trace.</p>
-<p>Default: False</p>
-</dd>
-</dl>
-</div>
-</div>
-<div class="section" id="module-app.attack">
-<span id="attack-py"></span><h1>attack.py<a class="headerlink" href="#module-app.attack" title="Permalink to this headline">¶</a></h1>
-<p>Import acquisition data and perform attack.</p>
-<p>The data are imported from CSV files produced by <code class="docutils literal notranslate"><span class="pre">acquire.py</span></code>
-in order to avoid parsing which is computationally expensive.</p>
-<p>The temporal correlations are plot and the key guess is displayed
-to validate the attack.</p>
-<p class="rubric">Examples</p>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ python attack.py <span class="m">256</span>
-$ python attack.py -m sw <span class="m">1024</span>
-</pre></div>
-</div>
-<p>In the above example, the first line will launch
-the attack on the CSV files representing the SoC data retrieved
-from the acquisition of 256 hardware traces.</p>
-<p>The second example do the same except it will launch the attack
-on 1024 software traces.</p>
-<dl class="py function">
-<dt id="app.attack.main">
-<code class="sig-prename descclassname">app.attack.</code><code class="sig-name descname">main</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.attack.main" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<p><p>Load acquisition data and perform a side-channel attack.</p>
-</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">attack</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">m</span> <span class="p">{</span><span class="n">hw</span><span class="p">,</span><span class="n">sw</span><span class="p">}]</span> <span class="p">[</span><span class="o">--</span><span class="n">chunks</span> <span class="n">CHUNKS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">path</span> <span class="n">PATH</span><span class="p">]</span>
-                 <span class="p">[</span><span class="o">--</span><span class="n">model</span> <span class="n">MODEL</span><span class="p">]</span>
-                 <span class="n">iterations</span> <span class="n">name</span>
-</pre></div>
-</div>
-<div class="section" id="Positional Arguments">
-<h2>Positional Arguments<a class="headerlink" href="#Positional Arguments" title="Permalink to this headline">¶</a></h2>
-<dl class="option-list">
-<dt><kbd>iterations</kbd></dt>
-<dd><p>Requested count of traces.</p>
-</dd>
-<dt><kbd>name</kbd></dt>
-<dd><p>Acquisition source name.</p>
-</dd>
-</dl>
-</div>
-<div class="section" id="Named Arguments">
-<h2>Named Arguments<a class="headerlink" href="#Named Arguments" title="Permalink to this headline">¶</a></h2>
-<dl class="option-list">
-<dt><kbd>-m, --mode</kbd></dt>
-<dd><p>Possible choices: hw, sw</p>
-<p>Encryption mode.</p>
-<p>Default: “hw”</p>
-</dd>
-<dt><kbd>--chunks</kbd></dt>
-<dd><p>Count of chunks to acquire.</p>
-</dd>
-<dt><kbd>--path</kbd></dt>
-<dd><p>Path where to save files.</p>
-<p>Default: “../data”</p>
-</dd>
-<dt><kbd>--model</kbd></dt>
-<dd><p>Leakage model.</p>
-</dd>
-</dl>
-</div>
+<div class="section" id="attack-py">
+<h1>attack.py<a class="headerlink" href="#attack-py" title="Permalink to this headline">¶</a></h1>
 </div>
 <div class="section" id="core-module">
 <h1>core module<a class="headerlink" href="#core-module" title="Permalink to this headline">¶</a></h1>
