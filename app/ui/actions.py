@@ -80,7 +80,6 @@ def init(request, path=DEFAULT_DATA_PATH):
     loadpath = None
     if request.source == Request.Sources.FILE:
         loadpath = path
-        path = os.sep.join(path.split(os.sep)[-1])
 
     try:
         os.mkdir(path)

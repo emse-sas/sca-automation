@@ -27,6 +27,7 @@ acquired from the SoC via serial port.
 
 import argparse
 import os
+from warnings import warn
 
 import numpy as np
 import ui
@@ -62,23 +63,22 @@ def main(args):
     def process(x, chunk=None):
         print(f"{'started':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")
         parser = data.Parser(x, direction=request.direction, verbose=request.verbose)
+        parsed = len(parser.channel)
+        trace = ui.update.Current.trace
         ui.save(request, x, parser.leak, parser.channel, parser.meta, parser.noise, chunk=chunk, path=savepath)
         print(f"{'size':<16}{ui.sizeof(len(x or []))}")
-        print(f"{'parsed':<16}{len(parser.channel)}/{request.iterations}")
-
-        traces = np.array(tr.adjust(parser.leak.traces, trace))
-        for t in traces:
-            t[:] = signal.filtfilt(b0, a0, t)
-            t[:] = signal.filtfilt(b1, a1, t)
-
-        mean = ui.update.trace(trace, traces) / ((chunk if chunk else 0 + 1) * request.iterations)
-
-        spectrum = np.absolute(fft.fft(mean))
+        print(f"{'parsed':<16}{parsed}/{request.iterations}")
+        print(f"{'total':<16}{parser.meta.iterations}/{(request.chunks or 1) * request.iterations}")
+        if not parsed:
+            warn("no traces parsed!\nskipping...")
+            return
+        traces = np.array(tr.adjust(parser.leak.traces, len(trace if trace is not None else [])))
+        mean = ui.update.trace(traces) / parser.meta.iterations
+        spectrum = np.absolute(fft.fft(mean - np.mean(mean)))
         ui.plot.acquisition(traces, mean, spectrum, parser.meta, request, path=savepath)
 
     request = Request(args)
     savepath, loadpath = ui.actions.init(request, args.path)
-    trace = None
     print(request)
     print(f"{'load path':<16}{os.path.abspath(loadpath)}")
     print(f"{'save path':<16}{os.path.abspath(savepath)}")

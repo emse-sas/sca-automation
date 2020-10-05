@@ -3,6 +3,11 @@ from lib import aes, cpa
 from ui.actions import timed
 
 
+class Current:
+    trace = None
+    handler = None
+
+
 @timed("updating handler", "update successful!")
 def handler(channel, traces, model, current=None):
     """Creates a correlation handler.
@@ -39,8 +44,9 @@ def handler(channel, traces, model, current=None):
     return key
 
 
-def trace(current, traces):
-    if current is None:
-        current = np.zeros((traces.shape[1]))
-    current += np.sum(traces, axis=0)
-    return current
+def trace(traces):
+    if Current.trace is None:
+        Current.trace = np.sum(traces, axis=0)
+        return Current.trace
+    Current.trace += np.sum(traces, axis=0)
+    return Current.trace

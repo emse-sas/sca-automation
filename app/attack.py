@@ -10,8 +10,8 @@ Examples
 --------
 .. code-block:: shell
 
-    $ python attack.py 256
-    $ python attack.py -m sw 1024
+    $ python correlate.py 256
+    $ python correlate.py -m sw 1024
 
 In the above example, the first line will launch
 the attack on the CSV files representing the SoC data retrieved
@@ -29,10 +29,18 @@ import numpy as np
 import ui.actions
 import ui.update
 import ui.plot
-from lib.data import Request
+from lib.data import Request, Parser
 from lib.cpa import Handler
 from lib import traces as tr
-from scipy import signal
+from scipy import fft, signal
+from warnings import warn
+from threading import Thread
+
+
+class Threads:
+    parse = None
+    acquire = None
+    correlate = None
 
 
 @ui.actions.timed("attack.py", "\nexiting...")
@@ -50,23 +58,56 @@ def main(args):
         print(f"{'started':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")
 
     @ui.actions.timed("start processing", "\nprocessing successful!")
-    def process(channel, leak, meta, _):
-        print(f"{'started':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")
-        m = handler.samples if handler.samples else None
-        traces = np.array(tr.adjust(leak.traces, m), dtype=np.float)
+    def process(x, chunk):
+        if Threads.parse is not None:
+            Threads.parse.join()
+        Threads.parse = Thread(target=parse, args=[x, chunk])
+        Threads.parse.start()
+
+    def parse(x, chunk):
+        parser = Parser(x, direction=request.direction, verbose=request.verbose)
+        parsed = len(parser.channel)
+        ui.save(request, x, parser.leak, parser.channel, parser.meta, parser.noise, chunk=chunk, path=savepath)
+        print(f"{'size':<16}{ui.sizeof(len(x or []))}")
+        print(f"{'parsed':<16}{parsed}/{request.iterations}")
+        print(f"{'total':<16}{parser.meta.iterations}/{(request.chunks or 1) * request.iterations}")
+        if not parsed:
+            warn("no traces parsed!\nskipping...")
+            return
+
+        trace = ui.update.Current.trace
+        m = len(trace if trace is not None else [])
+        traces = np.array(tr.adjust(parser.leak.traces, m))
+
+        Threads.acquire = Thread(target=acquire, args=[parser, traces])
+        Threads.correlate = Thread(target=correlate, args=[parser, traces.copy()])
+
+        Threads.acquire.start()
+        Threads.correlate.start()
+
+        Threads.acquire.join()
+        Threads.correlate.join()
+
+    def acquire(parser, traces):
+        mean = ui.update.trace(traces) / parser.meta.iterations
+        spectrum = np.absolute(fft.fft(mean - np.mean(mean)))
+        ui.plot.acquisition(traces, mean, spectrum, parser.meta, request, path=savepath)
+
+    def correlate(parser, traces):
         for trace in traces:
             trace[:] = signal.filtfilt(b, a, trace)
-        key = ui.update.handler(channel, traces, model=args.model, current=handler)
+        key = ui.update.handler(parser.channel, traces, model=args.model, current=handler)
         cor = handler.correlations()
         ui.plot.correlations(cor, key, request, maxs, handler, path=loadpath)
 
     maxs = []
     handler = Handler(model=args.model)
     request = Request(args)
-    _, loadpath = ui.init(request, args.path)
+    savepath, loadpath = ui.init(request, args.path)
     print(request)
     print(f"{'load path':<16}{os.path.abspath(loadpath)}")
-    ui.actions.load(request, process, prepare, path=loadpath)
+    print(f"{'save path':<16}{os.path.abspath(savepath)}")
+    ui.actions.acquire(request, process, prepare=prepare, path=loadpath)
 
 
 np.set_printoptions(formatter={"int": hex})
@@ -84,6 +125,18 @@ argp.add_argument("--chunks", type=int, default=None,
                   help="Count of chunks to acquire.")
 argp.add_argument("--path", type=str, default=ui.actions.DEFAULT_DATA_PATH,
                   help="Path where to save files.")
+argp.add_argument("-s", "--source",
+                  choices=[Request.Sources.FILE, Request.Sources.SERIAL],
+                  default=Request.Sources.FILE,
+                  help="Acquisition source.")
+argp.add_argument("-p", "--plot", type=int, default=16,
+                  help="Count of raw traces to plot.")
+argp.add_argument("--start", type=int,
+                  help="Start time sample index of each trace.")
+argp.add_argument("--end", type=int,
+                  help="End time sample index of each trace.")
+argp.add_argument("-v", "--verbose", action="store_true",
+                  help="End time sample index of each trace.")
 argp.add_argument("--model", type=int,
                   help="Leakage model.")
 

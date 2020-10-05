@@ -72,7 +72,7 @@ def fft(ax, freq, spectrum, f):
 def iterations(ax, scale, guess, key, maxs, request):
     _, n = maxs.shape
     ax.set(xlabel="Traces acquired", ylabel="Pearson Correlation")
-    ax.set_xlim([1, request.iterations * request.chunks])
+    ax.set_xlim([scale[0], request.iterations * request.chunks])
     scale = scale[:n]
     for h in range(COUNT_HYP):
         if h == key and h == guess:
@@ -171,7 +171,7 @@ def correlations(cor, key, request, maxs, handler, path=DEFAULT_DATA_PATH):
     cor_max, cor_min = Handler.guess_envelope(cor)
     maxs.append(mx)
     maxs = np.moveaxis(np.array(maxs), (0, 1, 2, 3), (3, 0, 1, 2))
-    scale = np.linspace(1, handler.iterations, handler.iterations // request.iterations + 1)
+    scale = np.arange(start=request.iterations, stop=handler.iterations + 1, step=request.iterations)
     for i, j in product(range(BLOCK_LEN), range(BLOCK_LEN)):
         b = i * BLOCK_LEN + j
         annotation = f"imported: {handler.iterations}\n" \
