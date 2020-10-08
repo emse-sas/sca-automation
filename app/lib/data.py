@@ -778,20 +778,15 @@ class Parser:
         elif n_max == 0:
             return
 
-        while len(self.leak.samples) != n_min:
-            self.leak.samples.pop()
-        while len(self.leak.traces) != n_min:
-            self.leak.traces.pop()
-        while len(self.noise.samples) != n_min:
-            self.noise.samples.pop()
-        while len(self.noise) > 0 and len(self.noise.traces) != n_min:
-            self.noise.traces.pop()
-        while len(self.channel.keys) != n_min:
-            self.channel.keys.pop()
-        while len(self.channel.plains) != n_min:
-            self.channel.plains.pop()
-        while len(self.channel.ciphers) != n_min:
-            self.channel.ciphers.pop()
+        Parser.__pop_until(self.leak.samples, n_min)
+        Parser.__pop_until(self.leak.traces, n_min)
+
+        Parser.__pop_until(self.noise.samples, n_min)
+        Parser.__pop_until(self.noise.traces, n_min)
+
+        Parser.__pop_until(self.channel.keys, n_min)
+        Parser.__pop_until(self.channel.plains, n_min)
+        Parser.__pop_until(self.channel.ciphers, n_min)
 
         return self
 
@@ -804,7 +799,7 @@ class Parser:
         self.meta.clear()
         self.channel.clear()
 
-    def parse(self, s, direction=Request.Directions.ENCRYPT, noise=False, verbose=False):
+    def parse(self, s, direction=Request.Directions.ENCRYPT, noise=False, verbose=False, warns=False):
         """Parses the given bytes to retrieve acquisition data.
 
         If inv`` is not specified the parser will infer the
@@ -840,8 +835,8 @@ class Parser:
                 if self.__parse_line(line, expected, noised):
                     expected = next(keywords)
             except (ValueError, UnicodeDecodeError, RuntimeError) as e:
-                args = (e, len(self.leak.traces), idx, line)
-                warn("parsing error\nerror: {}\niteration: {:d}\nline {:d}: {}".format(*args))
+                if warns:
+                    warn(f"parsing error\nerror: {e}\niteration: {len(self.leak.traces)}\nline {idx}")
                 keywords.reset(keywords.meta)
                 expected = next(keywords)
                 valid = False
@@ -889,3 +884,8 @@ class Parser:
                 raise RuntimeError("trace lengths mismatch %d != %d" % (m, n))
 
         return True
+
+    @classmethod
+    def __pop_until(cls, data, n):
+        while len(data) > n:
+            data.pop()

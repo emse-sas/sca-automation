@@ -23,6 +23,7 @@ on 1024 software traces.
 """
 import argparse
 import os
+import sys
 from datetime import datetime
 
 import numpy as np
@@ -35,6 +36,7 @@ from lib import traces as tr
 from scipy import fft, signal
 from warnings import warn
 from threading import Thread
+from multiprocessing import Process
 
 
 class Threads:
@@ -53,7 +55,7 @@ def main(args):
     @ui.actions.timed("start acquisition")
     def prepare(chunk=None):
         if chunk is not None:
-            print(f"{'chunk':<16}{chunk + 1}/{args.chunks}")
+            print(f"{'chunk':<16}{chunk + 1}/{request.chunks}")
             print(f"{'requested':<16}{(chunk + 1) * request.iterations}/{request.iterations * request.chunks}")
         print(f"{'started':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")
 
@@ -67,10 +69,17 @@ def main(args):
     def parse(x, chunk):
         parser = Parser(x, direction=request.direction, verbose=request.verbose)
         parsed = len(parser.channel)
-        ui.save(request, x, parser.leak, parser.channel, parser.meta, parser.noise, chunk=chunk, path=savepath)
+        try:
+            ui.save(request, x, parser.leak, parser.channel, parser.meta, parser.noise, chunk=chunk, path=savepath)
+        except OSError as e:
+            print(f"Fatal error : {e}\nexiting...")
+            sys.exit(1)
+
+        print(f"{'chunk':<16}{chunk + 1}/{request.chunks}")
         print(f"{'size':<16}{ui.sizeof(len(x or []))}")
         print(f"{'parsed':<16}{parsed}/{request.iterations}")
         print(f"{'total':<16}{parser.meta.iterations}/{(request.chunks or 1) * request.iterations}")
+
         if not parsed:
             warn("no traces parsed!\nskipping...")
             return
@@ -79,14 +88,14 @@ def main(args):
         m = len(trace if trace is not None else [])
         traces = np.array(tr.adjust(parser.leak.traces, m))
 
-        Threads.acquire = Thread(target=acquire, args=[parser, traces])
-        Threads.correlate = Thread(target=correlate, args=[parser, traces.copy()])
+        Thread.acquire = Thread(target=acquire, args=(parser, traces))
+        Thread.correlate = Thread(target=correlate, args=(parser, traces.copy()))
 
-        Threads.acquire.start()
-        Threads.correlate.start()
+        Thread.acquire.start()
+        Thread.correlate.start()
 
-        Threads.acquire.join()
-        Threads.correlate.join()
+        Thread.acquire.join()
+        Thread.correlate.join()
 
     def acquire(parser, traces):
         mean = ui.update.trace(traces) / parser.meta.iterations
@@ -96,12 +105,12 @@ def main(args):
     def correlate(parser, traces):
         for trace in traces:
             trace[:] = signal.filtfilt(b, a, trace)
-        key = ui.update.handler(parser.channel, traces, model=args.model, current=handler)
-        cor = handler.correlations()
-        ui.plot.correlations(cor, key, request, maxs, handler, path=loadpath)
+        key = ui.update.handler(parser.channel, traces, model=args.model)
+        cor = ui.update.Current.handler.correlations()
+        ui.plot.correlations(cor, key, request, maxs, ui.update.Current.handler, path=loadpath)
 
     maxs = []
-    handler = Handler(model=args.model)
+    ui.update.Current.handler = Handler(model=args.model)
     request = Request(args)
     savepath, loadpath = ui.init(request, args.path)
     print(request)

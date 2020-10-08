@@ -151,6 +151,10 @@ def acquisition(traces, trace, spectrum, meta, request, path=DEFAULT_DATA_PATH, 
     plt.close(fig)
 
 
+class Correlation:
+    scale = []
+
+
 @timed("plotting data", "plot successful!")
 def correlations(cor, key, request, maxs, handler, path=DEFAULT_DATA_PATH):
     """Plots temporal correlations and save images.
@@ -171,7 +175,7 @@ def correlations(cor, key, request, maxs, handler, path=DEFAULT_DATA_PATH):
     cor_max, cor_min = Handler.guess_envelope(cor)
     maxs.append(mx)
     maxs = np.moveaxis(np.array(maxs), (0, 1, 2, 3), (3, 0, 1, 2))
-    scale = np.arange(start=request.iterations, stop=handler.iterations + 1, step=request.iterations)
+    Correlation.scale.append(handler.iterations)
     for i, j in product(range(BLOCK_LEN), range(BLOCK_LEN)):
         b = i * BLOCK_LEN + j
         annotation = f"imported: {handler.iterations}\n" \
@@ -180,7 +184,7 @@ def correlations(cor, key, request, maxs, handler, path=DEFAULT_DATA_PATH):
                      f"{request}"
         gs_kw = dict(left=0.2, hspace=0.2)
         fig, (ax1, ax2) = plt.subplots(2, 1, constrained_layout=False, gridspec_kw=gs_kw)
-        iterations(ax1, scale, gs[i, j], key[i, j], maxs[i, j], request)
+        iterations(ax1, Correlation.scale, gs[i, j], key[i, j], maxs[i, j], request)
         ax2.fill_between(range(cor.shape[3]), cor_max[i, j], cor_min[i, j], color="grey")
         temporal(ax2, cor[i, j, gs[i, j]], cor[i, j, key[i, j]], gs[i, j], key[i, j], ex[i, j])
         annotate(ax1, annotation)

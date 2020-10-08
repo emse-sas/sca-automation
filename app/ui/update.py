@@ -5,11 +5,11 @@ from ui.actions import timed
 
 class Current:
     trace = None
-    handler = None
+    handler = cpa.Handler()
 
 
 @timed("updating handler", "update successful!")
-def handler(channel, traces, model, current=None):
+def handler(channel, traces, model):
     """Creates a correlation handler.
 
     Parameters
@@ -37,10 +37,10 @@ def handler(channel, traces, model, current=None):
         blocks = [aes.words_to_block(block) for block in channel.ciphers]
     else:
         return
-    if current.samples:
-        current.accumulate(blocks, traces)
+    if Current.handler.iterations > 0:
+        Current.handler.accumulate(blocks, traces)
     else:
-        current.clear(traces.shape[1]).accumulate(blocks, traces)
+        Current.handler.clear(traces.shape[1]).accumulate(blocks, traces)
     return key
 
 

@@ -50,6 +50,8 @@ def main(args):
     b0, a0, *_ = signal.butter(order, w, btype="highpass", output="ba")
 
     w = 55e6 / f_nyq
+
+
     b1, a1, *_ = signal.butter(order, w, btype="lowpass", output="ba")
 
     @ui.actions.timed("start acquisition")
