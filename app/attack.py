@@ -127,7 +127,7 @@ argp.add_argument("iterations", type=int,
 argp.add_argument("name", type=str,
                   help="Acquisition source name.")
 argp.add_argument("-m", "--mode",
-                  choices=[Request.Modes.HARDWARE, Request.Modes.SOFTWARE],
+                  choices=[Request.Modes.HARDWARE, Request.Modes.TINY, Request.Modes.SSL],
                   default=Request.Modes.HARDWARE,
                   help="Encryption mode.")
 argp.add_argument("--chunks", type=int, default=None,

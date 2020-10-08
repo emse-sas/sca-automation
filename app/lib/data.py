@@ -498,7 +498,8 @@ class Request:
 
     class Modes:
         HARDWARE = "hw"
-        SOFTWARE = "sw"
+        TINY = "tiny"
+        SSL = "ssl"
 
     class Directions:
         ENCRYPT = "enc"
@@ -593,7 +594,7 @@ class Request:
         return "{}{}{}{}{}{}{}".format(name,
                                        " -t %d" % self.iterations,
                                        " -v" if self.verbose else "",
-                                       " -h" if self.mode == Request.Modes.HARDWARE else "",
+                                       " -m %s" % self.mode,
                                        " -i" if self.direction == Request.Directions.DECRYPT else "",
                                        " -r" if self.noise else "",
                                        " -s %d" % self.start if self.start is not None else "",
