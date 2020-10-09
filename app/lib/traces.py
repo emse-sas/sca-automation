@@ -112,7 +112,7 @@ def sync(traces, step=1, stop=None):
             2D array representing synchronized traces.
 
     """
-    ref = traces[0]
+       ref = traces[0]
     n, m = traces.shape
     strides_pos = ref.strides * 2
     strides_neg = (-strides_pos[0], strides_pos[1])

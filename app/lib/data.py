@@ -509,6 +509,10 @@ class Request:
         FILE = "file"
         SERIAL = "serial"
 
+    class Sensors:
+        TDC = 0
+        RO = 1
+
     def __init__(self, args=None):
         """Initializes a request with a previously parsed command.
 
@@ -528,6 +532,7 @@ class Request:
         self.chunks = None
         self.start = None
         self.end = None
+        self.sensor = Request.Sensors.TDC
 
         if hasattr(args, "name"):
             self.name = args.name
@@ -547,17 +552,22 @@ class Request:
             self.start = args.start
         if hasattr(args, "end"):
             self.end = args.end
+        if hasattr(args, "sensor"):
+            self.sensor = args.sensor
 
     def __repr__(self):
         return f"{type(self).__name__}" \
-               f"({self.name}, " \
-               f"{self.iterations}, " \
-               f"{self.source}, " \
-               f"{self.mode}, " \
-               f"{self.direction}, " \
-               f"{self.verbose}, " \
-               f"{self.chunks}, " \
-               f"{self.noise})"
+               f"({self.name!r}, " \
+               f"{self.iterations!r}, " \
+               f"{self.source!r}, " \
+               f"{self.mode!r}, " \
+               f"{self.direction!r}, " \
+               f"{self.verbose!r}, " \
+               f"{self.chunks!r}, " \
+               f"{self.noise!r}, " \
+               f"{self.start!r}, " \
+               f"{self.end!r}, " \
+               f"{self.sensor!r})"
 
     def __str__(self):
         return f"{'name':<16}{self.name}\n" \
@@ -566,7 +576,8 @@ class Request:
                f"{'mode':<16}{self.mode}\n" \
                f"{'direction':<16}{self.direction}\n" \
                f"{'verbose':<16}{self.verbose}\n" \
-               f"{'chunks':<16}{self.chunks}\n"
+               f"{'chunks':<16}{self.chunks}\n" \
+               f"{'sensor':<16}{'ro' if self.sensor else 'tdc'}\n"
 
     def filename(self, prefix=None, suffix=""):
         """Creates a filename based on the request.
@@ -593,6 +604,7 @@ class Request:
     def command(self, name):
         return "{}{}{}{}{}{}{}".format(name,
                                        " -t %d" % self.iterations,
+                                       " -c %d" % self.sensor,
                                        " -v" if self.verbose else "",
                                        " -m %s" % self.mode,
                                        " -i" if self.direction == Request.Directions.DECRYPT else "",

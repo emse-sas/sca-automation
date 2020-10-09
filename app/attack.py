@@ -138,6 +138,10 @@ argp.add_argument("-s", "--source",
                   choices=[Request.Sources.FILE, Request.Sources.SERIAL],
                   default=Request.Sources.FILE,
                   help="Acquisition source.")
+argp.add_argument("--sensor", type=int,
+                  choices=[Request.Sensors.TDC, Request.Sensors.RO],
+                  default=Request.Sensors.TDC,
+                  help="Acquisition sensor.")
 argp.add_argument("-p", "--plot", type=int, default=16,
                   help="Count of raw traces to plot.")
 argp.add_argument("--start", type=int,
