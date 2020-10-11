@@ -523,7 +523,7 @@ class Request:
 
         """
         self.name = None
-        self.iterations = args.iterations
+        self.iterations = None
         self.source = Request.Sources.FILE
         self.mode = Request.Modes.HARDWARE
         self.direction = Request.Directions.ENCRYPT
@@ -532,8 +532,9 @@ class Request:
         self.chunks = None
         self.start = None
         self.end = None
-        self.sensor = Request.Sensors.TDC
 
+        if hasattr(args, "iterations"):
+            self.iterations = args.iterations
         if hasattr(args, "name"):
             self.name = args.name
         if hasattr(args, "source"):
@@ -552,8 +553,6 @@ class Request:
             self.start = args.start
         if hasattr(args, "end"):
             self.end = args.end
-        if hasattr(args, "sensor"):
-            self.sensor = args.sensor
 
     def __repr__(self):
         return f"{type(self).__name__}" \
@@ -566,8 +565,7 @@ class Request:
                f"{self.chunks!r}, " \
                f"{self.noise!r}, " \
                f"{self.start!r}, " \
-               f"{self.end!r}, " \
-               f"{self.sensor!r})"
+               f"{self.end!r})"
 
     def __str__(self):
         return f"{'name':<16}{self.name}\n" \
@@ -576,8 +574,7 @@ class Request:
                f"{'mode':<16}{self.mode}\n" \
                f"{'direction':<16}{self.direction}\n" \
                f"{'verbose':<16}{self.verbose}\n" \
-               f"{'chunks':<16}{self.chunks}\n" \
-               f"{'sensor':<16}{'ro' if self.sensor else 'tdc'}\n"
+               f"{'chunks':<16}{self.chunks}"
 
     def filename(self, prefix=None, suffix=""):
         """Creates a filename based on the request.
@@ -604,7 +601,6 @@ class Request:
     def command(self, name):
         return "{}{}{}{}{}{}{}".format(name,
                                        " -t %d" % self.iterations,
-                                       " -c %d" % self.sensor,
                                        " -v" if self.verbose else "",
                                        " -m %s" % self.mode,
                                        " -i" if self.direction == Request.Directions.DECRYPT else "",

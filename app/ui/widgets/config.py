@@ -1,3 +1,4 @@
+import os
 from tkinter import *
 from lib.cpa import Models
 from lib.data import Request
@@ -9,7 +10,7 @@ class ModeFrame(LabelFrame):
         self.var_mode = StringVar(value=Request.Modes.HARDWARE)
         self.radio_mode_hw = Radiobutton(self,
                                          text="Hardware",
-                                         variable=self,
+                                         variable=self.var_mode,
                                          value=Request.Modes.HARDWARE)
         self.radio_mode_hw.grid(row=0, column=0, sticky=W, padx=4)
 
@@ -45,18 +46,20 @@ class ModelFrame(LabelFrame):
 
 class GeneralFrame(LabelFrame):
     def __init__(self, master):
-        super().__init__(master, text="Configuration")
+        super().__init__(master, text="General")
         Grid.columnconfigure(self, 1, weight=1)
         Grid.columnconfigure(self, 0, weight=1)
 
         self.label_iterations = Label(self, text="Iterations")
         self.label_iterations.grid(row=0, column=0, sticky=W, padx=4)
-        self.entry_iterations = Entry(self)
+        self.var_iterations = StringVar()
+        self.entry_iterations = Entry(self, textvariable=self.var_iterations)
         self.entry_iterations.grid(row=0, column=1, sticky=EW, padx=4)
 
         self.label_target = Label(self, text="Target")
         self.label_target.grid(row=1, column=0, sticky=W, padx=4)
-        self.entry_target = Entry(self)
+        self.var_target = StringVar()
+        self.entry_target = Entry(self,  textvariable=self.var_target)
         self.entry_target.grid(row=1, column=1, sticky=EW, padx=4)
 
         self.frame_mode = ModeFrame(self)
@@ -71,17 +74,20 @@ class PerfsFrame(LabelFrame):
         super().__init__(master, text="Performances")
         self.label_start = Label(self, text="Start")
         self.label_start.grid(row=0, column=0, sticky=W, padx=4)
-        self.entry_start = Entry(self)
+        self.var_start = StringVar()
+        self.entry_start = Entry(self, textvariable=self.var_start)
         self.entry_start.grid(row=0, column=1, padx=4)
 
         self.label_end = Label(self, text="End")
         self.label_end.grid(row=1, column=0, sticky=W, padx=4)
-        self.entry_end = Entry(self)
+        self.var_end = StringVar()
+        self.entry_end = Entry(self, textvariable=self.var_end)
         self.entry_end.grid(row=1, column=1, padx=4)
 
         self.label_chunks = Label(self, text="Chunks")
         self.label_chunks.grid(row=2, column=0, sticky=W, padx=4)
-        self.entry_chunks = Entry(self)
+        self.var_chunks = StringVar()
+        self.entry_chunks = Entry(self, textvariable=self.var_chunks)
         self.entry_chunks.grid(row=2, column=1, padx=4)
 
         self.var_verbose = BooleanVar(value=False)
@@ -109,7 +115,8 @@ class FilesFrame(LabelFrame):
         Grid.columnconfigure(self, 1, weight=1)
         self.label_path = Label(self, text="Path")
         self.label_path.grid(row=0, column=0, sticky=W, padx=4)
-        self.entry_path = Entry(self)
+        self.var_path = StringVar(value=os.path.abspath(os.sep.join(os.getcwd().split(os.sep)[:-3] + ["data"])))
+        self.entry_path = Entry(self, textvariable=self.var_path)
         self.entry_path.grid(row=0, column=1, padx=4, sticky=EW)
 
 

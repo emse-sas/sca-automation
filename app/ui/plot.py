@@ -48,8 +48,8 @@ def presented(title, xlabel, ylabel):
 
 
 def annotate(ax, annotation):
-    ax.annotate(annotation,
-                xy=(.05, .95), xycoords='figure fraction',
+    return ax.annotate(annotation,
+                xy=(.01, .95), xycoords='figure fraction',
                 horizontalalignment='left', verticalalignment='top')
 
 
@@ -69,10 +69,9 @@ def fft(ax, freq, spectrum, f):
     return ax.plot(freq[f], spectrum[f], color="red", label="Spectrum average")
 
 
-def iterations(ax, scale, guess, key, maxs, request):
+def iterations(ax, scale, guess, key, maxs):
     _, n = maxs.shape
     ax.set(xlabel="Traces acquired", ylabel="Pearson Correlation")
-    ax.set_xlim([scale[0], request.iterations * request.chunks])
     scale = scale[:n]
     for h in range(COUNT_HYP):
         if h == key and h == guess:
@@ -91,8 +90,8 @@ def temporal(ax, cor_guess, cor_key, guess, key, exact):
     if exact:
         ax.plot(cor_key, color="r", label=f"key 0x{key:02x}")
     else:
-        ax.plot(cor_key, color="b", label=f"key 0x{key:02x}")
         ax.plot(cor_guess, color="c", label=f"guess 0x{guess:02x}")
+        ax.plot(cor_key, color="b", label=f"key 0x{key:02x}")
 
 
 @timed("plotting data", "plot successful!")
@@ -125,6 +124,7 @@ def acquisition(traces, trace, spectrum, meta, request, path=DEFAULT_DATA_PATH, 
         Spectrum's frequencies.
 
     """
+    """
     meta = meta or request
     annotation = f"{'samples':<16}{traces.shape[1]}\n" \
                  f"{request}\n" \
@@ -138,6 +138,10 @@ def acquisition(traces, trace, spectrum, meta, request, path=DEFAULT_DATA_PATH, 
     fig.legend()
     fig.savefig(os.path.join(path, request.filename("raw")))
     plt.close(fig)
+    """
+    annotation = f"{'samples':<16}{traces.shape[1]}\n" \
+                 f"{request}\n" \
+                 f"{meta}"
 
     gs_kw = dict(left=0.2, hspace=0.2)
     fig, (ax1, ax2) = plt.subplots(2, 1, constrained_layout=False, gridspec_kw=gs_kw)
@@ -176,6 +180,7 @@ def correlations(cor, key, request, maxs, handler, path=DEFAULT_DATA_PATH):
     maxs.append(mx)
     maxs = np.moveaxis(np.array(maxs), (0, 1, 2, 3), (3, 0, 1, 2))
     Correlation.scale.append(handler.iterations)
+    """
     for i, j in product(range(BLOCK_LEN), range(BLOCK_LEN)):
         b = i * BLOCK_LEN + j
         annotation = f"imported: {handler.iterations}\n" \
@@ -184,7 +189,8 @@ def correlations(cor, key, request, maxs, handler, path=DEFAULT_DATA_PATH):
                      f"{request}"
         gs_kw = dict(left=0.2, hspace=0.2)
         fig, (ax1, ax2) = plt.subplots(2, 1, constrained_layout=False, gridspec_kw=gs_kw)
-        iterations(ax1, Correlation.scale, gs[i, j], key[i, j], maxs[i, j], request)
+        ax1.set_xlim([Correlation.scale[0], request.iterations * request.chunks])
+        iterations(ax1, Correlation.scale, gs[i, j], key[i, j], maxs[i, j])
         ax2.fill_between(range(cor.shape[3]), cor_max[i, j], cor_min[i, j], color="grey")
         temporal(ax2, cor[i, j, gs[i, j]], cor[i, j, key[i, j]], gs[i, j], key[i, j], ex[i, j])
         annotate(ax1, annotation)
@@ -193,6 +199,7 @@ def correlations(cor, key, request, maxs, handler, path=DEFAULT_DATA_PATH):
         fig.savefig(os.path.join(path, request.filename("cor", f"_b{b}")))
 
         plt.close(fig)
+    """
 
     print(f"exact guess: {np.count_nonzero(ex)}/{BLOCK_LEN * BLOCK_LEN}\n{ex}")
     print(f"key:\n{key}")
