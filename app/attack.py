@@ -105,12 +105,12 @@ def main(args):
     def correlate(parser, traces):
         for trace in traces:
             trace[:] = signal.filtfilt(b, a, trace)
-        key = ui.update.handler(parser.channel, traces, model=args.model)
+        key = ui.update.handler(parser.channel, traces, model=args._model)
         cor = ui.update.Current.handler.correlations()
         ui.plot.correlations(cor, key, request, maxs, ui.update.Current.handler, path=loadpath)
 
     maxs = []
-    ui.update.Current.handler = Handler(model=args.model)
+    ui.update.Current.handler = Handler(model=args._model)
     request = Request(args)
     savepath, loadpath = ui.init(request, args.path)
     print(request)

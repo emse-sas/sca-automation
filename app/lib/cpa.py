@@ -26,7 +26,7 @@ from itertools import product
 
 import numpy as np
 
-from lib import aes
+from lib import aes, traces as tr
 
 COUNT_HYP = 256  # Count of key hypothesis for one byte
 COUNT_CLS = 256  # Traces with the same byte value in a given position
@@ -65,7 +65,7 @@ class Handler:
 
     """
 
-    def __init__(self, blocks=None, traces=None, samples=None, model=Models.SBOX):
+    def __init__(self, model, channel=None, traces=None, samples=None):
         """Allocates memory, accumulates traces and initialize model.
 
         Parameters
@@ -78,22 +78,26 @@ class Handler:
             Model index.
 
         """
+        self.model = model
+        self.blocks = None
+        self.key = None
         self.iterations = 0
         self.samples = None
         self.hypothesis = None
-        self.model = model
         self.lens = None
+
         self.sums = None
         self.sums2 = None
         self.sum = None
         self.sum2 = None
 
-        if traces is not None and blocks is not None:
-            self.clear(traces.shape[1]).set_model(model).accumulate(blocks, traces)
+        if traces is not None and channel is not None:
+            samples = samples or traces.shape[1]
+            self.clear(samples).set_model(model).set_key(channel).set_blocks(channel).accumulate(traces)
         else:
             self.clear(samples or 0).set_model(model)
 
-    def clear(self, samples):
+    def clear(self, samples=0):
         self.iterations = 0
         self.samples = samples
         self.hypothesis = np.zeros((COUNT_HYP, COUNT_CLS), dtype=np.uint8)
@@ -102,15 +106,13 @@ class Handler:
         self.sums2 = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_CLS, samples), dtype=np.float)
         self.sum = np.zeros(samples, dtype=np.float)
         self.sum2 = np.zeros(samples, dtype=np.float)
-        return self.set_model(self.model)
+        return self
 
-    def accumulate(self, blocks, traces):
+    def accumulate(self, traces):
         """Sorts traces by class and compute means and deviation.
 
         Parameters
         ----------
-        blocks : np.ndarray
-            Encrypted data blocks for each trace.
         traces : np.ndarray
             Traces matrix.
 
@@ -120,7 +122,7 @@ class Handler:
             Reference to self.
 
         """
-        for i, j, (block, trace) in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN), zip(blocks, traces)):
+        for i, j, (block, trace) in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN), zip(self.blocks, traces)):
             k = block[i, j]
             self.lens[i, j, k] += 1
             self.sums[i, j, k] += trace
@@ -128,6 +130,24 @@ class Handler:
         self.iterations += traces.shape[0]
         self.sum += np.sum(traces, axis=0)
         self.sum2 += np.sum(traces * traces, axis=0)
+        return self
+
+    def set_key(self, channel):
+        if self.model == Models.SBOX:
+            self.key = aes.words_to_block(channel.keys[0])
+        elif self.model == Models.INV_SBOX:
+            self.key = aes.key_expansion(aes.words_to_block(channel.keys[0]))[10].T
+        else:
+            raise ValueError(f"unknown model: {self.model}")
+        return self
+
+    def set_blocks(self, channel):
+        if self.model == Models.SBOX:
+            self.blocks = np.array([aes.words_to_block(block) for block in channel.plains])
+        elif self.model == Models.INV_SBOX:
+            self.blocks = ([aes.words_to_block(block) for block in channel.ciphers])
+        else:
+            raise ValueError(f"unknown model: {self.model}")
         return self
 
     def set_model(self, model):
@@ -144,11 +164,15 @@ class Handler:
             Reference to self.
 
         """
-        for h, k in product(range(COUNT_HYP), range(COUNT_CLS)):
-            if model == Models.SBOX:
+        self.model = model
+        if model == Models.SBOX:
+            for h, k in product(range(COUNT_HYP), range(COUNT_CLS)):
                 self.hypothesis[h, k] = bin(aes.S_BOX[k ^ h]).count("1")
-            elif model == Models.INV_SBOX:
+        elif model == Models.INV_SBOX:
+            for h, k in product(range(COUNT_HYP), range(COUNT_CLS)):
                 self.hypothesis[h, k] = bin(aes.INV_S_BOX[k ^ h] ^ k).count("1")
+        else:
+            raise ValueError(f"unknown model: {self.model}")
         return self
 
     def correlations(self):

@@ -131,15 +131,15 @@ def acquire(request, process, prepare=None, path=DEFAULT_DATA_PATH):
     filepath = os.path.join(path, request.filename(suffix=".bin"))
     if request.source == Request.Sources.SERIAL:
         if request.chunks:
-            io.acquire_chunks(request.name, cmd, request.chunks, process, prepare, terminator=terminator)
+            io.acquire_chunks(request.target, cmd, request.chunks, process, prepare, terminator=terminator)
         else:
             prepare(None)
-            s = io.acquire_serial(request.name, cmd, terminator=terminator)
+            s = io.acquire_serial(request.target, cmd, terminator=terminator)
             process(s, None)
     elif request.source == Request.Sources.FILE:
         if request.chunks:
             for chunk in range(request.chunks):
-                filepath = os.path.join(path, request.filename(request.name, f"_{chunk}.bin"))
+                filepath = os.path.join(path, request.filename(request.target, f"_{chunk}.bin"))
                 prepare(chunk)
                 s = io.read_file(filepath)
                 process(s, chunk)

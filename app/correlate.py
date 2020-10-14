@@ -56,12 +56,12 @@ def main(args):
         traces = np.array(tr.adjust(leak.traces, m), dtype=np.float)
         for trace in traces:
             trace[:] = signal.filtfilt(b, a, trace)
-        key = ui.update.handler(channel, traces, model=args.model, current=handler)
+        key = ui.update.handler(channel, traces, model=args._model, current=handler)
         cor = handler.correlations()
         ui.plot.correlations(cor, key, request, maxs, handler, path=loadpath)
 
     maxs = []
-    handler = Handler(model=args.model)
+    handler = Handler(model=args._model)
     request = Request(args)
     _, loadpath = ui.init(request, args.path)
     print(request)

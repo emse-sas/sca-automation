@@ -42,6 +42,8 @@ import os
 from warnings import warn
 from collections.abc import *
 
+from lib.cpa import Models
+
 
 class Serializable:
     def write_csv(self, path: str, append: bool) -> None:
@@ -478,7 +480,7 @@ class Request:
 
     Attributes
     ----------
-    name : str
+    target : str
         Serial port id or file prefix according to the source mode.
     iterations : int
         Requested count of traces.
@@ -522,25 +524,29 @@ class Request:
             Parsed arguments.
 
         """
-        self.name = None
-        self.iterations = None
+        self.target = ""
+        self.iterations = 0
         self.source = Request.Sources.FILE
         self.mode = Request.Modes.HARDWARE
+        self.model = Models.SBOX
         self.direction = Request.Directions.ENCRYPT
         self.verbose = False
         self.noise = False
         self.chunks = None
         self.start = None
         self.end = None
+        self.path = None
 
         if hasattr(args, "iterations"):
             self.iterations = args.iterations
         if hasattr(args, "name"):
-            self.name = args.name
+            self.target = args.target
         if hasattr(args, "source"):
             self.source = args.source
         if hasattr(args, "mode"):
             self.mode = args.mode
+        if hasattr(args, "noise"):
+            self.model = args.model
         if hasattr(args, "direction"):
             self.direction = args.direction
         if hasattr(args, "verbose"):
@@ -553,28 +559,35 @@ class Request:
             self.start = args.start
         if hasattr(args, "end"):
             self.end = args.end
+        if hasattr(args, "path"):
+            self.path = args.path
 
     def __repr__(self):
         return f"{type(self).__name__}" \
-               f"({self.name!r}, " \
+               f"({self.target!r}, " \
                f"{self.iterations!r}, " \
                f"{self.source!r}, " \
                f"{self.mode!r}, " \
+               f"{self.model!r}, " \
                f"{self.direction!r}, " \
                f"{self.verbose!r}, " \
-               f"{self.chunks!r}, " \
                f"{self.noise!r}, " \
                f"{self.start!r}, " \
-               f"{self.end!r})"
+               f"{self.end!r}, " \
+               f"{self.chunks!r})"
 
     def __str__(self):
-        return f"{'name':<16}{self.name}\n" \
+        return f"{'target':<16}{self.target}\n" \
                f"{'iterations':<16}{self.iterations}\n" \
                f"{'source':<16}{self.source}\n" \
                f"{'mode':<16}{self.mode}\n" \
+               f"{'model':<16}{self.model}\n" \
                f"{'direction':<16}{self.direction}\n" \
                f"{'verbose':<16}{self.verbose}\n" \
-               f"{'chunks':<16}{self.chunks}"
+               f"{'start':<16}{self.start}\n" \
+               f"{'end':<16}{self.end}\n" \
+               f"{'chunks':<16}{self.chunks}\n" \
+               f"{'path':<16}{os.path.abspath(self.path)}"
 
     def filename(self, prefix=None, suffix=""):
         """Creates a filename based on the request.
@@ -596,18 +609,24 @@ class Request:
 
         """
         iterations = self.iterations * (self.chunks or 1)
-        return f"{prefix or self.name.split(os.sep)[-1]}_{self.mode}_{self.direction}_{iterations}{suffix}"
+        return f"{prefix or self.target.split(os.sep)[-1]}_{self.mode}_{self.direction}_{iterations}{suffix}"
 
     def command(self, name):
-        return "{}{}{}{}{}{}{}".format(name,
-                                       " -t %d" % self.iterations,
-                                       " -v" if self.verbose else "",
-                                       " -m %s" % self.mode,
-                                       " -i" if self.direction == Request.Directions.DECRYPT else "",
-                                       " -r" if self.noise else "",
-                                       " -s %d" % self.start if self.start is not None else "",
-                                       " -e %d" % self.end if self.end is not None else ""
-                                       )
+        return f"{name}" \
+               f" -t {self.iterations}" \
+               f" -m {self.mode}" \
+               f"{' -i' if self.direction == Request.Directions.DECRYPT else ''}" \
+               f"{' -r' if self.noise else ''}" \
+               f"{' -v' if self.verbose else ''}" \
+               f"{f' -s {self.start}' if self.start else ''}" \
+               f"{f' -e {self.end}' if self.end else ''}"
+
+    @property
+    def total(self):
+        return self.iterations if self.chunks is None else self.iterations * self.chunks
+
+    def requested(self, chunk=None):
+        return self.iterations if chunk is None else (chunk) * self.iterations
 
 
 class Keywords:
@@ -713,6 +732,9 @@ class Keywords:
         else:
             self.datawords = datawords
         self.datawords += keywords
+
+    def all(self):
+        return self.metawords + self.datawords
 
 
 class Parser:
@@ -841,7 +863,7 @@ class Parser:
                     noised = (line == Keywords.START_RAW_TAG) or not (line == Keywords.START_TRACE_TAG)
                 continue
             try:
-                if self.__parse_line(line, expected, noised):
+                if self.__parse_line(line, expected, keywords, noised):
                     expected = next(keywords)
             except (ValueError, UnicodeDecodeError, RuntimeError) as e:
                 if warns:
@@ -856,7 +878,7 @@ class Parser:
         self.meta.iterations += len(self.channel)
         return self
 
-    def __parse_line(self, line, expected, noise):
+    def __parse_line(self, line, expected, keywords, noise):
         split = line.strip().split(Keywords.DELIMITER)
         try:
             keyword = str(split[0], "ascii").strip()
@@ -864,7 +886,7 @@ class Parser:
         except IndexError:
             return False
 
-        if keyword != expected:
+        if keyword in keywords.all() and keyword != expected:
             raise RuntimeError("expected %s keyword not %s" % (expected, keyword))
 
         leak = self.noise if noise else self.leak

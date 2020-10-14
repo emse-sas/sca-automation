@@ -2,6 +2,7 @@ from tkinter import *
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
+from matplotlib.figure import Figure
 
 import ui
 from lib.aes import BLOCK_LEN
@@ -10,12 +11,10 @@ from lib.aes import BLOCK_LEN
 class DoublePlotFrame(LabelFrame):
     def __init__(self, master, text):
         super().__init__(master, text=text)
+        self.fig = Figure(figsize=(16, 4))
+        self.ax1 = self.fig.add_subplot(2, 1, 1)
+        self.ax2 = self.fig.add_subplot(2, 1, 2)
 
-        gs_kw = dict(left=0.2, hspace=0.2)
-        fig, (ax1, ax2) = plt.subplots(2, 1, constrained_layout=False, gridspec_kw=gs_kw)
-        self.fig = fig
-        self.ax1 = ax1
-        self.ax2 = ax2
         self.plot1 = None
         self.plot2 = None
         self.annotation = None
@@ -26,9 +25,18 @@ class DoublePlotFrame(LabelFrame):
         self.toolbar.update()
         self.canvas.get_tk_widget().pack(side=TOP)
 
+    def clear(self):
+        self.ax1.clear()
+        self.ax2.clear()
+        self.fig.clear()
+        self.ax1 = self.fig.add_subplot(2, 1, 1)
+        self.ax2 = self.fig.add_subplot(2, 1, 2)
+        self.canvas.figure = self.fig
+        self.canvas.draw()
+
 
 class AcquisitionPlotFrame(DoublePlotFrame):
-    async def draw(self, mean, spectrum, freq, annotation):
+    def draw(self, mean, spectrum, freq, annotation):
         self.ax1.clear()
         self.ax2.clear()
         self.plot1 = ui.plot.mean(self.ax1, mean)
@@ -37,7 +45,6 @@ class AcquisitionPlotFrame(DoublePlotFrame):
         self.fig.suptitle("Filtered power consumptions")
         self.fig.legend()
         self.fig.canvas.draw()
-        self.fig.canvas.flush_event()
 
 
 class CorrelationPlotFrame(DoublePlotFrame):
@@ -45,11 +52,17 @@ class CorrelationPlotFrame(DoublePlotFrame):
         super().__init__(master, text)
         self.scale = scale or []
 
-    async def update_scale(self, handler, request):
+    def update_scale(self, handler, request):
         self.scale.append(handler.iterations)
-        self.ax1.set_xlim([self.scale[0], request.iterations * request.chunks])
+        if not request.chunks:
+            return
+        self.ax1.set_xlim([self.scale[0], request.iterations * (request.chunks or 1)])
 
-    async def draw(self, i, j, key, cor, guess, maxs_graph, exacts, max_env, min_env, annotation):
+    def clear(self):
+        self.scale = []
+        super().clear()
+
+    def draw(self, i, j, key, cor, guess, maxs_graph, exacts, max_env, min_env, annotation):
         b = i * BLOCK_LEN + j
         self.ax1.clear()
         self.ax2.clear()
@@ -60,7 +73,6 @@ class CorrelationPlotFrame(DoublePlotFrame):
         self.fig.suptitle(f"Correlation byte {b}")
         self.fig.legend()
         self.fig.canvas.draw()
-        self.fig.canvas.flush_event()
 
 
 class PlotFrame(LabelFrame):
@@ -70,3 +82,7 @@ class PlotFrame(LabelFrame):
         self.acquisition.pack(side=TOP, expand=1, fill=Y)
         self.correlation = CorrelationPlotFrame(self, "Correlation")
         self.correlation.pack(side=TOP, expand=1, fill=Y)
+
+    def clear(self):
+        self.acquisition.clear()
+        self.correlation.clear()
