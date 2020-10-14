@@ -636,7 +636,7 @@ to retrieve attack results in a reasonable amount of time.</p>
 
 <dl class="py class">
 <dt id="app.lib.cpa.Handler">
-<em class="property">class </em><code class="sig-prename descclassname">app.lib.cpa.</code><code class="sig-name descname">Handler</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">blocks</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">traces</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">samples</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">model</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">app.lib.cpa.</code><code class="sig-name descname">Handler</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">model</span></em>, <em class="sig-param"><span class="n">channel</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">traces</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">samples</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>CPA correlation handler interface.</p>
 <dl class="py attribute">
@@ -729,19 +729,16 @@ to retrieve attack results in a reasonable amount of time.</p>
 
 <dl class="py method">
 <dt id="app.lib.cpa.Handler.clear">
-<code class="sig-name descname">clear</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">samples</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler.clear" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">clear</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">samples</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler.clear" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt id="app.lib.cpa.Handler.accumulate">
-<code class="sig-name descname">accumulate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">blocks</span></em>, <em class="sig-param"><span class="n">traces</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler.accumulate" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">accumulate</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">traces</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler.accumulate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sorts traces by class and compute means and deviation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>blocks</strong> (<em>np.ndarray</em>) – Encrypted data blocks for each trace.</p></li>
-<li><p><strong>traces</strong> (<em>np.ndarray</em>) – Traces matrix.</p></li>
-</ul>
+<dd class="field-odd"><p><strong>traces</strong> (<em>np.ndarray</em>) – Traces matrix.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Reference to self.</p>
@@ -751,6 +748,16 @@ to retrieve attack results in a reasonable amount of time.</p>
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.cpa.Handler.set_key">
+<code class="sig-name descname">set_key</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">channel</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler.set_key" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.cpa.Handler.set_blocks">
+<code class="sig-name descname">set_blocks</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">channel</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler.set_blocks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt id="app.lib.cpa.Handler.set_model">
