@@ -535,7 +535,7 @@ class Request:
         self.chunks = None
         self.start = None
         self.end = None
-        self.path = None
+        self.path = ""
 
         if hasattr(args, "iterations"):
             self.iterations = args.iterations
@@ -626,7 +626,7 @@ class Request:
         return self.iterations if self.chunks is None else self.iterations * self.chunks
 
     def requested(self, chunk=None):
-        return self.iterations if chunk is None else (chunk) * self.iterations
+        return self.iterations if chunk is None else chunk * self.iterations
 
 
 class Keywords:

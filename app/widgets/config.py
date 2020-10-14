@@ -105,18 +105,12 @@ class GeneralFrame(LabelFrame):
 
         self.label_iterations = Label(self, text="Iterations *")
         self.label_iterations.grid(row=0, column=0, sticky=W, padx=4)
-        self.entry_iterations = Entry(self,
-                                      textvariable=self.var_iterations,
-                                      validate="focus",
-                                      vcmd=self.validate_iterations)
+        self.entry_iterations = Entry(self, textvariable=self.var_iterations)
         self.entry_iterations.grid(row=0, column=1, sticky=EW, padx=4)
 
         self.label_target = Label(self, text="Target *")
         self.label_target.grid(row=1, column=0, sticky=W, padx=4)
-        self.entry_target = Entry(self,
-                                  textvariable=self.var_target,
-                                  validate="focus",
-                                  vcmd=self.validate_target)
+        self.entry_target = Entry(self, textvariable=self.var_target)
         self.entry_target.grid(row=1, column=1, sticky=EW, padx=4)
 
         self.frame_mode = ModeFrame(self)
@@ -133,7 +127,7 @@ class GeneralFrame(LabelFrame):
     def target(self):
         return self._target
 
-    def validate_iterations(self):
+    def _validate_iterations(self):
         iterations = None
         try:
             iterations = max(int(self.var_iterations.get()), 0)
@@ -145,7 +139,7 @@ class GeneralFrame(LabelFrame):
         _set_validation_fg(self.label_iterations, valid)
         return valid
 
-    def validate_target(self):
+    def _validate_target(self):
         valid = False
         target = self.var_target.get()
         for port, *_ in serial.tools.list_ports.comports():
@@ -156,6 +150,10 @@ class GeneralFrame(LabelFrame):
         self._target = target if valid else None
         _set_validation_fg(self.label_target, valid)
         return valid
+
+    def validate(self):
+        valid = self._validate_target()
+        return self._validate_iterations() and valid
 
     def lock(self):
         self.entry_iterations["state"] = DISABLED
@@ -190,26 +188,17 @@ class PerfsFrame(LabelFrame):
 
         self.label_start = Label(self, text="Start")
         self.label_start.grid(row=0, column=0, sticky=W, padx=4)
-        self.entry_start = Entry(self,
-                                 textvariable=self.var_start,
-                                 validate="focus",
-                                 vcmd=self.validate_start)
+        self.entry_start = Entry(self, textvariable=self.var_start)
         self.entry_start.grid(row=0, column=1, padx=4)
 
         self.label_end = Label(self, text="End")
         self.label_end.grid(row=1, column=0, sticky=W, padx=4)
-        self.entry_end = Entry(self,
-                               textvariable=self.var_end,
-                               validate="focus",
-                               vcmd=self.validate_end)
+        self.entry_end = Entry(self, textvariable=self.var_end)
         self.entry_end.grid(row=1, column=1, padx=4)
 
         self.label_chunks = Label(self, text="Chunks")
         self.label_chunks.grid(row=2, column=0, sticky=W, padx=4)
-        self.entry_chunks = Entry(self,
-                                  textvariable=self.var_chunks,
-                                  validate="focus",
-                                  vcmd=self.validate_chunks)
+        self.entry_chunks = Entry(self, textvariable=self.var_chunks)
         self.entry_chunks.grid(row=2, column=1, padx=4)
 
         self.label_verbose = Label(self, text="Verbose")
@@ -254,7 +243,7 @@ class PerfsFrame(LabelFrame):
         self._noise = self.var_noise.get()
         self._verbose = self.var_verbose.get()
 
-    def validate_start(self):
+    def _validate_start(self):
         start = self.var_start.get()
         try:
             start = int(start)
@@ -266,7 +255,7 @@ class PerfsFrame(LabelFrame):
         _set_validation_fg(self.label_start, valid)
         return valid
 
-    def validate_end(self):
+    def _validate_end(self):
         end = self.var_end.get()
         try:
             end = int(end)
@@ -278,7 +267,7 @@ class PerfsFrame(LabelFrame):
         _set_validation_fg(self.label_end, valid)
         return valid
 
-    def validate_chunks(self):
+    def _validate_chunks(self):
         chunks = self.var_chunks.get()
         try:
             chunks = int(chunks)
@@ -289,6 +278,11 @@ class PerfsFrame(LabelFrame):
         self._chunks = chunks if valid and chunks != "" else None
         _set_validation_fg(self.label_chunks, valid)
         return valid
+
+    def validate(self):
+        valid = self._validate_start()
+        valid = self._validate_end() and valid
+        return self._validate_chunks() and valid
 
     def lock(self):
         self.entry_start["state"] = DISABLED
@@ -323,22 +317,22 @@ class FilesFrame(LabelFrame):
         self.label_path = Label(self, text="Path *")
         self.label_path.grid(row=0, column=0, sticky=W, padx=4)
         self.var_path = StringVar(value=self._path)
-        self.entry_path = Entry(self, textvariable=self.var_path,
-                                validate="focus",
-                                vcmd=self.validate_path)
+        self.entry_path = Entry(self, textvariable=self.var_path)
         self.entry_path.grid(row=0, column=1, padx=4, sticky=EW)
 
     @property
     def path(self):
         return self._path
 
-    def validate_path(self):
+    def _validate_path(self):
         path = self.var_path.get()
-        if os.path.isdir(path) or os.path.isdir(os.sep.join(path.split(os.sep)[:-1])):
-            self._path = path
-            return True
-        self._path = None
-        return False
+        valid = os.path.isdir(path) or os.path.isdir(os.sep.join(path.split(os.sep)[:-1]))
+        self._path = path if valid else None
+        _set_validation_fg(self.label_path, self._path)
+        return valid
+
+    def validate(self):
+        return self._validate_path()
 
     def lock(self):
         self.entry_path["state"] = DISABLED
@@ -362,6 +356,11 @@ class ConfigFrame(LabelFrame):
         self.perfs.pack(side=TOP, expand=1, fill=BOTH)
         self.file = FilesFrame(self)
         self.file.pack(side=TOP, expand=1, fill=BOTH)
+
+    def validate(self):
+        valid = self.general.validate()
+        valid = self.perfs.validate() and valid
+        return self.file.validate() and valid
 
     def lock(self):
         self.general.lock()

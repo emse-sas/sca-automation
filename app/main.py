@@ -42,6 +42,7 @@ class State(Enum):
 
 class Pending(Flag):
     IDLE = auto()
+    VALID = auto()
     STARTING = auto()
     LAUNCHING = auto()
     PARSING = auto()
@@ -328,11 +329,14 @@ class App(Tk):
             self.update()
 
             if self.state == State.IDLE:
-                self.validate()
-                if self.frames.clicked_launch:
-                    self.frames.clicked_launch = False
-                    self.state = State.LAUNCHED
-                    await self.launch()
+                self.pending |= Pending.IDLE
+                self.pending &= ~Pending.VALID
+                if self.validate():
+                    self.pending |= Pending.VALID
+                    if self.frames.clicked_launch:
+                        self.frames.clicked_launch = False
+                        self.state = State.LAUNCHED
+                        await self.launch()
 
             elif self.state == State.LAUNCHED:
                 if self.serial_protocol and self.serial_protocol.connected and self.serial_protocol.done:
@@ -357,10 +361,8 @@ class App(Tk):
                 await self.show_serial()
 
             if self.pending & Pending.IDLE:
-                if self.state != State.IDLE:
-                    self.pending &= ~ Pending.IDLE
-                else:
-                    await self.show_idle()
+                self.pending &= ~ Pending.IDLE
+                await self.show_idle()
 
             if self.pending & Pending.LAUNCHING:
                 self.pending &= ~ Pending.LAUNCHING
@@ -389,6 +391,8 @@ class App(Tk):
             await asyncio.sleep(interval)
 
     def validate(self):
+        if not self.frames.config.validate():
+            return False
         self.request.iterations = self.frames.config.general.iterations or self.request.iterations
         self.request.target = self.frames.config.general.target or self.request.target
         self.request.path = self.frames.config.file.path or self.request.path
@@ -398,6 +402,7 @@ class App(Tk):
         self.request.start = self.frames.config.perfs.start
         self.request.end = self.frames.config.perfs.end
         self.request.chunks = self.frames.config.perfs.chunks
+        return True
 
     async def launch(self):
         self.handler.clear().set_model(self.request.model)
@@ -423,8 +428,10 @@ class App(Tk):
         pass
 
     async def show_idle(self):
-        self.frames.log.clear()
-        self.frames.log.log(f"{self.request}")
+        if self.pending & Pending.VALID:
+            self.frames.log.var_status.set("Ready to launch acquisition !")
+        else:
+            self.frames.log.var_status.set("Please correct errors before launching acquisition...")
 
     async def show_serial(self):
         msg = f"{'acquired':<16}{self.serial_protocol.iterations}/{self.request.iterations}"
