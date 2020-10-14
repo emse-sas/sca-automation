@@ -83,7 +83,7 @@ class AppSerial(asyncio.Protocol):
         self.connected = False
         self.done = False
         self.transport.serial.close()
-        self.transport.loop_main.stop()
+        self.transport.loop.stop()
         logging.info(self.transport.serial)
         if exc:
             logging.warning(exc)
@@ -178,7 +178,7 @@ class App(Tk):
 
     def close(self):
         if self.serial_transport is not None:
-            self.serial_transport.loop_main.call_soon_threadsafe(self.serial_transport.close)
+            self.serial_transport.loop.call_soon_threadsafe(self.serial_transport.close)
         self.queue_comm.put(False)
         self.thread_comm.join()
         self.queue_comm.close()
@@ -331,7 +331,7 @@ class App(Tk):
             if self.state == State.IDLE:
                 self.pending |= Pending.IDLE
                 self.pending &= ~Pending.VALID
-                if self.validate():
+                if self._validate():
                     self.pending |= Pending.VALID
                     if self.frames.clicked_launch:
                         self.frames.clicked_launch = False
@@ -365,6 +365,7 @@ class App(Tk):
                 await self.show_idle()
 
             if self.pending & Pending.LAUNCHING:
+                self.frames.log.clear()
                 self.pending &= ~ Pending.LAUNCHING
                 await self.show_launching()
 
@@ -381,8 +382,10 @@ class App(Tk):
                 await self.show_stats()
 
             if self.pending & Pending.CORRELATION:
+                self.frames.log.clear()
                 self.pending &= ~ Pending.CORRELATION
                 await self.show_corr()
+                await self.show_starting()
 
             if self.pending & Pending.CHUNK:
                 self.pending &= ~ Pending.CHUNK
@@ -390,7 +393,7 @@ class App(Tk):
 
             await asyncio.sleep(interval)
 
-    def validate(self):
+    def _validate(self):
         if not self.frames.config.validate():
             return False
         self.request.iterations = self.frames.config.general.iterations or self.request.iterations
@@ -405,13 +408,15 @@ class App(Tk):
         return True
 
     async def launch(self):
+        logging.info("launching attack")
         self.handler.clear().set_model(self.request.model)
         self.trace = None
         self.curr_chunk = 0 if self.request.chunks else None
         self.next_chunk = 0 if self.request.chunks else None
 
-        if self.serial_transport and self.serial_transport.serial and self.serial_transport.serial.port != self.request.target:
-            self.serial_transport.loop_main.call_soon_threadsafe(self.serial_transport.close)
+        if self.serial_transport and self.serial_transport.serial.open:
+            if self.serial_transport.serial.port != self.request.target:
+                self.serial_transport.loop.call_soon_threadsafe(self.serial_transport.close)
 
         if not self.serial_protocol or not self.serial_protocol.connected:
             self.queue_comm.put(True)
@@ -419,13 +424,15 @@ class App(Tk):
         self.pending |= Pending.LAUNCHING
 
     async def start(self):
+        logging.info(f"starting acquisition {(self.next_chunk or 0) + 1}/{self.request.chunks or 1}")
         self.t_start = time.perf_counter()
         self.command = f"{self.request.command('sca')}"
         await self.serial_protocol.send(self.command.encode())
         self.pending |= Pending.STARTING
 
     async def stop(self):
-        pass
+        self.t_end = time.perf_counter()
+        logging.info(f"stopping acquisition, duration {timedelta(seconds=self.t_start - self.t_end)}")
 
     async def show_idle(self):
         if self.pending & Pending.VALID:
@@ -437,23 +444,22 @@ class App(Tk):
         msg = f"{'acquired':<16}{self.serial_protocol.iterations}/{self.request.iterations}"
         try:
             self.frames.log.overwrite_at_least(msg)
-        except IndexError:
+        except Exception as e:
+            logging.warning(e)
             self.frames.log.insert_at_least(msg)
 
     async def show_launching(self):
         self.frames.plot.clear()
-        self.frames.log.clear()
         self.frames.log.log(f"* Attack launched *\n"
                             f"{self.request}\n"
                             f"connecting to target...\n")
 
     async def show_starting(self):
         now = datetime.now()
-        self.frames.log.clear()
         self.frames.log.log(f"* Acquisition started *\n"
                             f"{'command':<16}{self.command}\n")
         if self.curr_chunk is not None:
-            self.frames.log.log(f"{'requested':<16}{self.request.requested(self.next_chunk)}/{self.request.total}\n")
+            self.frames.log.log(f"{'requested':<16}{self.request.requested(self.next_chunk + 1)}/{self.request.total}\n")
             self.frames.log.log(f"{'chunk':<16}{self.next_chunk + 1}/{self.request.chunks}\n")
             self.frames.log.var_status.set(
                 f"Chunk {self.next_chunk + 1}/{self.request.chunks} started {now:the %d %b %Y at %H:%M:%S}")
@@ -463,10 +469,8 @@ class App(Tk):
         self.frames.log.insert_at_least(f"waiting target's answer...\n")
 
     async def show_parsing(self):
-
         now = datetime.now()
         parsed = len(self.parser.channel)
-        self.frames.log.clear()
         self.frames.log.log(
             f"* Traces parsed *\n"
             f"{'size':<16}{ui.sizeof(len(self.serial_protocol.buffer))}\n"
@@ -489,7 +493,7 @@ class App(Tk):
         msg = f"Chunk {self.curr_chunk + 1}/{self.request.chunks} statistics computed {now:the %d %b %Y at %H:%M:%S}" \
             if self.curr_chunk is not None else f"Statistics computed {now:the %d %b %Y at %H:%M:%S}"
         self.frames.log.var_status.set(msg)
-
+        self.frames.plot.acquisition.clear()
         self.frames.plot.acquisition.draw(
             self.mean,
             self.spectrum,
@@ -505,13 +509,14 @@ class App(Tk):
         msg = f"Chunk {self.curr_chunk + 1}/{self.request.chunks} correlation computed {now:the %d %b %Y at %H:%M:%S}" \
             if self.curr_chunk is not None else f"Correlation computed {now:the %d %b %Y at %H:%M:%S}"
         self.frames.log.var_status.set(msg)
-        self.frames.log.clear()
         self.frames.log.log(f"exacts: {np.count_nonzero(self.exacts)}/{BLOCK_LEN * BLOCK_LEN}\n{self.exacts}\n"
                             f"key:\n{self.handler.key}\n"
                             f"guess:\n{self.guess}\n")
+        self.frames.plot.correlation.clear()
         self.frames.plot.correlation.update_scale(
             self.handler,
             self.request)
+
         self.frames.plot.correlation.draw(
             self.i,
             self.j,

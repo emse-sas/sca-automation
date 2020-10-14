@@ -59,8 +59,10 @@ class CorrelationPlotFrame(DoublePlotFrame):
         self.ax1.set_xlim([self.scale[0], request.iterations * (request.chunks or 1)])
 
     def clear(self):
-        self.scale = []
         super().clear()
+
+    def reset(self):
+        self.scale = []
 
     def draw(self, i, j, key, cor, guess, maxs_graph, exacts, max_env, min_env, annotation):
         b = i * BLOCK_LEN + j
@@ -86,3 +88,4 @@ class PlotFrame(LabelFrame):
     def clear(self):
         self.acquisition.clear()
         self.correlation.clear()
+        self.correlation.reset()

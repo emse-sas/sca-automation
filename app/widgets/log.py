@@ -18,9 +18,9 @@ class LogFrame(LabelFrame):
 
     def insert_at_least(self, msg):
         self.text_log['state'] = NORMAL
-        self.text_log.tag_remove("last_insert", "1.0", "end")
-        self.text_log.insert("end", msg, "last_insert")
-        self.text_log.see("end")
+        self.text_log.tag_remove("last_insert", "1.0", END)
+        self.text_log.insert(END, msg, "last_insert")
+        self.text_log.see(END)
         self.text_log['state'] = DISABLED
 
     def overwrite_at_least(self, msg):
