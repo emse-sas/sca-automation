@@ -1,11 +1,13 @@
 from tkinter import *
 
+import matplotlib.gridspec as gridspec
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 from matplotlib.figure import Figure
 
 from lib.cpa import COUNT_HYP, Statistics
 from lib.aes import BLOCK_LEN
+
 
 def raw(ax, traces, limit=16, chunk=None):
     chunk = (chunk or 0) + 1
@@ -60,14 +62,14 @@ class PlotFrame(LabelFrame):
     def __init__(self, master, scale=None):
         super().__init__(master, text="Plots")
         self.scale = scale or []
-        self.fig = Figure(figsize=(16, 9))
-        self.ax1 = self.fig.add_subplot(2, 1, 1)
-        self.ax2 = self.fig.add_subplot(2, 1, 2)
-
+        self.gs = gridspec.GridSpec(2, 1, hspace=0.5)
+        self.fig = Figure()
+        self.ax1 = self.fig.add_subplot(self.gs[0])
+        self.ax2 = self.fig.add_subplot(self.gs[1])
         self.plot1 = None
         self.plot2 = None
         self.annotation = None
-
+        self.gs.tight_layout(self.fig)
         self.canvas = FigureCanvasTkAgg(self.fig, master=self)
         self.canvas.draw()
         self.toolbar = NavigationToolbar2Tk(self.canvas, self)
@@ -79,6 +81,7 @@ class PlotFrame(LabelFrame):
         self.ax1.clear()
         self.ax2.clear()
         self.fig.clear()
+        self.gs.tight_layout(self.fig)
         self.ax1 = self.fig.add_subplot(2, 1, 1)
         self.ax2 = self.fig.add_subplot(2, 1, 2)
         self.canvas.figure = self.fig

@@ -1,4 +1,5 @@
 import os
+from enum import Enum
 from tkinter import *
 from lib.cpa import Models
 from lib.data import Request
@@ -90,6 +91,73 @@ class ModelFrame(LabelFrame):
     def unlock(self):
         self.radio_model_sbox_r0["state"] = NORMAL
         self.radio_model_inv_sbox_r10["state"] = NORMAL
+
+
+class PlotFrame(LabelFrame):
+    class Mode(Enum):
+        STATISTICS = 0
+        CORRELATION = 1
+
+    def __init__(self, master):
+        super().__init__(master, text="Plots")
+        self._mode = PlotFrame.Mode.CORRELATION
+        self._old_mode = PlotFrame.Mode.CORRELATION
+        self._byte = None
+        self._old_byte = None
+        self.var_mode = IntVar(value=self._mode.value)
+        self.var_byte = StringVar(value=0)
+
+        self.label_byte = Label(self, text="Byte")
+        self.label_byte.grid(row=0, column=0, sticky=W, padx=4)
+        self.entry_byte = Entry(self, textvariable=self.var_byte)
+        self.entry_byte.grid(row=0, column=1, sticky=EW, padx=4)
+
+        self.radio_mode_stats = Radiobutton(self,
+                                            text="Statistics",
+                                            variable=self.var_mode,
+                                            value=0)
+        self.radio_mode_stats.grid(row=1, column=0, sticky=W, padx=4)
+
+        self.radio_mode_corr = Radiobutton(self,
+                                           text="Correlation",
+                                           variable=self.var_mode,
+                                           value=1)
+        self.radio_mode_corr.grid(row=2, column=0, sticky=W, padx=4)
+
+    def _validate_byte(self):
+        byte = None
+        try:
+            byte = int(self.var_byte.get())
+            valid = byte >= 0
+        except ValueError:
+            valid = False
+        if valid:
+            self._old_byte = self._byte
+            self._byte = byte
+        else:
+            self._byte = None
+        _set_validation_fg(self.label_byte, valid)
+        return valid
+
+    @property
+    def changed(self):
+        return ((self._old_byte or 0) != (self._byte or 0)) or (self._old_mode != self._mode)
+
+    @property
+    def mode(self):
+        return self._mode
+
+    @property
+    def byte(self):
+        return self._byte
+
+    def validate(self):
+        self.on_click()
+        return self._validate_byte()
+
+    def on_click(self):
+        self._old_mode = PlotFrame.Mode(value=self._mode.value)
+        self._mode = PlotFrame.Mode(value=self.var_mode.get())
 
 
 class GeneralFrame(LabelFrame):
@@ -194,12 +262,12 @@ class PerfsFrame(LabelFrame):
         self.label_end = Label(self, text="End")
         self.label_end.grid(row=1, column=0, sticky=W, padx=4)
         self.entry_end = Entry(self, textvariable=self.var_end)
-        self.entry_end.grid(row=1, column=1, padx=4)
+        self.entry_end.grid(row=1, column=1, sticky=W, padx=4)
 
         self.label_chunks = Label(self, text="Chunks")
         self.label_chunks.grid(row=2, column=0, sticky=W, padx=4)
         self.entry_chunks = Entry(self, textvariable=self.var_chunks)
-        self.entry_chunks.grid(row=2, column=1, padx=4)
+        self.entry_chunks.grid(row=2, column=1, sticky=W, padx=4)
 
         self.label_verbose = Label(self, text="Verbose")
         self.label_verbose.grid(row=3, column=0, sticky=W, padx=4)
@@ -352,14 +420,22 @@ class ConfigFrame(LabelFrame):
         super().__init__(master, text="Configuration")
         self.general = GeneralFrame(self)
         self.general.pack(side=TOP, expand=1, fill=BOTH)
-        self.perfs = PerfsFrame(self)
-        self.perfs.pack(side=TOP, expand=1, fill=BOTH)
+        self._lower = Frame(self)
+        self._lower.pack(side=TOP, expand=1, fill=BOTH)
+        Grid.columnconfigure(self._lower, 0, weight=2)
+        Grid.columnconfigure(self._lower, 1, weight=5)
+
+        self.perfs = PerfsFrame(self._lower)
+        self.perfs.grid(row=0, column=0, sticky=NSEW, padx=4)
+        self.plot = PlotFrame(self._lower)
+        self.plot.grid(row=0, column=1, sticky=NSEW, padx=4)
         self.file = FilesFrame(self)
         self.file.pack(side=TOP, expand=1, fill=BOTH)
 
     def validate(self):
         valid = self.general.validate()
         valid = self.perfs.validate() and valid
+        valid = self.plot.validate() and valid
         return self.file.validate() and valid
 
     def lock(self):

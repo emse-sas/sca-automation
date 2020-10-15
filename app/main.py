@@ -24,7 +24,7 @@ from lib.aes import BLOCK_LEN
 from lib.cpa import Handler, Statistics
 from lib.data import Request, Parser, Keywords
 import lib.traces as tr
-from widgets import MainFrame
+from widgets import MainFrame, config
 
 logger_format = '[%(asctime)s | %(processName)s | %(threadName)s] %(message)s'
 logging.basicConfig(stream=sys.stdout, format=logger_format, level=logging.DEBUG, datefmt="%y-%m-%d %H:%M:%S")
@@ -309,13 +309,15 @@ class App(Tk):
                 self.mean, self.spectrum, self.freq = self.queue_stats.get()
             except ValueError:
                 return
-
-            self.pending |= Pending.STATISTICS
+            if self.frames.config.plot.mode == config.PlotFrame.Mode.STATISTICS:
+                self.pending |= Pending.STATISTICS
             try:
                 self.handler, self.stats = self.queue_corr.get()
             except ValueError:
                 return
-            self.pending |= Pending.CORRELATION
+
+            if self.frames.config.plot.mode == config.PlotFrame.Mode.CORRELATION:
+                self.pending |= Pending.CORRELATION
 
             self.frames.plot.update_scale(self.handler, self.request)
 
@@ -382,6 +384,14 @@ class App(Tk):
                 self.close()
 
     async def update_state(self):
+        if self.frames.config.plot.validate() and self.frames.config.plot.changed and self.handler.iterations > 0:
+            self.i = min(self.frames.config.plot.byte // BLOCK_LEN, BLOCK_LEN - 1)
+            self.j = min(self.frames.config.plot.byte % BLOCK_LEN, BLOCK_LEN - 1)
+            if self.frames.config.plot.mode == config.PlotFrame.Mode.CORRELATION:
+                self.pending |= Pending.CORRELATION
+            elif self.frames.config.plot.mode == config.PlotFrame.Mode.STATISTICS:
+                self.pending |= Pending.STATISTICS
+
         if self.state != State.IDLE:
             if self.frames.clicked_stop and self.status & Status.PAUSE:
                 self.state = State.IDLE
