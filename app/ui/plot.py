@@ -73,25 +73,29 @@ def iterations(ax, scale, guess, key, maxs):
     _, n = maxs.shape
     ax.set(xlabel="Traces acquired", ylabel="Pearson Correlation")
     scale = scale[:n]
+    plot_key = None
+    plot_guess = None
     for h in range(COUNT_HYP):
         if h == key and h == guess:
-            ax.plot(scale, maxs[h], color="r", zorder=10)
+            plot_key, = plot_guess, = ax.plot(scale, maxs[h], color="r", zorder=10)
         elif h == key:
-            ax.plot(scale, maxs[h], color="b", zorder=10)
+            plot_key, = ax.plot(scale, maxs[h], color="b", zorder=10)
         elif h == guess:
-            ax.plot(scale, maxs[h], color="c", zorder=10)
+            plot_guess, = ax.plot(scale, maxs[h], color="c", zorder=10)
         else:
             ax.plot(scale, maxs[h], color="grey")
+    return plot_key, plot_guess
 
 
 @presented("Temporal correlation", "Time Samples", "Pearson Correlation")
 def temporal(ax, cor_guess, cor_key, guess, key, exact):
     ax.set(xlabel="Time Samples", ylabel="Pearson Correlation")
     if exact:
-        ax.plot(cor_key, color="r", label=f"key 0x{key:02x}")
+        plot_key, = plot_guess, = ax.plot(cor_key, color="r", label=f"key 0x{key:02x}")
     else:
-        ax.plot(cor_guess, color="c", label=f"guess 0x{guess:02x}")
-        ax.plot(cor_key, color="b", label=f"key 0x{key:02x}")
+        plot_guess, = ax.plot(cor_guess, color="c", label=f"guess 0x{guess:02x}")
+        plot_key, = ax.plot(cor_key, color="b", label=f"key 0x{key:02x}")
+    return plot_key, plot_guess
 
 
 @timed("plotting data", "plot successful!")

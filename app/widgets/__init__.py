@@ -16,10 +16,9 @@ class MainFrame(Frame):
         self.log.pack(side=TOP)
         self.plot = PlotFrame(master)
         self.plot.pack(side=RIGHT, expand=1, fill=Y)
-
         self.buttons = Frame(self.panel)
-        self.buttons.pack(side=TOP, expand=1, fill=BOTH)
 
+        self.buttons.pack(side=TOP, expand=1, fill=BOTH)
         self.button_launch = Button(self.buttons, text="Launch", command=self.launch)
         self.button_launch.pack(side=LEFT)
         self.button_stop = Button(self.buttons, text="Stop", command=self.stop)

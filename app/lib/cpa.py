@@ -41,6 +41,68 @@ class Models:
     INV_SBOX = 1
 
 
+class Statistics:
+    def __init__(self, handler=None):
+        self.corr = None
+        self.corr_min = None
+        self.corr_max = None
+
+        self.key = None
+        self.corr_key = []
+        self.corr_guess = []
+        self.guesses = []
+        self.exacts = []
+        self.ranks = []
+        self.maxs = []
+
+        if handler and handler.iterations > 0:
+            self.update(handler)
+
+    def update(self, handler):
+        self.corr = handler.correlations()
+        self.key = handler.key
+        guess, mx, exact, rank, corr_key, corr_guess = handler.guess_stats(self.corr, handler.key)
+        self.corr_max, self.corr_min = Handler.guess_envelope(self.corr, guess)
+        self.corr_key.append(corr_key)
+        self.corr_guess.append(corr_guess)
+        self.guesses.append(guess)
+        self.exacts.append(exact)
+        self.ranks.append(rank)
+        self.maxs.append(mx)
+
+    def clear(self):
+        self.corr = None
+        self.corr_min = None
+        self.corr_max = None
+        self.corr_key.clear()
+        self.corr_guess.clear()
+        self.guesses.clear()
+        self.exacts.clear()
+        self.ranks.clear()
+        self.maxs.clear()
+
+    def __repr__(self):
+        return f"Statistics({self.corr})"
+
+    def __str__(self):
+        ret = f"{'Byte':<8}{'Exact':<8}{'Key':<8}{'(%)':<8}{'Guess':<8}{'(%)':<8}{'Rank':<16}\n"
+        for i, j in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN)):
+            ret += f"{i * aes.BLOCK_LEN + j:<8}" \
+                   f"{bool(self.exacts[-1][i, j]):<8}" \
+                   f"{hex(self.key[i, j]):<8}{100 * self.corr_key[-1][i, j]:<5.2f}{'%':<3}" \
+                   f"{hex(self.guesses[-1][i, j]):<8}{100 * self.corr_guess[-1][i, j]:<5.2f}{'%':<3}" \
+                   f"{self.ranks[-1][i, j]:<8}\n"
+
+        return ret
+
+    @classmethod
+    def graph(cls, data):
+        data = np.array(data)
+        n = len(data.shape)
+        r = tuple(range(n))
+        return np.moveaxis(data, r, tuple([r[-1]] + list(r[:-1])))
+
+
 class Handler:
     """CPA correlation handler interface.
 
@@ -227,13 +289,17 @@ class Handler:
         correlations : Compute temporal correlation.
 
         """
-        maxs = np.amax(cor, axis=3)
-        guess = np.argmax(maxs, axis=2)
+        best = np.amax(cor, axis=3)
+        guess = np.argmax(best, axis=2)
+        rank = COUNT_HYP - np.argsort(np.argsort(best, axis=2), axis=2)
+        rank = np.array([[rank[i, j, key[i, j]] for j in range(aes.BLOCK_LEN)] for i in range(aes.BLOCK_LEN)])
+        corr_guess = np.array([[best[i, j, guess[i, j]] for j in range(aes.BLOCK_LEN)] for i in range(aes.BLOCK_LEN)])
+        corr_key = np.array([[best[i, j, key[i, j]] for j in range(aes.BLOCK_LEN)] for i in range(aes.BLOCK_LEN)])
         exact = guess == key
-        return guess, maxs, exact
+        return guess, best, exact, rank, corr_key, corr_guess
 
     @classmethod
-    def guess_envelope(cls, cor):
+    def guess_envelope(cls, cor, guess):
         """Computes the envelope of correlation.
 
         The envelope consists on two curves representing
@@ -260,5 +326,8 @@ class Handler:
         correlations : Compute temporal correlation.
 
         """
-        cor = np.moveaxis(cor, (0, 1, 2, 3), (0, 1, 3, 2))
-        return np.max(cor, axis=3), np.min(cor, axis=3)
+        env = np.moveaxis(cor.copy(), (0, 1, 2, 3), (0, 1, 3, 2))
+        for i, j in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN)):
+            env[i, j, :, guess[i, j]] -= env[i, j, :, guess[i, j]]
+
+        return np.max(env, axis=3), np.min(env, axis=3)

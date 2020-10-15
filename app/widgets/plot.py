@@ -37,13 +37,15 @@ class DoublePlotFrame(LabelFrame):
 
 class AcquisitionPlotFrame(DoublePlotFrame):
     def draw(self, mean, spectrum, freq, annotation):
+        for legend in self.fig.legends:
+            legend.remove()
         self.ax1.clear()
         self.ax2.clear()
-        self.plot1 = ui.plot.mean(self.ax1, mean)
-        self.plot2 = ui.plot.fft(self.ax2, freq, spectrum, freq)
+        self.plot1, = ui.plot.mean(self.ax1, mean)
+        self.plot2, = ui.plot.fft(self.ax2, freq, spectrum, freq)
         self.annotation = ui.plot.annotate(self.ax1, annotation)
         self.fig.suptitle("Filtered power consumptions")
-        self.fig.legend()
+        self.fig.legend((self.plot1, self.plot2), ("Temporal average", "Spectrum average"))
         self.fig.canvas.draw()
 
 
@@ -59,21 +61,21 @@ class CorrelationPlotFrame(DoublePlotFrame):
         self.ax1.set_xlim([self.scale[0], request.iterations * (request.chunks or 1)])
 
     def clear(self):
-        super().clear()
-
-    def reset(self):
         self.scale = []
+        super().clear()
 
     def draw(self, i, j, key, cor, guess, maxs_graph, exacts, max_env, min_env, annotation):
         b = i * BLOCK_LEN + j
+        for legend in self.fig.legends:
+            legend.remove()
         self.ax1.clear()
         self.ax2.clear()
-        ui.plot.iterations(self.ax1, self.scale, guess[i, j], key[i, j], maxs_graph[i, j])
+        plot_key, plot_guess = ui.plot.iterations(self.ax1, self.scale, guess[i, j], key[i, j], maxs_graph[i, j])
         self.ax2.fill_between(range(cor.shape[3]), max_env[i, j], min_env[i, j], color="grey")
         ui.plot.temporal(self.ax2, cor[i, j, guess[i, j]], cor[i, j, key[i, j]], guess[i, j], key[i, j], exacts[i, j])
         ui.plot.annotate(self.ax1, annotation)
+        self.fig.legend((plot_key, plot_guess), (f"key 0x{key[i, j]:02x}", f"guess 0x{guess[i, j]:02x}"))
         self.fig.suptitle(f"Correlation byte {b}")
-        self.fig.legend()
         self.fig.canvas.draw()
 
 
@@ -88,4 +90,3 @@ class PlotFrame(LabelFrame):
     def clear(self):
         self.acquisition.clear()
         self.correlation.clear()
-        self.correlation.reset()

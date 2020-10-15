@@ -21,7 +21,7 @@ import signal as sgl
 import ui
 from lib import cpa
 from lib.aes import BLOCK_LEN
-from lib.cpa import Handler
+from lib.cpa import Handler, Statistics
 from lib.data import Request, Parser, Keywords
 import lib.traces as tr
 from widgets import MainFrame
@@ -69,14 +69,20 @@ class AppSerial(asyncio.Protocol):
         self.t_start = None
         self.t_end = None
         self.iterations = 0
+        self.total_iterations = 0
         self.pending = False
+        self.total_size = 0
+        self.size = 0
 
     def connection_made(self, transport):
+        self.total_size = 0
+        self.size = 0
         self.transport = transport
         self.connected = True
         self.done = True
         self.pending = False
         self.iterations = 0
+        self.total_iterations = 0
         logging.info(self.transport.serial)
 
     def connection_lost(self, exc):
@@ -92,11 +98,14 @@ class AppSerial(asyncio.Protocol):
         self.buffer += data
         if self.buffer[-16:].find(Keywords.END_ACQ_TAG) != -1:
             self.t_end = time.perf_counter()
-            logging.info(f"received {len(self.buffer)} bytes in {timedelta(seconds=self.t_end - self.t_start)}")
+            self.size = len(self.buffer)
+            self.total_size += self.size
+            logging.info(f"received {self.size} bytes in {timedelta(seconds=self.t_end - self.t_start)}")
             self.done = True
             self.pending = True
         if data.find(Keywords.START_TRACE_TAG) != -1:
             self.iterations += 1
+            self.total_iterations += 1
             self.pending = True
 
     async def send(self, buffer):
@@ -107,6 +116,7 @@ class AppSerial(asyncio.Protocol):
         self.pending = False
         self.iterations = 0
         self.t_start = time.perf_counter()
+
         self.transport.serial.write(buffer + b"\r\n")
 
 
@@ -133,28 +143,23 @@ class App(Tk):
         self.request = Request()
         self.parser = Parser()
         self.handler = Handler(0)
+        self.stats = Statistics()
 
         self.state = State.IDLE
         self.pending = Pending.IDLE
 
         self.curr_chunk = None
         self.next_chunk = None
+        self.total_size = 0
+        self.size = 0
 
         self.mean = None
         self.spectrum = None
         self.freq = None
         self.trace = None
         self.traces = None
-
-        self.key = None
-        self.corr = None
-        self.guess = None
         self.maxs = None
-        self.exacts = None
-        self.max_env = None
-        self.min_env = None
-        self.maxs_graph = None
-        self.maxs_list = None
+
 
         self.serial_transport = None
         self.serial_protocol = None
@@ -259,14 +264,24 @@ class App(Tk):
                 self.traces = np.array(tr.adjust(self.parser.leak.traces, len(self.trace)))
                 self.trace += np.sum(self.traces, axis=0)
 
-            self.queue_stats.put((self.trace, self.traces, self.parser.meta.iterations))
-            self.queue_corr.put((self.handler, self.request.model, self.parser.channel, self.traces, self.maxs_list))
+            self.queue_stats.put((self.trace, self.traces, self.serial_protocol.total_iterations))
+            self.queue_corr.put((self.handler, self.stats, self.request.model, self.parser.channel, self.traces))
+            try:
+                self.mean, self.spectrum, self.freq = self.queue_stats.get()
+            except ValueError:
+                return
 
-            self.mean, self.spectrum, self.freq = self.queue_stats.get()
             self.pending |= Pending.STATISTICS
-
-            self.handler, self.corr, self.guess, self.maxs, self.exacts, self.max_env, self.min_env, self.maxs_list, self.maxs_graph = self.queue_corr.get()
+            try:
+                self.handler, self.stats, self.maxs = self.queue_corr.get()
+            except ValueError:
+                return
             self.pending |= Pending.CORRELATION
+
+            self.frames.plot.correlation.update_scale(
+                self.handler,
+                self.request)
+
             if self.curr_chunk is not None:
                 self.pending |= Pending.CHUNK
             self.t_end = time.perf_counter()
@@ -300,7 +315,7 @@ class App(Tk):
 
         while True:
             try:
-                handler, model, channel, traces, maxs_list = queue.get()
+                handler, stats, model, channel, traces = queue.get()
             except (ValueError, KeyboardInterrupt):
                 return
 
@@ -311,18 +326,11 @@ class App(Tk):
                 handler.set_blocks(channel).accumulate(traces)
             else:
                 handler = Handler(model, channel, traces)
-                maxs_list = None
-            cor = handler.correlations()
-            guess, maxs, exacts = Handler.guess_stats(cor, handler.key)
-            max_env, min_env = Handler.guess_envelope(cor)
-            if maxs_list is not None:
-                maxs_list.append(maxs)
-            else:
-                maxs_list = [maxs]
-            maxs_graph = np.moveaxis(np.array(maxs_list), (0, 1, 2, 3), (3, 0, 1, 2))
+            stats.update(handler)
+            maxs = Statistics.graph(stats.maxs)
             t_end = time.perf_counter()
             logging.info(f"{len(channel)} traces computed in {timedelta(seconds=t_end - t_start)}")
-            queue.put((handler, cor, guess, maxs, exacts, max_env, min_env, maxs_list, maxs_graph))
+            queue.put((handler, stats, maxs))
 
     async def event_loop(self, interval):
         while True:
@@ -340,7 +348,7 @@ class App(Tk):
 
             elif self.state == State.LAUNCHED:
                 if self.serial_protocol and self.serial_protocol.connected and self.serial_protocol.done:
-                    if not self.curr_chunk or self.next_chunk - self.curr_chunk == 1:
+                    if not self.next_chunk or self.next_chunk - self.curr_chunk == 1:
                         self.state = State.STARTED
                         await self.start()
 
@@ -385,7 +393,9 @@ class App(Tk):
                 self.frames.log.clear()
                 self.pending &= ~ Pending.CORRELATION
                 await self.show_corr()
-                await self.show_starting()
+                await self.show_parsing()
+                if self.state != State.IDLE:
+                    await self.show_starting()
 
             if self.pending & Pending.CHUNK:
                 self.pending &= ~ Pending.CHUNK
@@ -411,12 +421,17 @@ class App(Tk):
         logging.info("launching attack")
         self.handler.clear().set_model(self.request.model)
         self.trace = None
+        self.maxs = None
+        self.stats.clear()
+        self.t_start = time.perf_counter()
         self.curr_chunk = 0 if self.request.chunks else None
         self.next_chunk = 0 if self.request.chunks else None
 
         if self.serial_transport and self.serial_transport.serial.open:
             if self.serial_transport.serial.port != self.request.target:
                 self.serial_transport.loop.call_soon_threadsafe(self.serial_transport.close)
+            self.serial_protocol.total_iterations = 0
+            self.serial_protocol.total_size = 0
 
         if not self.serial_protocol or not self.serial_protocol.connected:
             self.queue_comm.put(True)
@@ -425,7 +440,7 @@ class App(Tk):
 
     async def start(self):
         logging.info(f"starting acquisition {(self.next_chunk or 0) + 1}/{self.request.chunks or 1}")
-        self.t_start = time.perf_counter()
+
         self.command = f"{self.request.command('sca')}"
         await self.serial_protocol.send(self.command.encode())
         self.pending |= Pending.STARTING
@@ -441,7 +456,13 @@ class App(Tk):
             self.frames.log.var_status.set("Please correct errors before launching acquisition...")
 
     async def show_serial(self):
-        msg = f"{'acquired':<16}{self.serial_protocol.iterations}/{self.request.iterations}"
+        acquired = self.serial_protocol.iterations
+        msg = f"{'acquired':<16}{acquired}/{self.request.iterations}\n"
+        t = time.perf_counter()
+        if self.curr_chunk is not None:
+            msg += f"{'requested':<16}{self.request.requested(self.next_chunk) + acquired}/{self.request.total}\n"
+        msg += f"{'speed':<16}{self.serial_protocol.total_iterations / (t - self.t_start):3.1f} i/s\n" \
+               f"{'elapsed':<16}{timedelta(seconds=int(t) - int(self.t_start))}\n"
         try:
             self.frames.log.overwrite_at_least(msg)
         except Exception as e:
@@ -459,26 +480,23 @@ class App(Tk):
         self.frames.log.log(f"* Acquisition started *\n"
                             f"{'command':<16}{self.command}\n")
         if self.curr_chunk is not None:
-            self.frames.log.log(f"{'requested':<16}{self.request.requested(self.next_chunk + 1)}/{self.request.total}\n")
             self.frames.log.log(f"{'chunk':<16}{self.next_chunk + 1}/{self.request.chunks}\n")
             self.frames.log.var_status.set(
                 f"Chunk {self.next_chunk + 1}/{self.request.chunks} started {now:the %d %b %Y at %H:%M:%S}")
         else:
             self.frames.log.var_status.set(f"Acquisition started {now:the %d %b %Y at %H:%M:%S}")
 
-        self.frames.log.insert_at_least(f"waiting target's answer...\n")
-
     async def show_parsing(self):
         now = datetime.now()
         parsed = len(self.parser.channel)
         self.frames.log.log(
             f"* Traces parsed *\n"
-            f"{'size':<16}{ui.sizeof(len(self.serial_protocol.buffer))}\n"
-            f"{'parsed':<16}{parsed}/{self.request.iterations}\n")
+            f"{'parsed':<16}{parsed}/{self.request.iterations}\n"
+            f"{'size':<16}{ui.sizeof(self.serial_protocol.size)}/{ui.sizeof(self.serial_protocol.total_size)}\n")
         if self.curr_chunk is not None:
             self.frames.log.log(
                 f"{'chunk':<16}{self.curr_chunk + 1}/{self.request.chunks}\n"
-                f"{'total':<16}{self.handler.iterations + parsed}/{self.request.total}\n")
+                f"{'total':<16}{self.handler.iterations}/{self.request.total}\n")
             self.frames.log.var_status.set(
                 f"Chunk {self.curr_chunk + 1}/{self.request.chunks} processing started {now:the %d %b %Y at %H:%M:%S}"
             )
@@ -493,7 +511,6 @@ class App(Tk):
         msg = f"Chunk {self.curr_chunk + 1}/{self.request.chunks} statistics computed {now:the %d %b %Y at %H:%M:%S}" \
             if self.curr_chunk is not None else f"Statistics computed {now:the %d %b %Y at %H:%M:%S}"
         self.frames.log.var_status.set(msg)
-        self.frames.plot.acquisition.clear()
         self.frames.plot.acquisition.draw(
             self.mean,
             self.spectrum,
@@ -502,31 +519,29 @@ class App(Tk):
 
     async def show_corr(self):
         now = datetime.now()
-        annotation = f"imported: {self.handler.iterations}\n" \
+        """
+                annotation = f"imported: {self.handler.iterations}\n" \
                      f"guess correlation: {100 * self.maxs[self.i, self.j, self.guess[self.i, self.j]]:.2f}%\n" \
                      f"key correlation: {100 * self.maxs[self.i, self.j, self.handler.key[self.i, self.j]]:.2f}%\n" \
                      f"{self.request}"
+        """
+
         msg = f"Chunk {self.curr_chunk + 1}/{self.request.chunks} correlation computed {now:the %d %b %Y at %H:%M:%S}" \
             if self.curr_chunk is not None else f"Correlation computed {now:the %d %b %Y at %H:%M:%S}"
         self.frames.log.var_status.set(msg)
-        self.frames.log.log(f"exacts: {np.count_nonzero(self.exacts)}/{BLOCK_LEN * BLOCK_LEN}\n{self.exacts}\n"
-                            f"key:\n{self.handler.key}\n"
-                            f"guess:\n{self.guess}\n")
-        self.frames.plot.correlation.clear()
-        self.frames.plot.correlation.update_scale(
-            self.handler,
-            self.request)
-
+        self.frames.log.log(f"* Correlation computed *\n"
+                            f"{'exacts':<16}{np.count_nonzero(self.stats.exacts[-1])}/{BLOCK_LEN * BLOCK_LEN}\n"
+                            f"{self.stats}\n")
         self.frames.plot.correlation.draw(
             self.i,
             self.j,
             self.handler.key,
-            self.corr,
-            self.guess,
-            self.maxs_graph,
-            self.exacts,
-            self.max_env,
-            self.min_env,
+            self.stats.corr,
+            self.stats.guesses[-1],
+            self.maxs,
+            self.stats.exacts[-1],
+            self.stats.corr_max,
+            self.stats.corr_min,
             "")
 
 
@@ -536,7 +551,8 @@ if __name__ == "__main__":
     app.title("SCABox Demo")
     try:
         lo.run_forever()
-    except KeyboardInterrupt:
+    except Exception as e:
+        logging.error(e)
         app.close()
 
     lo.close()
