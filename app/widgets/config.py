@@ -368,9 +368,9 @@ class ConfigFrame(LabelFrame):
         self.file.lock()
 
     def unlock(self):
-        self.general.lock()
-        self.perfs.lock()
-        self.file.lock()
+        self.general.unlock()
+        self.perfs.unlock()
+        self.file.unlock()
 
     def clear(self):
         self.general.clear()

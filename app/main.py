@@ -49,6 +49,8 @@ class Pending(Flag):
     STATISTICS = auto()
     CORRELATION = auto()
     CHUNK = auto()
+    DONE = auto()
+    STOP = auto()
     PAUSE = auto()
 
 
@@ -246,8 +248,8 @@ class App(Tk):
                         timeout=10)
                     self.serial_transport, self.serial_protocol = self.loop_com.run_until_complete(coro)
                     self.loop_com.run_forever()
-                except Exception as e:
-                    logging.info(e)
+                except Exception as err:
+                    logging.info(err)
                     continue
 
     def computation(self):
@@ -273,6 +275,19 @@ class App(Tk):
                 return
             else:
                 logging.info(f"{parsed} traces parsed in {timedelta(seconds=t_end - t_start)}")
+
+            try:
+                append = self.request.chunks is not None
+                suffix = f"_{self.curr_chunk}.bin" if self.curr_chunk is not None else ".bin"
+                with open(os.path.join(self.request.path, self.request.filename(suffix=suffix), "wb+")) as file:
+                    file.write(self.serial_protocol.buffer)
+                self.parser.channel.write_csv(os.path.join(self.path, self.request.filename("channel", ".csv")), append)
+                self.parser.leak.write_csv(os.path.join(self.path, self.request.filename("leak", ".csv")), append)
+                self.parser.meta.write_csv(os.path.join(self.path, self.request.filename("meta", ".csv")), append)
+                self.parser.noise.write_csv(os.path.join(self.path, self.request.filename("noise", ".csv")), append)
+                logging.info(f"traces successfully saved {(self.next_chunk or 0) + 1}/{self.request.chunks or 1}")
+            except OSError as err:
+                logging.error(f"error occurred during saving: {err}")
 
             if self.trace is None:
                 self.traces = np.array(tr.adjust(self.parser.leak.traces))
@@ -349,9 +364,24 @@ class App(Tk):
             logging.info(f"{len(channel)} traces computed in {timedelta(seconds=t_end - t_start)}")
             queue.put((handler, stats, maxs))
 
+    async def event_loop(self, interval):
+        while True:
+            try:
+                self.update()
+                await self.update_state()
+                await self.acknowledge_pending()
+                self.frames.clicked_launch = False
+                self.frames.clicked_stop = False
+                await asyncio.sleep(interval)
+            except Exception as err:
+                logging.error(f"fatal error occurred `{err}`:\n{traceback.format_exc()}")
+                self.close()
+                return
+
     async def update_state(self):
         if self.frames.clicked_stop and self.pending & Pending.PAUSE:
             self.state = State.IDLE
+            self.pending |= Pending.STOP
         elif self.frames.clicked_stop:
             self.pending |= Pending.PAUSE
             await self.stop()
@@ -406,6 +436,7 @@ class App(Tk):
                 self.state = State.LAUNCHED
             else:
                 self.state = State.IDLE
+                self.pending |= Pending.DONE
             self.queue_comp.put(True)
 
     async def acknowledge_pending(self):
@@ -452,19 +483,13 @@ class App(Tk):
             self.pending &= ~ Pending.CHUNK
             self.curr_chunk += 1
 
-    async def event_loop(self, interval):
-        while True:
-            try:
-                self.update()
-                await self.update_state()
-                await self.acknowledge_pending()
-                self.frames.clicked_launch = False
-                self.frames.clicked_stop = False
-                await asyncio.sleep(interval)
-            except Exception as err:
-                logging.error(f"fatal error occurred `{err}`:\n{traceback.format_exc()}")
-                self.close()
-                return
+        if self.pending & Pending.DONE:
+            self.frames.config.unlock()
+            self.pending &= ~ Pending.DONE
+
+        if self.pending & Pending.STOP:
+            self.frames.config.unlock()
+            self.pending &= ~ Pending.STOP
 
     def _validate(self):
         if not self.frames.config.validate():
@@ -527,6 +552,7 @@ class App(Tk):
             self.frames.log.insert_at_least(msg)
 
     async def show_launching(self):
+        self.frames.config.lock()
         self.frames.log.log(f"* Attack launched *\n"
                             f"{self.request}\n"
                             f"connecting to target...\n")
