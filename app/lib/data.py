@@ -881,7 +881,7 @@ class Parser:
     def __parse_line(self, line, expected, keywords, noise):
         split = line.strip().split(Keywords.DELIMITER)
         try:
-            keyword = str(split[0], "ascii").strip()
+            keyword = str(split[0], "ascii").strip().split(" ")[-1]
             data = split[1].strip()
         except IndexError:
             return False

@@ -29,7 +29,7 @@ from widgets import MainFrame
 plt.rcParams["figure.figsize"] = (16, 4)
 plt.rcParams["figure.titlesize"] = "x-large"
 logger_format = '[%(asctime)s | %(processName)s | %(threadName)s] %(message)s'
-logging.basicConfig(stream=sys.stdout, format=logger_format, level=logging.INFO, datefmt="%y-%m-%d %H:%M:%S")
+logging.basicConfig(stream=sys.stdout, format=logger_format, level=logging.DEBUG, datefmt="%y-%m-%d %H:%M:%S")
 
 
 class State(Enum):
@@ -37,18 +37,19 @@ class State(Enum):
     LAUNCHED = 1
     STARTED = 2
     ACQUIRED = 3
-    WAIT = 4
 
 
 class Pending(Flag):
     IDLE = auto()
     VALID = auto()
     STARTING = auto()
+    CONNECTING = auto()
     LAUNCHING = auto()
     PARSING = auto()
     STATISTICS = auto()
     CORRELATION = auto()
     CHUNK = auto()
+    PAUSE = auto()
 
 
 def show_error(*args):
@@ -64,23 +65,26 @@ class AppSerial(asyncio.Protocol):
         self.buffer = bytearray()
         self.transport = None
         self.connected = False
-        self.done = True
+        self.done = False
+        self.pending = False
+        self.paused = False
         self.terminator = Keywords.END_ACQ_TAG
         self.t_start = None
         self.t_end = None
         self.iterations = 0
         self.total_iterations = 0
-        self.pending = False
         self.total_size = 0
         self.size = 0
 
     def connection_made(self, transport):
         self.total_size = 0
         self.size = 0
+        self.buffer.clear()
         self.transport = transport
         self.connected = True
-        self.done = True
+        self.done = False
         self.pending = False
+        self.paused = False
         self.iterations = 0
         self.total_iterations = 0
         logging.info(self.transport.serial)
@@ -88,11 +92,24 @@ class AppSerial(asyncio.Protocol):
     def connection_lost(self, exc):
         self.connected = False
         self.done = False
+        self.paused = False
         self.transport.serial.close()
         self.transport.loop.stop()
         logging.info(self.transport.serial)
         if exc:
             logging.warning(exc)
+
+    def pause_reading(self):
+        self.transport.pause_reading()
+        self.paused = True
+        logging.info(self.transport.serial)
+        logging.info("reading paused...")
+
+    def resume_reading(self):
+        self.transport.resume_reading()
+        self.paused = False
+        logging.info(self.transport.serial)
+        logging.info("resuming reading...")
 
     def data_received(self, data):
         self.buffer += data
@@ -147,6 +164,7 @@ class App(Tk):
 
         self.state = State.IDLE
         self.pending = Pending.IDLE
+        self.paused = False
 
         self.curr_chunk = None
         self.next_chunk = None
@@ -159,7 +177,6 @@ class App(Tk):
         self.trace = None
         self.traces = None
         self.maxs = None
-
 
         self.serial_transport = None
         self.serial_protocol = None
@@ -182,9 +199,9 @@ class App(Tk):
         self.frames.log.log("*** Welcome to SCABox demo ***\n")
 
     def close(self):
-        if self.serial_transport is not None:
-            self.serial_transport.loop.call_soon_threadsafe(self.serial_transport.close)
         self.queue_comm.put(False)
+        if self.serial_transport is not None and self.serial_transport.loop:
+            self.serial_transport.loop.call_soon_threadsafe(self.serial_transport.close)
         self.thread_comm.join()
         self.queue_comm.close()
         logging.info(self.thread_comm)
@@ -332,76 +349,122 @@ class App(Tk):
             logging.info(f"{len(channel)} traces computed in {timedelta(seconds=t_end - t_start)}")
             queue.put((handler, stats, maxs))
 
-    async def event_loop(self, interval):
-        while True:
-            self.update()
+    async def update_state(self):
+        if self.frames.clicked_stop and self.pending & Pending.PAUSE:
+            self.state = State.IDLE
+        elif self.frames.clicked_stop:
+            self.pending |= Pending.PAUSE
+            await self.stop()
+        elif self.frames.clicked_launch and self.pending & Pending.PAUSE:
+            self.pending &= ~Pending.PAUSE
 
-            if self.state == State.IDLE:
-                self.pending |= Pending.IDLE
-                self.pending &= ~Pending.VALID
-                if self._validate():
-                    self.pending |= Pending.VALID
-                    if self.frames.clicked_launch:
-                        self.frames.clicked_launch = False
-                        self.state = State.LAUNCHED
-                        await self.launch()
+        if self.state == State.IDLE:
+            try:
+                valid = self._validate()
+            except TclError as err:
+                logging.warning(f"error occurred during validation {err}")
+                valid = False
+            self.pending |= Pending.IDLE | (Pending.VALID if valid else Pending.IDLE)
+            if self.frames.clicked_launch and valid:
+                self.state = State.LAUNCHED
+                self.pending |= Pending.LAUNCHING
+                await self.launch()
 
-            elif self.state == State.LAUNCHED:
-                if self.serial_protocol and self.serial_protocol.connected and self.serial_protocol.done:
-                    if not self.next_chunk or self.next_chunk - self.curr_chunk == 1:
-                        self.state = State.STARTED
-                        await self.start()
+        elif self.state == State.LAUNCHED:
+            if self.pending & Pending.PAUSE:
+                self.state = State.IDLE
+                self.pending &= ~Pending.PAUSE
+                return
 
-            elif self.state == State.STARTED:
-                if self.serial_protocol.done:
-                    self.state = State.ACQUIRED
+            if self.serial_protocol and self.serial_protocol.connected:
+                if not self.next_chunk or (
+                        self.next_chunk - self.curr_chunk <= 1 and self.serial_protocol.done):
+                    self.state = State.STARTED
+                    self.pending |= Pending.STARTING
+                    await self.start()
+            else:
+                self.pending |= Pending.CONNECTING
 
-            elif self.state == State.ACQUIRED:
-                if self.curr_chunk is not None and self.next_chunk < self.request.chunks - 1:
-                    self.next_chunk += 1
-                    self.state = State.LAUNCHED
-                else:
-                    self.state = State.IDLE
-                self.queue_comp.put(True)
+        elif self.state == State.STARTED:
+            if not self.serial_protocol.connected:
+                self.state = State.LAUNCHED
+                self.pending |= Pending.CONNECTING
+                self.pending |= Pending.LAUNCHING
+                return
 
-            if self.serial_protocol and self.serial_protocol.pending:
-                self.serial_protocol.pending = False
-                await self.show_serial()
+            if self.pending & Pending.PAUSE and not self.serial_protocol.paused:
+                self.serial_protocol.pause_reading()
+            elif ~self.pending & Pending.PAUSE and self.serial_protocol.paused:
+                self.serial_protocol.resume_reading()
 
-            if self.pending & Pending.IDLE:
-                self.pending &= ~ Pending.IDLE
-                await self.show_idle()
+            if not self.serial_protocol.paused and self.serial_protocol.done:
+                self.state = State.ACQUIRED
 
-            if self.pending & Pending.LAUNCHING:
+        elif self.state == State.ACQUIRED:
+            if self.curr_chunk is not None and self.next_chunk < self.request.chunks - 1:
+                self.next_chunk += 1
+                self.state = State.LAUNCHED
+            else:
+                self.state = State.IDLE
+            self.queue_comp.put(True)
+
+    async def acknowledge_pending(self):
+        if self.serial_protocol and self.serial_protocol.pending:
+            self.serial_protocol.pending = False
+            await self.show_serial()
+
+        if self.pending & Pending.IDLE:
+            self.pending &= ~ Pending.IDLE
+            await self.show_idle()
+
+        if self.pending & Pending.LAUNCHING:
+            if not self.curr_chunk:
+                self.frames.plot.clear()
                 self.frames.log.clear()
-                self.pending &= ~ Pending.LAUNCHING
-                await self.show_launching()
+            self.pending &= ~ Pending.LAUNCHING
+            await self.show_launching()
 
-            if self.pending & Pending.STARTING:
-                self.pending &= ~ Pending.STARTING
+        if self.pending & Pending.STARTING:
+            self.pending &= ~ Pending.STARTING
+            await self.show_starting()
+
+        if self.pending & Pending.PARSING:
+            self.pending &= ~ Pending.PARSING
+            await self.show_parsing()
+
+        if self.pending & Pending.STATISTICS:
+            self.pending &= ~ Pending.STATISTICS
+            await self.show_stats()
+
+        if self.pending & Pending.CORRELATION:
+            self.frames.log.clear()
+            self.pending &= ~ Pending.CORRELATION
+            await self.show_corr()
+            await self.show_parsing()
+            if self.state != State.IDLE:
                 await self.show_starting()
 
-            if self.pending & Pending.PARSING:
-                self.pending &= ~ Pending.PARSING
-                await self.show_parsing()
+        if self.pending & Pending.CONNECTING:
+            self.pending &= ~ Pending.CONNECTING
+            self.queue_comm.put(True)
 
-            if self.pending & Pending.STATISTICS:
-                self.pending &= ~ Pending.STATISTICS
-                await self.show_stats()
+        if self.pending & Pending.CHUNK:
+            self.pending &= ~ Pending.CHUNK
+            self.curr_chunk += 1
 
-            if self.pending & Pending.CORRELATION:
-                self.frames.log.clear()
-                self.pending &= ~ Pending.CORRELATION
-                await self.show_corr()
-                await self.show_parsing()
-                if self.state != State.IDLE:
-                    await self.show_starting()
-
-            if self.pending & Pending.CHUNK:
-                self.pending &= ~ Pending.CHUNK
-                self.curr_chunk += 1
-
-            await asyncio.sleep(interval)
+    async def event_loop(self, interval):
+        while True:
+            try:
+                self.update()
+                await self.update_state()
+                await self.acknowledge_pending()
+                self.frames.clicked_launch = False
+                self.frames.clicked_stop = False
+                await asyncio.sleep(interval)
+            except Exception as err:
+                logging.error(f"fatal error occurred `{err}`:\n{traceback.format_exc()}")
+                self.close()
+                return
 
     def _validate(self):
         if not self.frames.config.validate():
@@ -418,7 +481,7 @@ class App(Tk):
         return True
 
     async def launch(self):
-        logging.info("launching attack")
+        logging.info("launching attack...")
         self.handler.clear().set_model(self.request.model)
         self.trace = None
         self.maxs = None
@@ -426,24 +489,19 @@ class App(Tk):
         self.t_start = time.perf_counter()
         self.curr_chunk = 0 if self.request.chunks else None
         self.next_chunk = 0 if self.request.chunks else None
-
-        if self.serial_transport and self.serial_transport.serial.open:
-            if self.serial_transport.serial.port != self.request.target:
-                self.serial_transport.loop.call_soon_threadsafe(self.serial_transport.close)
+        if self.serial_protocol:
             self.serial_protocol.total_iterations = 0
             self.serial_protocol.total_size = 0
-
-        if not self.serial_protocol or not self.serial_protocol.connected:
-            self.queue_comm.put(True)
-
-        self.pending |= Pending.LAUNCHING
+            if self.serial_transport.serial.port != self.request.target:
+                self.serial_transport.loop.call_soon_threadsafe(self.serial_transport.close)
+                self.pending |= Pending.CONNECTING
+        else:
+            self.pending |= Pending.CONNECTING
 
     async def start(self):
         logging.info(f"starting acquisition {(self.next_chunk or 0) + 1}/{self.request.chunks or 1}")
-
         self.command = f"{self.request.command('sca')}"
         await self.serial_protocol.send(self.command.encode())
-        self.pending |= Pending.STARTING
 
     async def stop(self):
         self.t_end = time.perf_counter()
@@ -465,12 +523,10 @@ class App(Tk):
                f"{'elapsed':<16}{timedelta(seconds=int(t) - int(self.t_start))}\n"
         try:
             self.frames.log.overwrite_at_least(msg)
-        except Exception as e:
-            logging.warning(e)
+        except IndexError:
             self.frames.log.insert_at_least(msg)
 
     async def show_launching(self):
-        self.frames.plot.clear()
         self.frames.log.log(f"* Attack launched *\n"
                             f"{self.request}\n"
                             f"connecting to target...\n")
