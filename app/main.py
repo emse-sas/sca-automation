@@ -26,8 +26,6 @@ from lib.data import Request, Parser, Keywords
 import lib.traces as tr
 from widgets import MainFrame
 
-plt.rcParams["figure.figsize"] = (16, 4)
-plt.rcParams["figure.titlesize"] = "x-large"
 logger_format = '[%(asctime)s | %(processName)s | %(threadName)s] %(message)s'
 logging.basicConfig(stream=sys.stdout, format=logger_format, level=logging.DEBUG, datefmt="%y-%m-%d %H:%M:%S")
 
@@ -161,10 +159,10 @@ class App(Tk):
         self.queue_corr = mp.Queue(1)
         self.queue_comp = mp.Queue(1)
         self.queue_comm = mp.Queue(1)
-        self.process_stats = mp.Process(target=App.statistics, args=(self.queue_stats,), name="p.statistics")
-        self.process_corr = mp.Process(target=App.correlation, args=(self.queue_corr,), name="p.correlation")
-        self.thread_comp = th.Thread(target=self.computation, name="t.computation")
-        self.thread_comm = th.Thread(target=self.communication, name="t.communication")
+        self.process_stats = mp.Process(target=App.statistics, args=(self.queue_stats,), name="p.stats")
+        self.process_corr = mp.Process(target=App.correlation, args=(self.queue_corr,), name="p.corr")
+        self.thread_comp = th.Thread(target=self.computation, name="t.comp")
+        self.thread_comm = th.Thread(target=self.communication, name="t.comm")
 
         self.command = ""
         self.request = Request()
@@ -287,16 +285,13 @@ class App(Tk):
             try:
                 append = self.request.chunks is not None
                 suffix = f"_{self.curr_chunk}.bin" if self.curr_chunk is not None else ".bin"
+                path = self.request.path
                 with open(os.path.join(self.request.path, self.request.filename(suffix=suffix)), "wb+") as file:
                     file.write(self.serial_protocol.buffer)
-                self.parser.channel.write_csv(os.path.join(self.request.path, self.request.filename("channel", ".csv")),
-                                              append)
-                self.parser.leak.write_csv(os.path.join(self.request.path, self.request.filename("leak", ".csv")),
-                                           append)
-                self.parser.meta.write_csv(os.path.join(self.request.path, self.request.filename("meta", ".csv")),
-                                           append)
-                self.parser.noise.write_csv(os.path.join(self.request.path, self.request.filename("noise", ".csv")),
-                                            append)
+                self.parser.channel.write_csv(os.path.join(path, self.request.filename("channel", ".csv")), append)
+                self.parser.leak.write_csv(os.path.join(path, self.request.filename("leak", ".csv")), append)
+                self.parser.meta.write_csv(os.path.join(path, self.request.filename("meta", ".csv")), append)
+                self.parser.noise.write_csv(os.path.join(path, self.request.filename("noise", ".csv")), append)
                 logging.info(f"traces successfully saved {(self.curr_chunk or 0) + 1}/{self.request.chunks or 1}")
             except OSError as err:
                 logging.error(f"error occurred during saving: {err}")
@@ -317,14 +312,12 @@ class App(Tk):
 
             self.pending |= Pending.STATISTICS
             try:
-                self.handler, self.stats, self.maxs = self.queue_corr.get()
+                self.handler, self.stats = self.queue_corr.get()
             except ValueError:
                 return
             self.pending |= Pending.CORRELATION
 
-            self.frames.plot.correlation.update_scale(
-                self.handler,
-                self.request)
+            self.frames.plot.update_scale(self.handler, self.request)
 
             if self.curr_chunk is not None:
                 self.pending |= Pending.CHUNK
@@ -371,10 +364,9 @@ class App(Tk):
             else:
                 handler = Handler(model, channel, traces)
             stats.update(handler)
-            maxs = Statistics.graph(stats.maxs)
             t_end = time.perf_counter()
             logging.info(f"{len(channel)} traces computed in {timedelta(seconds=t_end - t_start)}")
-            queue.put((handler, stats, maxs))
+            queue.put((handler, stats))
 
     async def event_loop(self, interval):
         while True:
@@ -409,7 +401,7 @@ class App(Tk):
                 logging.warning(f"error occurred during validation {err}")
                 valid = False
 
-            if (not valid and self.status & Status.VALID) or (valid and ~(self.status & Status.VALID)):
+            if ((not valid) and self.status & Status.VALID) or (valid and not (self.status & Status.VALID)):
                 self.pending |= Pending.IDLE
             self.status = self.status | Status.VALID if valid else self.status & ~Status.VALID
             if self.frames.clicked_launch and valid:
@@ -468,6 +460,8 @@ class App(Tk):
                 self.frames.plot.clear()
                 self.frames.log.clear()
             self.frames.lock_launch()
+            self.frames.config.lock()
+            self.frames.button_stop.focus_set()
             await self.show_launching()
 
         if self.pending & Pending.STARTING:
@@ -553,9 +547,9 @@ class App(Tk):
             self.pending |= Pending.CONNECTING
 
     async def start(self):
-        logging.info(f"starting acquisition {(self.next_chunk or 0) + 1}/{self.request.chunks or 1}")
         self.command = f"{self.request.command('sca')}"
         await self.serial_protocol.send(self.command.encode())
+        logging.info(f"starting acquisition {(self.next_chunk or 0) + 1}/{self.request.chunks or 1}")
 
     async def stop(self):
         self.t_end = time.perf_counter()
@@ -578,85 +572,61 @@ class App(Tk):
             msg += f"{'requested':<16}{self.request.requested(self.next_chunk) + acquired}/{self.request.total}\n"
         msg += f"{'speed':<16}{self.serial_protocol.total_iterations / (t - self.t_start):3.1f} i/s\n" \
                f"{'elapsed':<16}{timedelta(seconds=int(t) - int(self.t_start))}\n"
-        try:
-            self.frames.log.overwrite_at_least(msg)
-        except IndexError:
-            self.frames.log.insert_at_least(msg)
+        self.frames.log.update_text_status(msg)
 
     async def show_launching(self):
-        self.frames.config.lock()
         self.frames.log.log(f"* Attack launched *\n"
                             f"{self.request}\n"
                             f"connecting to target...\n")
 
     async def show_starting(self):
-        now = datetime.now()
+        now = f"{datetime.now():the %d %b %Y at %H:%M:%S}"
         self.frames.log.log(f"* Acquisition started *\n"
                             f"{'command':<16}{self.command}\n")
         if self.curr_chunk is not None:
             self.frames.log.log(f"{'chunk':<16}{self.next_chunk + 1}/{self.request.chunks}\n")
-            self.frames.log.var_status.set(
-                f"Chunk {self.next_chunk + 1}/{self.request.chunks} started {now:the %d %b %Y at %H:%M:%S}")
+            self.frames.log.var_status.set(f"Chunk {self.next_chunk + 1}/{self.request.chunks} started {now}")
         else:
-            self.frames.log.var_status.set(f"Acquisition started {now:the %d %b %Y at %H:%M:%S}")
+            self.frames.log.var_status.set(f"Acquisition started {now}")
 
     async def show_parsing(self):
-        now = datetime.now()
+        now = f"{datetime.now():the %d %b %Y at %H:%M:%S}"
         parsed = len(self.parser.channel)
         self.frames.log.log(
             f"* Traces parsed *\n"
             f"{'parsed':<16}{parsed}/{self.request.iterations}\n"
-            f"{'size':<16}{ui.sizeof(self.serial_protocol.size)}/{ui.sizeof(self.serial_protocol.total_size)}\n")
+            f"{'size':<16}{ui.sizeof(self.serial_protocol.size):<8}/{ui.sizeof(self.serial_protocol.total_size):<8}\n")
         if self.curr_chunk is not None:
             self.frames.log.log(
                 f"{'chunk':<16}{self.curr_chunk + 1}/{self.request.chunks}\n"
                 f"{'total':<16}{self.handler.iterations}/{self.request.total}\n")
             self.frames.log.var_status.set(
-                f"Chunk {self.curr_chunk + 1}/{self.request.chunks} processing started {now:the %d %b %Y at %H:%M:%S}"
+                f"Chunk {self.curr_chunk + 1}/{self.request.chunks} processing started {now}"
             )
         else:
-            self.frames.log.var_status.set(f"Processing started {now:the %d %b %Y at %H:%M:%S}")
+            self.frames.log.var_status.set(f"Processing started {now}")
 
     async def show_stats(self):
-        now = datetime.now()
-        annotation = f"{'samples':<16}{self.traces.shape[1]}\n" \
-                     f"{self.request}\n" \
-                     f"{self.parser.meta}"
-        msg = f"Chunk {self.curr_chunk + 1}/{self.request.chunks} statistics computed {now:the %d %b %Y at %H:%M:%S}" \
-            if self.curr_chunk is not None else f"Statistics computed {now:the %d %b %Y at %H:%M:%S}"
+        now = f"{datetime.now():the %d %b %Y at %H:%M:%S}"
+        if self.curr_chunk is not None:
+            msg = f"Chunk {self.curr_chunk + 1}/{self.request.chunks} statistics computed {now}"
+        else:
+            msg = f"Statistics computed {now}"
         self.frames.log.var_status.set(msg)
-        self.frames.plot.acquisition.draw(
-            self.mean,
-            self.spectrum,
-            self.freq,
-            "")
+        self.frames.plot.draw_stats((self.mean, self.spectrum, self.freq))
 
     async def show_corr(self):
-        now = datetime.now()
-        """
-                annotation = f"imported: {self.handler.iterations}\n" \
-                     f"guess correlation: {100 * self.maxs[self.i, self.j, self.guess[self.i, self.j]]:.2f}%\n" \
-                     f"key correlation: {100 * self.maxs[self.i, self.j, self.handler.key[self.i, self.j]]:.2f}%\n" \
-                     f"{self.request}"
-        """
+        now = f"{datetime.now():the %d %b %Y at %H:%M:%S}"
+        if self.curr_chunk is not None:
+            msg = f"Chunk {self.curr_chunk + 1}/{self.request.chunks} correlation computed {now}"
+        else:
+            msg = f"Correlation computed {now}"
 
-        msg = f"Chunk {self.curr_chunk + 1}/{self.request.chunks} correlation computed {now:the %d %b %Y at %H:%M:%S}" \
-            if self.curr_chunk is not None else f"Correlation computed {now:the %d %b %Y at %H:%M:%S}"
         self.frames.log.var_status.set(msg)
         self.frames.log.log(f"* Correlation computed *\n"
                             f"{'exacts':<16}{np.count_nonzero(self.stats.exacts[-1])}/{BLOCK_LEN * BLOCK_LEN}\n"
                             f"{self.stats}\n")
-        self.frames.plot.correlation.draw(
-            self.i,
-            self.j,
-            self.handler.key,
-            self.stats.corr,
-            self.stats.guesses[-1],
-            self.maxs,
-            self.stats.exacts[-1],
-            self.stats.corr_max,
-            self.stats.corr_min,
-            "")
+        self.frames.plot.draw_corr(self.stats, (self.i, self.j))
 
 
 if __name__ == "__main__":
