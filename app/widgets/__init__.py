@@ -32,3 +32,9 @@ class MainFrame(Frame):
 
     def stop(self):
         self.clicked_stop = True
+
+    def lock_launch(self):
+        self.button_launch['state'] = DISABLED
+
+    def unlock_launch(self):
+        self.button_launch['state'] = NORMAL

@@ -52,6 +52,7 @@ class Pending(Flag):
     DONE = auto()
     STOP = auto()
     PAUSE = auto()
+    RESUME = auto()
 
 
 def show_error(*args):
@@ -279,7 +280,7 @@ class App(Tk):
             try:
                 append = self.request.chunks is not None
                 suffix = f"_{self.curr_chunk}.bin" if self.curr_chunk is not None else ".bin"
-                with open(os.path.join(self.request.path, self.request.filename(suffix=suffix), "wb+")) as file:
+                with open(os.path.join(self.request.path, self.request.filename(suffix=suffix)), "wb+") as file:
                     file.write(self.serial_protocol.buffer)
                 self.parser.channel.write_csv(os.path.join(self.path, self.request.filename("channel", ".csv")), append)
                 self.parser.leak.write_csv(os.path.join(self.path, self.request.filename("leak", ".csv")), append)
@@ -376,17 +377,19 @@ class App(Tk):
             except Exception as err:
                 logging.error(f"fatal error occurred `{err}`:\n{traceback.format_exc()}")
                 self.close()
-                return
 
     async def update_state(self):
-        if self.frames.clicked_stop and self.pending & Pending.PAUSE:
-            self.state = State.IDLE
-            self.pending |= Pending.STOP
-        elif self.frames.clicked_stop:
-            self.pending |= Pending.PAUSE
-            await self.stop()
-        elif self.frames.clicked_launch and self.pending & Pending.PAUSE:
-            self.pending &= ~Pending.PAUSE
+        if self.state != State.IDLE:
+            if self.frames.clicked_stop and self.pending & Pending.PAUSE:
+                self.state = State.IDLE
+                self.pending |= Pending.STOP
+                self.pending &= ~Pending.PAUSE
+            elif self.frames.clicked_stop:
+                self.pending |= Pending.PAUSE
+                await self.stop()
+            elif self.frames.clicked_launch and self.pending & Pending.PAUSE:
+                self.pending |= Pending.RESUME
+                self.pending &= ~Pending.PAUSE
 
         if self.state == State.IDLE:
             try:
@@ -394,7 +397,12 @@ class App(Tk):
             except TclError as err:
                 logging.warning(f"error occurred during validation {err}")
                 valid = False
-            self.pending |= Pending.IDLE | (Pending.VALID if valid else Pending.IDLE)
+            self.pending |= Pending.IDLE
+            if valid:
+                self.pending |= Pending.VALID
+            else:
+                self.pending &= ~Pending.VALID
+
             if self.frames.clicked_launch and valid:
                 self.state = State.LAUNCHED
                 self.pending |= Pending.LAUNCHING
@@ -403,6 +411,7 @@ class App(Tk):
         elif self.state == State.LAUNCHED:
             if self.pending & Pending.PAUSE:
                 self.state = State.IDLE
+                self.pending |= Pending.STOP
                 self.pending &= ~Pending.PAUSE
                 return
 
@@ -411,6 +420,7 @@ class App(Tk):
                         self.next_chunk - self.curr_chunk <= 1 and self.serial_protocol.done):
                     self.state = State.STARTED
                     self.pending |= Pending.STARTING
+                    self.pending |= Pending.RESUME
                     await self.start()
             else:
                 self.pending |= Pending.CONNECTING
@@ -446,12 +456,20 @@ class App(Tk):
 
         if self.pending & Pending.IDLE:
             self.pending &= ~ Pending.IDLE
+            if self.pending & Pending.VALID:
+                self.frames.unlock_launch()
+            else:
+                self.frames.lock_launch()
             await self.show_idle()
+
+        if self.pending & Pending.VALID:
+            await self.show_valid()
 
         if self.pending & Pending.LAUNCHING:
             if not self.curr_chunk:
                 self.frames.plot.clear()
                 self.frames.log.clear()
+            self.frames.lock_launch()
             self.pending &= ~ Pending.LAUNCHING
             await self.show_launching()
 
@@ -485,11 +503,20 @@ class App(Tk):
 
         if self.pending & Pending.DONE:
             self.frames.config.unlock()
+            self.frames.unlock_launch()
             self.pending &= ~ Pending.DONE
 
         if self.pending & Pending.STOP:
             self.frames.config.unlock()
+            self.frames.unlock_launch()
             self.pending &= ~ Pending.STOP
+
+        if self.pending & Pending.PAUSE:
+            self.frames.unlock_launch()
+
+        if self.pending & Pending.RESUME:
+            self.frames.lock_launch()
+            self.pending &= ~Pending.RESUME
 
     def _validate(self):
         if not self.frames.config.validate():
@@ -517,8 +544,11 @@ class App(Tk):
         if self.serial_protocol:
             self.serial_protocol.total_iterations = 0
             self.serial_protocol.total_size = 0
-            if self.serial_transport.serial.port != self.request.target:
-                self.serial_transport.loop.call_soon_threadsafe(self.serial_transport.close)
+            if self.serial_transport.serial:
+                if self.serial_transport.serial.port != self.request.target:
+                    self.serial_transport.loop.call_soon_threadsafe(self.serial_transport.close)
+                    self.pending |= Pending.CONNECTING
+            else:
                 self.pending |= Pending.CONNECTING
         else:
             self.pending |= Pending.CONNECTING
@@ -530,13 +560,14 @@ class App(Tk):
 
     async def stop(self):
         self.t_end = time.perf_counter()
+        self.t_start = self.t_start or self.t_end
         logging.info(f"stopping acquisition, duration {timedelta(seconds=self.t_start - self.t_end)}")
 
     async def show_idle(self):
-        if self.pending & Pending.VALID:
-            self.frames.log.var_status.set("Ready to launch acquisition !")
-        else:
-            self.frames.log.var_status.set("Please correct errors before launching acquisition...")
+        self.frames.log.var_status.set("Please correct errors before launching acquisition...")
+
+    async def show_valid(self):
+        self.frames.log.var_status.set("Ready to launch acquisition !")
 
     async def show_serial(self):
         acquired = self.serial_protocol.iterations
@@ -633,8 +664,8 @@ if __name__ == "__main__":
     app.title("SCABox Demo")
     try:
         lo.run_forever()
-    except Exception as e:
-        logging.error(e)
+    except KeyboardInterrupt:
+        logging.error(f"keyboard interrupt, exiting...")
         app.close()
 
     lo.close()
