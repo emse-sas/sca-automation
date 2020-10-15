@@ -282,11 +282,11 @@ class App(Tk):
                 suffix = f"_{self.curr_chunk}.bin" if self.curr_chunk is not None else ".bin"
                 with open(os.path.join(self.request.path, self.request.filename(suffix=suffix)), "wb+") as file:
                     file.write(self.serial_protocol.buffer)
-                self.parser.channel.write_csv(os.path.join(self.path, self.request.filename("channel", ".csv")), append)
-                self.parser.leak.write_csv(os.path.join(self.path, self.request.filename("leak", ".csv")), append)
-                self.parser.meta.write_csv(os.path.join(self.path, self.request.filename("meta", ".csv")), append)
-                self.parser.noise.write_csv(os.path.join(self.path, self.request.filename("noise", ".csv")), append)
-                logging.info(f"traces successfully saved {(self.next_chunk or 0) + 1}/{self.request.chunks or 1}")
+                self.parser.channel.write_csv(os.path.join(self.request.path, self.request.filename("channel", ".csv")), append)
+                self.parser.leak.write_csv(os.path.join(self.request.path, self.request.filename("leak", ".csv")), append)
+                self.parser.meta.write_csv(os.path.join(self.request.path, self.request.filename("meta", ".csv")), append)
+                self.parser.noise.write_csv(os.path.join(self.request.path, self.request.filename("noise", ".csv")), append)
+                logging.info(f"traces successfully saved {(self.curr_chunk or 0) + 1}/{self.request.chunks or 1}")
             except OSError as err:
                 logging.error(f"error occurred during saving: {err}")
 
@@ -541,6 +541,11 @@ class App(Tk):
         self.t_start = time.perf_counter()
         self.curr_chunk = 0 if self.request.chunks else None
         self.next_chunk = 0 if self.request.chunks else None
+        try:
+            os.makedirs(os.path.abspath(self.request.path))
+        except FileExistsError:
+            pass
+
         if self.serial_protocol:
             self.serial_protocol.total_iterations = 0
             self.serial_protocol.total_size = 0
