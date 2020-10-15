@@ -39,6 +39,13 @@ class State(Enum):
     ACQUIRED = 3
 
 
+class Status(Flag):
+    IDLE = auto()
+    PAUSE = auto()
+    VALID = auto()
+    DONE = auto()
+
+
 class Pending(Flag):
     IDLE = auto()
     VALID = auto()
@@ -167,7 +174,7 @@ class App(Tk):
 
         self.state = State.IDLE
         self.pending = Pending.IDLE
-        self.paused = False
+        self.status = Status.IDLE
 
         self.curr_chunk = None
         self.next_chunk = None
@@ -282,10 +289,14 @@ class App(Tk):
                 suffix = f"_{self.curr_chunk}.bin" if self.curr_chunk is not None else ".bin"
                 with open(os.path.join(self.request.path, self.request.filename(suffix=suffix)), "wb+") as file:
                     file.write(self.serial_protocol.buffer)
-                self.parser.channel.write_csv(os.path.join(self.request.path, self.request.filename("channel", ".csv")), append)
-                self.parser.leak.write_csv(os.path.join(self.request.path, self.request.filename("leak", ".csv")), append)
-                self.parser.meta.write_csv(os.path.join(self.request.path, self.request.filename("meta", ".csv")), append)
-                self.parser.noise.write_csv(os.path.join(self.request.path, self.request.filename("noise", ".csv")), append)
+                self.parser.channel.write_csv(os.path.join(self.request.path, self.request.filename("channel", ".csv")),
+                                              append)
+                self.parser.leak.write_csv(os.path.join(self.request.path, self.request.filename("leak", ".csv")),
+                                           append)
+                self.parser.meta.write_csv(os.path.join(self.request.path, self.request.filename("meta", ".csv")),
+                                           append)
+                self.parser.noise.write_csv(os.path.join(self.request.path, self.request.filename("noise", ".csv")),
+                                            append)
                 logging.info(f"traces successfully saved {(self.curr_chunk or 0) + 1}/{self.request.chunks or 1}")
             except OSError as err:
                 logging.error(f"error occurred during saving: {err}")
@@ -380,16 +391,16 @@ class App(Tk):
 
     async def update_state(self):
         if self.state != State.IDLE:
-            if self.frames.clicked_stop and self.pending & Pending.PAUSE:
+            if self.frames.clicked_stop and self.status & Status.PAUSE:
                 self.state = State.IDLE
-                self.pending |= Pending.STOP
-                self.pending &= ~Pending.PAUSE
+                self.status &= ~Status.PAUSE
             elif self.frames.clicked_stop:
-                self.pending |= Pending.PAUSE
+                self.pending |= Pending.STOP
+                self.status |= Status.PAUSE
                 await self.stop()
-            elif self.frames.clicked_launch and self.pending & Pending.PAUSE:
+            elif self.frames.clicked_launch and self.status & Status.PAUSE:
                 self.pending |= Pending.RESUME
-                self.pending &= ~Pending.PAUSE
+                self.status &= ~Status.PAUSE
 
         if self.state == State.IDLE:
             try:
@@ -397,30 +408,24 @@ class App(Tk):
             except TclError as err:
                 logging.warning(f"error occurred during validation {err}")
                 valid = False
-            self.pending |= Pending.IDLE
-            if valid:
-                self.pending |= Pending.VALID
-            else:
-                self.pending &= ~Pending.VALID
 
+            if (not valid and self.status & Status.VALID) or (valid and ~(self.status & Status.VALID)):
+                self.pending |= Pending.IDLE
+            self.status = self.status | Status.VALID if valid else self.status & ~Status.VALID
             if self.frames.clicked_launch and valid:
                 self.state = State.LAUNCHED
                 self.pending |= Pending.LAUNCHING
                 await self.launch()
 
         elif self.state == State.LAUNCHED:
-            if self.pending & Pending.PAUSE:
+            if self.status & Status.PAUSE:
                 self.state = State.IDLE
                 self.pending |= Pending.STOP
-                self.pending &= ~Pending.PAUSE
-                return
-
-            if self.serial_protocol and self.serial_protocol.connected:
-                if not self.next_chunk or (
-                        self.next_chunk - self.curr_chunk <= 1 and self.serial_protocol.done):
+                self.status &= ~Status.PAUSE
+            elif self.serial_protocol and self.serial_protocol.connected:
+                if not self.next_chunk or (self.next_chunk - self.curr_chunk <= 1 and self.serial_protocol.done):
                     self.state = State.STARTED
-                    self.pending |= Pending.STARTING
-                    self.pending |= Pending.RESUME
+                    self.pending |= Pending.STARTING | Pending.RESUME
                     await self.start()
             else:
                 self.pending |= Pending.CONNECTING
@@ -428,13 +433,12 @@ class App(Tk):
         elif self.state == State.STARTED:
             if not self.serial_protocol.connected:
                 self.state = State.LAUNCHED
-                self.pending |= Pending.CONNECTING
-                self.pending |= Pending.LAUNCHING
+                self.pending |= Pending.CONNECTING | Pending.LAUNCHING
                 return
 
-            if self.pending & Pending.PAUSE and not self.serial_protocol.paused:
+            if self.status & Status.PAUSE and not self.serial_protocol.paused:
                 self.serial_protocol.pause_reading()
-            elif ~self.pending & Pending.PAUSE and self.serial_protocol.paused:
+            elif ~self.status & Status.PAUSE and self.serial_protocol.paused:
                 self.serial_protocol.resume_reading()
 
             if not self.serial_protocol.paused and self.serial_protocol.done:
@@ -456,21 +460,14 @@ class App(Tk):
 
         if self.pending & Pending.IDLE:
             self.pending &= ~ Pending.IDLE
-            if self.pending & Pending.VALID:
-                self.frames.unlock_launch()
-            else:
-                self.frames.lock_launch()
             await self.show_idle()
 
-        if self.pending & Pending.VALID:
-            await self.show_valid()
-
         if self.pending & Pending.LAUNCHING:
+            self.pending &= ~ Pending.LAUNCHING
             if not self.curr_chunk:
                 self.frames.plot.clear()
                 self.frames.log.clear()
             self.frames.lock_launch()
-            self.pending &= ~ Pending.LAUNCHING
             await self.show_launching()
 
         if self.pending & Pending.STARTING:
@@ -486,8 +483,8 @@ class App(Tk):
             await self.show_stats()
 
         if self.pending & Pending.CORRELATION:
-            self.frames.log.clear()
             self.pending &= ~ Pending.CORRELATION
+            self.frames.log.clear()
             await self.show_corr()
             await self.show_parsing()
             if self.state != State.IDLE:
@@ -510,9 +507,6 @@ class App(Tk):
             self.frames.config.unlock()
             self.frames.unlock_launch()
             self.pending &= ~ Pending.STOP
-
-        if self.pending & Pending.PAUSE:
-            self.frames.unlock_launch()
 
         if self.pending & Pending.RESUME:
             self.frames.lock_launch()
@@ -569,10 +563,12 @@ class App(Tk):
         logging.info(f"stopping acquisition, duration {timedelta(seconds=self.t_start - self.t_end)}")
 
     async def show_idle(self):
-        self.frames.log.var_status.set("Please correct errors before launching acquisition...")
-
-    async def show_valid(self):
-        self.frames.log.var_status.set("Ready to launch acquisition !")
+        if self.status & Status.VALID:
+            self.frames.log.var_status.set("Ready to launch acquisition !")
+            self.frames.unlock_launch()
+        else:
+            self.frames.log.var_status.set("Please correct errors before launching acquisition...")
+            self.frames.lock_launch()
 
     async def show_serial(self):
         acquired = self.serial_protocol.iterations
