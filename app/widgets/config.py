@@ -40,6 +40,13 @@ class ModeFrame(LabelFrame):
                                           command=self.on_click)
         self.radio_mode_ssl.grid(row=2, column=0, sticky=W, padx=4)
 
+        self.radio_mode_dhuertas = Radiobutton(self,
+                                               text="Dhuertas",
+                                               variable=self.var_mode,
+                                               value=Request.Modes.DHUERTAS,
+                                               command=self.on_click)
+        self.radio_mode_dhuertas.grid(row=3, column=0, sticky=W, padx=4)
+
     @property
     def mode(self):
         return self._mode
@@ -51,11 +58,13 @@ class ModeFrame(LabelFrame):
         self.radio_mode_hw["state"] = DISABLED
         self.radio_mode_tiny["state"] = DISABLED
         self.radio_mode_ssl["state"] = DISABLED
+        self.radio_mode_dhuertas["state"] = DISABLED
 
     def unlock(self):
         self.radio_mode_hw["state"] = NORMAL
         self.radio_mode_tiny["state"] = NORMAL
         self.radio_mode_ssl["state"] = NORMAL
+        self.radio_mode_dhuertas["state"] = NORMAL
 
 
 class ModelFrame(LabelFrame):
