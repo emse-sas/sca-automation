@@ -54,6 +54,8 @@ class Statistics:
         self.exacts = []
         self.ranks = []
         self.maxs = []
+        self.iterations = []
+        self.divs = []
 
         if handler and handler.iterations > 0:
             self.update(handler)
@@ -61,14 +63,16 @@ class Statistics:
     def update(self, handler):
         self.corr = handler.correlations()
         self.key = handler.key
-        guess, mx, exact, rank, corr_key, corr_guess = handler.guess_stats(self.corr, handler.key)
-        self.corr_max, self.corr_min = Handler.guess_envelope(self.corr, guess)
+        guess, mx, exact, rank, corr_key, corr_guess = Statistics.guess_stats(self.corr, handler.key)
+        self.corr_max, self.corr_min = Statistics.guess_envelope(self.corr, guess)
         self.corr_key.append(corr_key)
         self.corr_guess.append(corr_guess)
         self.guesses.append(guess)
         self.exacts.append(exact)
         self.ranks.append(rank)
         self.maxs.append(mx)
+        self.iterations.append(handler.iterations)
+        self.divs.append(self.div_idxs())
 
     def clear(self):
         self.corr = None
@@ -80,18 +84,20 @@ class Statistics:
         self.exacts.clear()
         self.ranks.clear()
         self.maxs.clear()
+        self.iterations.clear()
 
     def __repr__(self):
         return f"Statistics({self.corr})"
 
     def __str__(self):
-        ret = f"{'Byte':<8}{'Exact':<8}{'Key':<8}{'(%)':<8}{'Guess':<8}{'(%)':<8}{'Rank':<16}\n"
+        ret = f"{'Byte':<8}{'Exact':<8}{'Key':<8}{'(%)':<8}{'Guess':<8}{'(%)':<8}{'Rank':<8}{'Divergence':<8}\n"
         for i, j in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN)):
             ret += f"{i * aes.BLOCK_LEN + j:<8}" \
                    f"{bool(self.exacts[-1][i, j]):<8}" \
-                   f"{hex(self.key[i, j]):<8}{100 * self.corr_key[-1][i, j]:<5.2f}{'%':<3}" \
-                   f"{hex(self.guesses[-1][i, j]):<8}{100 * self.corr_guess[-1][i, j]:<5.2f}{'%':<3}" \
-                   f"{self.ranks[-1][i, j]:<8}\n"
+                   f"{self.key[i, j]:<8x}{100 * self.corr_key[-1][i, j]:<5.2f}{'%':<3}" \
+                   f"{self.guesses[-1][i, j]:<8x}{100 * self.corr_guess[-1][i, j]:<5.2f}{'%':<3}" \
+                   f"{self.ranks[-1][i, j]:<8}" \
+                   f"{self.divs[-1][i, j]:<8}\n"
 
         return ret
 
@@ -101,6 +107,86 @@ class Statistics:
         n = len(data.shape)
         r = tuple(range(n))
         return np.moveaxis(data, r, tuple([r[-1]] + list(r[:-1])))
+
+    def div_idxs(self, n=0.2):
+        div = np.full((aes.BLOCK_LEN, aes.BLOCK_LEN), fill_value=-1)
+        for i, j in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN)):
+            if self.key[i, j] != self.guesses[-1][i, j]:
+                continue
+            for chunk, mx in enumerate(self.maxs):
+                mx_second = mx[i, j, np.argsort(mx[i, j])[-2]]
+                mx_key = mx[i, j, self.key[i, j]]
+                if (mx_key - mx_second) / mx_key > n:
+                    div[i, j] = self.iterations[chunk]
+                    break
+        return div
+
+    @classmethod
+    def guess_stats(cls, cor, key):
+        """Computes the best guess key from correlation data.
+
+        Parameters
+        ----------
+        cor : np.ndarray
+            Temporal correlation per block position and hypothesis.
+        key : np.ndarray
+
+        Returns
+        -------
+        guess : np.ndarray
+            Guessed key block.
+        maxs : np.ndarray
+            Maximums of temporal correlation per hypothesis.
+        exact : np.ndarray
+            ``True`` if the guess is exact for each byte position.
+
+        See Also
+        --------
+        correlations : Compute temporal correlation.
+
+        """
+        best = np.amax(cor, axis=3)
+        guess = np.argmax(best, axis=2)
+        rank = COUNT_HYP - np.argsort(np.argsort(best, axis=2), axis=2)
+        rank = np.array([[rank[i, j, key[i, j]] for j in range(aes.BLOCK_LEN)] for i in range(aes.BLOCK_LEN)])
+        corr_guess = np.array([[best[i, j, guess[i, j]] for j in range(aes.BLOCK_LEN)] for i in range(aes.BLOCK_LEN)])
+        corr_key = np.array([[best[i, j, key[i, j]] for j in range(aes.BLOCK_LEN)] for i in range(aes.BLOCK_LEN)])
+        exact = guess == key
+        return guess, best, exact, rank, corr_key, corr_guess
+
+    @classmethod
+    def guess_envelope(cls, cor, guess):
+        """Computes the envelope of correlation.
+
+        The envelope consists on two curves representing
+        respectively the max and min of temporal correlation
+        at each instant.
+
+        This feature is mainly useful to plot
+        temporal correlations curve.
+
+        Parameters
+        ----------
+        cor : np.ndarray
+            Temporal correlation per block position and hypothesis.
+
+        Returns
+        -------
+        cor_max : np.ndarray
+            Maximum correlation at each instant.
+        cor_min : np.ndarray
+            Minimum correlation at each instant.
+
+        See Also
+        --------
+        correlations : Compute temporal correlation.
+
+        """
+        env = np.moveaxis(cor.copy(), (0, 1, 2, 3), (0, 1, 3, 2))
+        for i, j in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN)):
+            env[i, j, :, guess[i, j]] -= env[i, j, :, guess[i, j]]
+
+        return np.max(env, axis=3), np.min(env, axis=3)
 
 
 class Handler:
@@ -264,70 +350,3 @@ class Handler:
                 ret[i, j, h] = np.nan_to_num(ret[i, j, h])
 
         return ret
-
-    @classmethod
-    def guess_stats(cls, cor, key):
-        """Computes the best guess key from correlation data.
-
-        Parameters
-        ----------
-        cor : np.ndarray
-            Temporal correlation per block position and hypothesis.
-        key : np.ndarray
-
-        Returns
-        -------
-        guess : np.ndarray
-            Guessed key block.
-        maxs : np.ndarray
-            Maximums of temporal correlation per hypothesis.
-        exact : np.ndarray
-            ``True`` if the guess is exact for each byte position.
-
-        See Also
-        --------
-        correlations : Compute temporal correlation.
-
-        """
-        best = np.amax(cor, axis=3)
-        guess = np.argmax(best, axis=2)
-        rank = COUNT_HYP - np.argsort(np.argsort(best, axis=2), axis=2)
-        rank = np.array([[rank[i, j, key[i, j]] for j in range(aes.BLOCK_LEN)] for i in range(aes.BLOCK_LEN)])
-        corr_guess = np.array([[best[i, j, guess[i, j]] for j in range(aes.BLOCK_LEN)] for i in range(aes.BLOCK_LEN)])
-        corr_key = np.array([[best[i, j, key[i, j]] for j in range(aes.BLOCK_LEN)] for i in range(aes.BLOCK_LEN)])
-        exact = guess == key
-        return guess, best, exact, rank, corr_key, corr_guess
-
-    @classmethod
-    def guess_envelope(cls, cor, guess):
-        """Computes the envelope of correlation.
-
-        The envelope consists on two curves representing
-        respectively the max and min of temporal correlation
-        at each instant.
-
-        This feature is mainly useful to plot
-        temporal correlations curve.
-
-        Parameters
-        ----------
-        cor : np.ndarray
-            Temporal correlation per block position and hypothesis.
-
-        Returns
-        -------
-        cor_max : np.ndarray
-            Maximum correlation at each instant.
-        cor_min : np.ndarray
-            Minimum correlation at each instant.
-
-        See Also
-        --------
-        correlations : Compute temporal correlation.
-
-        """
-        env = np.moveaxis(cor.copy(), (0, 1, 2, 3), (0, 1, 3, 2))
-        for i, j in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN)):
-            env[i, j, :, guess[i, j]] -= env[i, j, :, guess[i, j]]
-
-        return np.max(env, axis=3), np.min(env, axis=3)

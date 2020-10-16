@@ -135,7 +135,11 @@ class AppSerial(asyncio.Protocol):
 
     async def send(self, buffer):
         logging.info(f"sending {buffer} to {self.transport.serial.name}")
-        self.buffer.clear()
+        try:
+            self.buffer.clear()
+        except BufferError as err:
+            logging.warning(err)
+
         self.transport.serial.flush()
         self.done = False
         self.pending = False
@@ -316,10 +320,9 @@ class App(Tk):
             except ValueError:
                 return
 
+            self.frames.plot.update_scale(self.handler, self.request)
             if self.frames.config.plot.mode == config.PlotFrame.Mode.CORRELATION:
                 self.pending |= Pending.CORRELATION
-
-            self.frames.plot.update_scale(self.handler, self.request)
 
             if self.curr_chunk is not None:
                 self.pending |= Pending.CHUNK
@@ -634,8 +637,8 @@ class App(Tk):
 
         self.frames.log.var_status.set(msg)
         self.frames.log.log(f"* Correlation computed *\n"
-                            f"{'exacts':<16}{np.count_nonzero(self.stats.exacts[-1])}/{BLOCK_LEN * BLOCK_LEN}\n"
-                            f"{self.stats}\n")
+                            f"{self.stats}\n"
+                            f"{'exacts':<16}{np.count_nonzero(self.stats.exacts[-1])}/{BLOCK_LEN * BLOCK_LEN}\n")
         self.frames.plot.draw_corr(self.stats, (self.i, self.j))
 
 
