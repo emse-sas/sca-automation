@@ -502,6 +502,7 @@ class Request:
         HARDWARE = "hw"
         TINY = "tiny"
         SSL = "ssl"
+        DHUERTAS = "dhuertas"
 
     class Directions:
         ENCRYPT = "enc"
