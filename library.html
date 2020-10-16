@@ -653,6 +653,70 @@ to retrieve attack results in a reasonable amount of time.</p>
 <em class="property">classmethod </em><code class="sig-name descname">graph</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Statistics.graph" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="py method">
+<dt id="app.lib.cpa.Statistics.div_idxs">
+<code class="sig-name descname">div_idxs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="o">=</span><span class="default_value">0.2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Statistics.div_idxs" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.cpa.Statistics.guess_stats">
+<em class="property">classmethod </em><code class="sig-name descname">guess_stats</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cor</span></em>, <em class="sig-param"><span class="n">key</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Statistics.guess_stats" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the best guess key from correlation data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cor</strong> (<em>np.ndarray</em>) – Temporal correlation per block position and hypothesis.</p></li>
+<li><p><strong>key</strong> (<em>np.ndarray</em>) – </p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>guess</strong> (<em>np.ndarray</em>) – Guessed key block.</p></li>
+<li><p><strong>maxs</strong> (<em>np.ndarray</em>) – Maximums of temporal correlation per hypothesis.</p></li>
+<li><p><strong>exact</strong> (<em>np.ndarray</em>) – <code class="docutils literal notranslate"><span class="pre">True</span></code> if the guess is exact for each byte position.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">correlations()</span></code></dt><dd><p>Compute temporal correlation.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt id="app.lib.cpa.Statistics.guess_envelope">
+<em class="property">classmethod </em><code class="sig-name descname">guess_envelope</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cor</span></em>, <em class="sig-param"><span class="n">guess</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Statistics.guess_envelope" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the envelope of correlation.</p>
+<p>The envelope consists on two curves representing
+respectively the max and min of temporal correlation
+at each instant.</p>
+<p>This feature is mainly useful to plot
+temporal correlations curve.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>cor</strong> (<em>np.ndarray</em>) – Temporal correlation per block position and hypothesis.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>cor_max</strong> (<em>np.ndarray</em>) – Maximum correlation at each instant.</p></li>
+<li><p><strong>cor_min</strong> (<em>np.ndarray</em>) – Minimum correlation at each instant.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">correlations()</span></code></dt><dd><p>Compute temporal correlation.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
@@ -809,65 +873,6 @@ to retrieve attack results in a reasonable amount of time.</p>
 <dd class="field-even"><p>np.ndarray</p>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py method">
-<dt id="app.lib.cpa.Handler.guess_stats">
-<em class="property">classmethod </em><code class="sig-name descname">guess_stats</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cor</span></em>, <em class="sig-param"><span class="n">key</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler.guess_stats" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes the best guess key from correlation data.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>cor</strong> (<em>np.ndarray</em>) – Temporal correlation per block position and hypothesis.</p></li>
-<li><p><strong>key</strong> (<em>np.ndarray</em>) – </p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><strong>guess</strong> (<em>np.ndarray</em>) – Guessed key block.</p></li>
-<li><p><strong>maxs</strong> (<em>np.ndarray</em>) – Maximums of temporal correlation per hypothesis.</p></li>
-<li><p><strong>exact</strong> (<em>np.ndarray</em>) – <code class="docutils literal notranslate"><span class="pre">True</span></code> if the guess is exact for each byte position.</p></li>
-</ul>
-</p>
-</dd>
-</dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<dl class="simple">
-<dt><a class="reference internal" href="#app.lib.cpa.Handler.correlations" title="app.lib.cpa.Handler.correlations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">correlations()</span></code></a></dt><dd><p>Compute temporal correlation.</p>
-</dd>
-</dl>
-</div>
-</dd></dl>
-
-<dl class="py method">
-<dt id="app.lib.cpa.Handler.guess_envelope">
-<em class="property">classmethod </em><code class="sig-name descname">guess_envelope</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">cor</span></em>, <em class="sig-param"><span class="n">guess</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler.guess_envelope" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes the envelope of correlation.</p>
-<p>The envelope consists on two curves representing
-respectively the max and min of temporal correlation
-at each instant.</p>
-<p>This feature is mainly useful to plot
-temporal correlations curve.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>cor</strong> (<em>np.ndarray</em>) – Temporal correlation per block position and hypothesis.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><ul class="simple">
-<li><p><strong>cor_max</strong> (<em>np.ndarray</em>) – Maximum correlation at each instant.</p></li>
-<li><p><strong>cor_min</strong> (<em>np.ndarray</em>) – Minimum correlation at each instant.</p></li>
-</ul>
-</p>
-</dd>
-</dl>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<dl class="simple">
-<dt><a class="reference internal" href="#app.lib.cpa.Handler.correlations" title="app.lib.cpa.Handler.correlations"><code class="xref py py-meth docutils literal notranslate"><span class="pre">correlations()</span></code></a></dt><dd><p>Compute temporal correlation.</p>
-</dd>
-</dl>
-</div>
 </dd></dl>
 
 </dd></dl>
