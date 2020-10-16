@@ -30,6 +30,7 @@ from lib import aes, traces as tr
 
 COUNT_HYP = 256  # Count of key hypothesis for one byte
 COUNT_CLS = 256  # Traces with the same byte value in a given position
+BLOCK_SIZE = aes.BLOCK_SIZE
 
 
 class Models:
@@ -91,13 +92,13 @@ class Statistics:
 
     def __str__(self):
         ret = f"{'Byte':<8}{'Exact':<8}{'Key':<8}{'(%)':<8}{'Guess':<8}{'(%)':<8}{'Rank':<8}{'Divergence':<8}\n"
-        for i, j in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN)):
-            ret += f"{i * aes.BLOCK_LEN + j:<8}" \
-                   f"{bool(self.exacts[-1][i, j]):<8}" \
-                   f"{self.key[i, j]:<8x}{100 * self.corr_key[-1][i, j]:<5.2f}{'%':<3}" \
-                   f"{self.guesses[-1][i, j]:<8x}{100 * self.corr_guess[-1][i, j]:<5.2f}{'%':<3}" \
-                   f"{self.ranks[-1][i, j]:<8}" \
-                   f"{self.divs[-1][i, j]:<8}\n"
+        for b in range(BLOCK_SIZE):
+            ret += f"{b:<8}" \
+                   f"{bool(self.exacts[-1][b]):<8}" \
+                   f"{self.key[b]:<8x}{100 * self.corr_key[-1][b]:<5.2f}{'%':<3}" \
+                   f"{self.guesses[-1][b]:<8x}{100 * self.corr_guess[-1][b]:<5.2f}{'%':<3}" \
+                   f"{self.ranks[-1][b]:<8}" \
+                   f"{self.divs[-1][b]:<8}\n"
 
         return ret
 
@@ -109,15 +110,15 @@ class Statistics:
         return np.moveaxis(data, r, tuple([r[-1]] + list(r[:-1])))
 
     def div_idxs(self, n=0.2):
-        div = np.full((aes.BLOCK_LEN, aes.BLOCK_LEN), fill_value=-1)
-        for i, j in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN)):
-            if self.key[i, j] != self.guesses[-1][i, j]:
+        div = np.full((BLOCK_SIZE,), fill_value=-1)
+        for b in range(BLOCK_SIZE):
+            if self.key[b] != self.guesses[-1][b]:
                 continue
             for chunk, mx in enumerate(self.maxs):
-                mx_second = mx[i, j, np.argsort(mx[i, j])[-2]]
-                mx_key = mx[i, j, self.key[i, j]]
+                mx_second = mx[b, np.argsort(mx[b])[-2]]
+                mx_key = mx[b, self.key[b]]
                 if (mx_key - mx_second) / mx_key > n:
-                    div[i, j] = self.iterations[chunk]
+                    div[b] = self.iterations[chunk]
                     break
         return div
 
@@ -128,7 +129,7 @@ class Statistics:
         Parameters
         ----------
         cor : np.ndarray
-            Temporal correlation per block position and hypothesis.
+            Temporal correlation per block byte and hypothesis.
         key : np.ndarray
 
         Returns
@@ -145,12 +146,12 @@ class Statistics:
         correlations : Compute temporal correlation.
 
         """
-        best = np.amax(cor, axis=3)
-        guess = np.argmax(best, axis=2)
-        rank = COUNT_HYP - np.argsort(np.argsort(best, axis=2), axis=2)
-        rank = np.array([[rank[i, j, key[i, j]] for j in range(aes.BLOCK_LEN)] for i in range(aes.BLOCK_LEN)])
-        corr_guess = np.array([[best[i, j, guess[i, j]] for j in range(aes.BLOCK_LEN)] for i in range(aes.BLOCK_LEN)])
-        corr_key = np.array([[best[i, j, key[i, j]] for j in range(aes.BLOCK_LEN)] for i in range(aes.BLOCK_LEN)])
+        best = np.amax(cor, axis=2)
+        guess = np.argmax(best, axis=1)
+        rank = COUNT_HYP - np.argsort(np.argsort(best, axis=1), axis=1)
+        rank = np.array([rank[b, key[b]] for b in range(BLOCK_SIZE)])
+        corr_guess = np.array([best[b, guess[b]] for b in range(BLOCK_SIZE)])
+        corr_key = np.array([best[b, key[b]] for b in range(BLOCK_SIZE)])
         exact = guess == key
         return guess, best, exact, rank, corr_key, corr_guess
 
@@ -169,7 +170,8 @@ class Statistics:
         ----------
         cor : np.ndarray
             Temporal correlation per block position and hypothesis.
-
+        guess : np.ndarray
+            Guessed block matrix.
         Returns
         -------
         cor_max : np.ndarray
@@ -182,11 +184,11 @@ class Statistics:
         correlations : Compute temporal correlation.
 
         """
-        env = np.moveaxis(cor.copy(), (0, 1, 2, 3), (0, 1, 3, 2))
-        for i, j in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN)):
-            env[i, j, :, guess[i, j]] -= env[i, j, :, guess[i, j]]
+        env = np.moveaxis(cor.copy(), (0, 1, 2), (0, 2, 1))
+        for b in range(BLOCK_SIZE):
+            env[b, :, guess[b]] -= env[b, :, guess[b]]
 
-        return np.max(env, axis=3), np.min(env, axis=3)
+        return np.max(env, axis=2), np.min(env, axis=2)
 
 
 class Handler:
@@ -249,9 +251,9 @@ class Handler:
         self.iterations = 0
         self.samples = samples
         self.hypothesis = np.zeros((COUNT_HYP, COUNT_CLS), dtype=np.uint8)
-        self.lens = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_CLS), dtype=np.int)
-        self.sums = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_CLS, samples), dtype=np.float)
-        self.sums2 = np.zeros((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_CLS, samples), dtype=np.float)
+        self.lens = np.zeros((BLOCK_SIZE, COUNT_CLS), dtype=np.int)
+        self.sums = np.zeros((BLOCK_SIZE, COUNT_CLS, samples), dtype=np.float)
+        self.sums2 = np.zeros((BLOCK_SIZE, COUNT_CLS, samples), dtype=np.float)
         self.sum = np.zeros(samples, dtype=np.float)
         self.sum2 = np.zeros(samples, dtype=np.float)
         return self
@@ -270,30 +272,32 @@ class Handler:
             Reference to self.
 
         """
-        for i, j, (block, trace) in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN), zip(self.blocks, traces)):
-            k = block[i, j]
-            self.lens[i, j, k] += 1
-            self.sums[i, j, k] += trace
-            self.sums2[i, j, k] += np.square(trace)
+        for b, (block, trace) in product(range(BLOCK_SIZE), zip(self.blocks, traces)):
+            k = block[b]
+            self.lens[b, k] += 1
+            self.sums[b, k] += trace
+            self.sums2[b, k] += np.square(trace)
         self.iterations += traces.shape[0]
         self.sum += np.sum(traces, axis=0)
         self.sum2 += np.sum(traces * traces, axis=0)
         return self
 
     def set_key(self, channel):
+        shape = (BLOCK_SIZE,)
         if self.model == Models.SBOX:
-            self.key = aes.words_to_block(channel.keys[0])
+            self.key = aes.words_to_block(channel.keys[0]).reshape(shape)
         elif self.model == Models.INV_SBOX:
-            self.key = aes.key_expansion(aes.words_to_block(channel.keys[0]))[10].T
+            self.key = aes.key_expansion(aes.words_to_block(channel.keys[0]))[10].T.reshape(shape)
         else:
             raise ValueError(f"unknown model: {self.model}")
         return self
 
     def set_blocks(self, channel):
+        shape = (BLOCK_SIZE,)
         if self.model == Models.SBOX:
-            self.blocks = np.array([aes.words_to_block(block) for block in channel.plains])
+            self.blocks = np.array([aes.words_to_block(block).reshape(shape) for block in channel.plains])
         elif self.model == Models.INV_SBOX:
-            self.blocks = ([aes.words_to_block(block) for block in channel.ciphers])
+            self.blocks = ([aes.words_to_block(block).reshape(shape) for block in channel.ciphers])
         else:
             raise ValueError(f"unknown model: {self.model}")
         return self
@@ -333,20 +337,20 @@ class Handler:
 
         """
         n = self.iterations
-        ret = np.empty((aes.BLOCK_LEN, aes.BLOCK_LEN, COUNT_HYP, self.samples))
+        ret = np.empty((BLOCK_SIZE, COUNT_HYP, self.samples))
         mean = self.sum / n
         dev = self.sum2 / n
         dev -= np.square(mean)
         dev = np.sqrt(dev)
 
-        for i, j in product(range(aes.BLOCK_LEN), range(aes.BLOCK_LEN)):
-            mean_ij = np.nan_to_num(self.sums[i, j] / self.lens[i, j].reshape((COUNT_CLS, 1)))
+        for b in range(BLOCK_SIZE):
+            mean_ij = np.nan_to_num(self.sums[b] / self.lens[b].reshape((COUNT_CLS, 1)))
             for h in range(COUNT_HYP):
-                y = np.array(self.hypothesis[h] * self.lens[i, j], dtype=np.float)
+                y = np.array(self.hypothesis[h] * self.lens[b], dtype=np.float)
                 y_mean = np.sum(y) / n
                 y_dev = np.sqrt(np.sum(self.hypothesis[h] * y) / n - y_mean * y_mean)
                 xy = np.sum(y.reshape((COUNT_HYP, 1)) * mean_ij, axis=0) / n
-                ret[i, j, h] = ((xy - mean * y_mean) / dev) / y_dev
-                ret[i, j, h] = np.nan_to_num(ret[i, j, h])
+                ret[b, h] = ((xy - mean * y_mean) / dev) / y_dev
+                ret[b, h] = np.nan_to_num(ret[b, h])
 
         return ret

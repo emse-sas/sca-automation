@@ -25,32 +25,30 @@ def fft(ax, freq, spectrum, f):
     return ax.plot(freq[f], spectrum[f], color="red")
 
 
-def iterations(ax, scale, stats, idx):
+def iterations(ax, scale, stats, byte):
     maxs = Statistics.graph(stats.maxs)
-    i, j = idx
     ax.set(xlabel="Traces acquired", ylabel="Pearson Correlation")
     plot_key = None
     plot_guess = None
     plots = []
     for h in range(COUNT_HYP):
-        if h == stats.key[i, j] and h == stats.guesses[-1][i, j]:
-            plot_key, = plot_guess, = ax.plot(scale, maxs[i, j, h], color="r", zorder=10)
-        elif h == stats.key[i, j]:
-            plot_key, = ax.plot(scale, maxs[i, j, h], color="b", zorder=10)
-        elif h == stats.guesses[-1][i, j]:
-            plot_guess, = ax.plot(scale, maxs[i, j, h], color="c", zorder=10)
+        if h == stats.key[byte] and h == stats.guesses[-1][byte]:
+            plot_key, = plot_guess, = ax.plot(scale, maxs[byte, h], color="r", zorder=10)
+        elif h == stats.key[byte]:
+            plot_key, = ax.plot(scale, maxs[byte, h], color="b", zorder=10)
+        elif h == stats.guesses[-1][byte]:
+            plot_guess, = ax.plot(scale, maxs[byte, h], color="c", zorder=10)
         else:
-            plots.append(ax.plot(scale, maxs[i, j, h], color="grey"))
+            plots.append(ax.plot(scale, maxs[byte, h], color="grey"))
     return plot_key, plot_guess, plots
 
 
-def temporal(ax, stats, idx):
-    i, j = idx
-    corr_guess = stats.corr[i, j, stats.guesses[-1][i, j]]
-    corr_key = stats.corr[i, j, stats.key[i, j]]
+def temporal(ax, stats, byte):
+    corr_guess = stats.corr[byte, stats.guesses[-1][byte]]
+    corr_key = stats.corr[byte, stats.key[byte]]
     ax.set(xlabel="Time Samples", ylabel="Pearson Correlation")
-    ax.fill_between(range(stats.corr.shape[3]), stats.corr_max[i, j], stats.corr_min[i, j], color="grey")
-    if stats.exacts[-1][i, j]:
+    ax.fill_between(range(stats.corr.shape[2]), stats.corr_max[byte], stats.corr_min[byte], color="grey")
+    if stats.exacts[-1][byte]:
         plot_key, = plot_guess, = ax.plot(corr_guess, color="r")
     else:
         plot_guess, = ax.plot(corr_guess, color="c")
@@ -106,16 +104,15 @@ class PlotFrame(LabelFrame):
             return
         self.ax1.set_xlim([self.scale[0], request.iterations * (request.chunks or 1)])
 
-    def draw_corr(self, data, idx):
-        i, j = idx
+    def draw_corr(self, data, byte):
         stats = data
         for legend in self.fig.legends:
             legend.remove()
         self.ax1.clear()
         self.ax2.clear()
-        plot_key, plot_guess, _ = iterations(self.ax1, self.scale, stats, idx)
-        temporal(self.ax2, stats, idx)
-        self.fig.suptitle(f"Correlation byte {i * BLOCK_LEN + j}")
+        plot_key, plot_guess, _ = iterations(self.ax1, self.scale, stats, byte)
+        temporal(self.ax2, stats, byte)
+        self.fig.suptitle(f"Correlation byte {byte}")
         self.fig.legend((plot_key, plot_guess),
-                        (f"key 0x{stats.key[i, j]:02x}", f"guess 0x{stats.guesses[-1][i, j]:02x}"))
+                        (f"key 0x{stats.key[byte]:02x}", f"guess 0x{stats.guesses[-1][byte]:02x}"))
         self.fig.canvas.draw()

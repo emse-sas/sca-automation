@@ -91,7 +91,8 @@ R_CON = np.array([
 ], dtype=np.uint8)
 
 N_ROUNDS = 10  # Count of rounds excluding the first one
-BLOCK_LEN = 4  # Size of the AES block matrix 4x4
+BLOCK_LEN = 4  # Size of the AES block matrix
+BLOCK_SIZE = 16  # Size of the AES block in bytes
 
 
 def __xtime(x):

@@ -173,6 +173,12 @@ class App(Tk):
         self.parser = Parser()
         self.handler = Handler(0)
         self.stats = Statistics()
+        self.mean = None
+        self.spectrum = None
+        self.freq = None
+        self.trace = None
+        self.traces = None
+        self.maxs = None
 
         self.state = State.IDLE
         self.pending = Pending.IDLE
@@ -183,21 +189,11 @@ class App(Tk):
         self.total_size = 0
         self.size = 0
 
-        self.mean = None
-        self.spectrum = None
-        self.freq = None
-        self.trace = None
-        self.traces = None
-        self.maxs = None
-
         self.serial_transport = None
         self.serial_protocol = None
 
         self.t_start = None
         self.t_end = None
-
-        self.i = 0
-        self.j = 0
 
         self.protocol("WM_DELETE_WINDOW", self.close)
         self.process_stats.start()
@@ -388,8 +384,6 @@ class App(Tk):
 
     async def update_state(self):
         if self.frames.config.plot.validate() and self.frames.config.plot.changed and self.handler.iterations > 0:
-            self.i = min(self.frames.config.plot.byte // BLOCK_LEN, BLOCK_LEN - 1)
-            self.j = min(self.frames.config.plot.byte % BLOCK_LEN, BLOCK_LEN - 1)
             if self.frames.config.plot.mode == config.PlotFrame.Mode.CORRELATION:
                 self.pending |= Pending.CORRELATION
             elif self.frames.config.plot.mode == config.PlotFrame.Mode.STATISTICS:
@@ -639,7 +633,7 @@ class App(Tk):
         self.frames.log.log(f"* Correlation computed *\n"
                             f"{self.stats}\n"
                             f"{'exacts':<16}{np.count_nonzero(self.stats.exacts[-1])}/{BLOCK_LEN * BLOCK_LEN}\n")
-        self.frames.plot.draw_corr(self.stats, (self.i, self.j))
+        self.frames.plot.draw_corr(self.stats, self.frames.config.plot.byte)
 
 
 if __name__ == "__main__":
