@@ -888,7 +888,7 @@ class Parser:
             return False
 
         if keyword in keywords.all() and keyword != expected:
-            raise RuntimeError("expected %s keyword not %s" % (expected, keyword))
+            raise RuntimeError(f"expected {expected} keyword not {keyword}")
 
         leak = self.noise if noise else self.leak
         if keyword in (Keywords.MODE, Keywords.DIRECTION):
@@ -896,7 +896,7 @@ class Parser:
         elif keyword in (Keywords.SENSORS, Keywords.TARGET):
             setattr(self.meta, keyword, int(data))
         elif keyword in (Keywords.KEY, Keywords.PLAIN, Keywords.CIPHER):
-            getattr(self.channel, keyword).append(f"{int(data.replace(b' ', b''), 16):x}")
+            getattr(self.channel, keyword).append(f"{int(data.replace(b' ', b''), 16):032x}")
         elif keyword == Keywords.SAMPLES:
             leak.samples.append(int(data))
         elif keyword == Keywords.CODE:
@@ -913,7 +913,7 @@ class Parser:
             n = leak.samples[-1]
             m = len(leak.traces[-1])
             if m != n:
-                raise RuntimeError("trace lengths mismatch %d != %d" % (m, n))
+                raise RuntimeError(f"trace lengths mismatch {m} != {n}")
 
         return True
 
