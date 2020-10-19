@@ -649,13 +649,13 @@ to retrieve attack results in a reasonable amount of time.</p>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt id="app.lib.cpa.Statistics.graph">
-<em class="property">classmethod </em><code class="sig-name descname">graph</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Statistics.graph" title="Permalink to this definition">¶</a></dt>
+<dt id="app.lib.cpa.Statistics.div_idxs">
+<code class="sig-name descname">div_idxs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="o">=</span><span class="default_value">0.2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Statistics.div_idxs" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt id="app.lib.cpa.Statistics.div_idxs">
-<code class="sig-name descname">div_idxs</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span><span class="o">=</span><span class="default_value">0.2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Statistics.div_idxs" title="Permalink to this definition">¶</a></dt>
+<dt id="app.lib.cpa.Statistics.graph">
+<em class="property">classmethod </em><code class="sig-name descname">graph</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span></em><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Statistics.graph" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -665,7 +665,7 @@ to retrieve attack results in a reasonable amount of time.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>cor</strong> (<em>np.ndarray</em>) – Temporal correlation per block position and hypothesis.</p></li>
+<li><p><strong>cor</strong> (<em>np.ndarray</em>) – Temporal correlation per block byte and hypothesis.</p></li>
 <li><p><strong>key</strong> (<em>np.ndarray</em>) – </p></li>
 </ul>
 </dd>
@@ -674,6 +674,7 @@ to retrieve attack results in a reasonable amount of time.</p>
 <li><p><strong>guess</strong> (<em>np.ndarray</em>) – Guessed key block.</p></li>
 <li><p><strong>maxs</strong> (<em>np.ndarray</em>) – Maximums of temporal correlation per hypothesis.</p></li>
 <li><p><strong>exact</strong> (<em>np.ndarray</em>) – <code class="docutils literal notranslate"><span class="pre">True</span></code> if the guess is exact for each byte position.</p></li>
+<li><p><strong>rank</strong> (<em>np.ndarray</em>) – Rank of the true key in terms of correlation.</p></li>
 </ul>
 </p>
 </dd>
@@ -698,7 +699,10 @@ at each instant.</p>
 temporal correlations curve.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>cor</strong> (<em>np.ndarray</em>) – Temporal correlation per block position and hypothesis.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cor</strong> (<em>np.ndarray</em>) – Temporal correlation per block position and hypothesis.</p></li>
+<li><p><strong>guess</strong> (<em>np.ndarray</em>) – Guessed block matrix.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
@@ -864,10 +868,10 @@ temporal correlations curve.</p>
 <dl class="py method">
 <dt id="app.lib.cpa.Handler.correlations">
 <code class="sig-name descname">correlations</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#app.lib.cpa.Handler.correlations" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes Pearson’s correlation coefficient on current data.</p>
+<dd><p>Computes Pearson’s correlation coefficients on current data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>Temporal correlation per block position and hypothesis.</p>
+<dd class="field-odd"><p>Temporal correlation per byte and hypothesis.</p>
 </dd>
 <dt class="field-even">Return type</dt>
 <dd class="field-even"><p>np.ndarray</p>
