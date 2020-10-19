@@ -26,7 +26,7 @@ def fft(ax, freq, spectrum, f):
 
 
 def iterations(ax, scale, stats, byte):
-    maxs = Statistics.graph(stats.maxs)
+    maxs = Statistics.graph(stats.bests)
     ax.set(xlabel="Traces acquired", ylabel="Pearson Correlation")
     plot_key = None
     plot_guess = None

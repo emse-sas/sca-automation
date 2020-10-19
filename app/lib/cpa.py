@@ -21,7 +21,7 @@ Examples
 >>> correlations = handler.correlations()
 
 """
-
+import concurrent
 from itertools import product
 
 import numpy as np
@@ -54,9 +54,9 @@ class Statistics:
         self.guesses = []
         self.exacts = []
         self.ranks = []
-        self.maxs = []
+        self.bests = []
         self.iterations = []
-        self.divs = []
+        self.divergences = []
 
         if handler and handler.iterations > 0:
             self.update(handler)
@@ -64,27 +64,23 @@ class Statistics:
     def update(self, handler):
         self.corr = handler.correlations()
         self.key = handler.key
-        guess, mx, exact, rank, corr_key, corr_guess = Statistics.guess_stats(self.corr, handler.key)
+        guess, best, exact, rank = Statistics.guess_stats(self.corr, handler.key)
         self.corr_max, self.corr_min = Statistics.guess_envelope(self.corr, guess)
-        self.corr_key.append(corr_key)
-        self.corr_guess.append(corr_guess)
         self.guesses.append(guess)
         self.exacts.append(exact)
         self.ranks.append(rank)
-        self.maxs.append(mx)
+        self.bests.append(best)
         self.iterations.append(handler.iterations)
-        self.divs.append(self.div_idxs())
+        self.divergences.append(self.div_idxs())
 
     def clear(self):
         self.corr = None
         self.corr_min = None
         self.corr_max = None
-        self.corr_key.clear()
-        self.corr_guess.clear()
         self.guesses.clear()
         self.exacts.clear()
         self.ranks.clear()
-        self.maxs.clear()
+        self.bests.clear()
         self.iterations.clear()
 
     def __repr__(self):
@@ -95,12 +91,25 @@ class Statistics:
         for b in range(BLOCK_SIZE):
             ret += f"{b:<8}" \
                    f"{bool(self.exacts[-1][b]):<8}" \
-                   f"{self.key[b]:<8x}{100 * self.corr_key[-1][b]:<5.2f}{'%':<3}" \
-                   f"{self.guesses[-1][b]:<8x}{100 * self.corr_guess[-1][b]:<5.2f}{'%':<3}" \
+                   f"{self.key[b]:<8x}{100 * self.bests[-1][b, self.key[b]]:<5.2f}{'%':<3}" \
+                   f"{self.guesses[-1][b]:<8x}{100 * self.bests[-1][b, self.guesses[-1][b]]:<5.2f}{'%':<3}" \
                    f"{self.ranks[-1][b]:<8}" \
-                   f"{self.divs[-1][b]:<8}\n"
+                   f"{self.divergences[-1][b]:<8}\n"
 
         return ret
+
+    def div_idxs(self, n=0.2):
+        div = np.full((BLOCK_SIZE,), fill_value=-1)
+        for b in range(BLOCK_SIZE):
+            if self.key[b] != self.guesses[-1][b]:
+                continue
+            for chunk, mx in enumerate(self.bests):
+                mx_second = mx[b, np.argsort(mx[b])[-2]]
+                mx_key = mx[b, self.key[b]]
+                if (mx_key - mx_second) / mx_key > n:
+                    div[b] = self.iterations[chunk]
+                    break
+        return div
 
     @classmethod
     def graph(cls, data):
@@ -108,19 +117,6 @@ class Statistics:
         n = len(data.shape)
         r = tuple(range(n))
         return np.moveaxis(data, r, tuple([r[-1]] + list(r[:-1])))
-
-    def div_idxs(self, n=0.2):
-        div = np.full((BLOCK_SIZE,), fill_value=-1)
-        for b in range(BLOCK_SIZE):
-            if self.key[b] != self.guesses[-1][b]:
-                continue
-            for chunk, mx in enumerate(self.maxs):
-                mx_second = mx[b, np.argsort(mx[b])[-2]]
-                mx_key = mx[b, self.key[b]]
-                if (mx_key - mx_second) / mx_key > n:
-                    div[b] = self.iterations[chunk]
-                    break
-        return div
 
     @classmethod
     def guess_stats(cls, cor, key):
@@ -140,6 +136,8 @@ class Statistics:
             Maximums of temporal correlation per hypothesis.
         exact : np.ndarray
             ``True`` if the guess is exact for each byte position.
+        rank : np.ndarray
+            Rank of the true key in terms of correlation.
 
         See Also
         --------
@@ -150,10 +148,8 @@ class Statistics:
         guess = np.argmax(best, axis=1)
         rank = COUNT_HYP - np.argsort(np.argsort(best, axis=1), axis=1)
         rank = np.array([rank[b, key[b]] for b in range(BLOCK_SIZE)])
-        corr_guess = np.array([best[b, guess[b]] for b in range(BLOCK_SIZE)])
-        corr_key = np.array([best[b, key[b]] for b in range(BLOCK_SIZE)])
         exact = guess == key
-        return guess, best, exact, rank, corr_key, corr_guess
+        return guess, best, exact, rank
 
     @classmethod
     def guess_envelope(cls, cor, guess):
@@ -220,13 +216,14 @@ class Handler:
 
         Parameters
         ----------
-        blocks : np.ndarray
-            Encrypted data blocks for each trace.
+        channel : np.ndarray
+            Channel data blocks for each trace.
         traces : np.ndarray
-            Traces matrix.
+            Leak traces matrix.
         model : int
-            Model index.
-
+            Hypothesis model.
+        samples : int
+            Count of time samples in the signals.
         """
         self.model = model
         self.blocks = None
@@ -258,6 +255,27 @@ class Handler:
         self.sum2 = np.zeros(samples, dtype=np.float)
         return self
 
+    @classmethod
+    def _accumulate_lens(cls, lens, blocks, traces, iterations):
+        iterations += traces.shape[0]
+        for b, (block, trace) in product(range(BLOCK_SIZE), zip(blocks, traces)):
+            lens[b, block[b]] += 1
+        return lens, iterations
+
+    @classmethod
+    def _accumulate_sums(cls, sums, blocks, traces, sum):
+        sum += np.sum(traces, axis=0)
+        for b, (block, trace) in product(range(BLOCK_SIZE), zip(blocks, traces)):
+            sums[b, block[b]] += trace
+        return sums, sum
+
+    @classmethod
+    def _accumulate_sums2(cls, sums2, blocks, traces, sum2):
+        sum2 += np.sum(traces * traces, axis=0)
+        for b, (block, trace) in product(range(BLOCK_SIZE), zip(blocks, traces)):
+            sums2[b, block[b]] += np.square(trace)
+        return sums2, sum2
+
     def accumulate(self, traces):
         """Sorts traces by class and compute means and deviation.
 
@@ -272,14 +290,13 @@ class Handler:
             Reference to self.
 
         """
-        for b, (block, trace) in product(range(BLOCK_SIZE), zip(self.blocks, traces)):
-            k = block[b]
-            self.lens[b, k] += 1
-            self.sums[b, k] += trace
-            self.sums2[b, k] += np.square(trace)
-        self.iterations += traces.shape[0]
-        self.sum += np.sum(traces, axis=0)
-        self.sum2 += np.sum(traces * traces, axis=0)
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            processes = (executor.submit(Handler._accumulate_lens, self.lens, self.blocks, traces, self.iterations),
+                         executor.submit(Handler._accumulate_sums, self.sums, self.blocks, traces, self.sum),
+                         executor.submit(Handler._accumulate_sums2, self.sums2, self.blocks, traces, self.sum2))
+            self.lens, self.iterations = processes[0].result()
+            self.sums, self.sum = processes[1].result()
+            self.sums2, self.sum2 = processes[2].result()
         return self
 
     def set_key(self, channel):
@@ -327,30 +344,34 @@ class Handler:
             raise ValueError(f"unknown model: {self.model}")
         return self
 
+    @classmethod
+    def _byte_correlations(cls, data):
+        b, n, sums, lens, hypothesis, mean, dev, samples = data
+        ret = np.empty((COUNT_HYP, samples))
+        mean_ij = np.nan_to_num(np.divide(sums[b], lens[b].reshape((COUNT_CLS, 1))))
+        for h in range(COUNT_HYP):
+            y = np.array(hypothesis[h] * lens[b], dtype=np.float)
+            y_mean = np.divide(np.sum(y), n)
+            y_dev = np.sqrt(np.divide(np.sum(hypothesis[h] * y),  n) - y_mean * y_mean)
+            xy = np.divide(np.sum(y.reshape((COUNT_HYP, 1)) * mean_ij, axis=0), n)
+            ret[h] = np.nan_to_num(np.divide(np.divide(xy - mean * y_mean, dev), y_dev))
+        return ret
+
     def correlations(self):
-        """Computes Pearson's correlation coefficient on current data.
+        """Computes Pearson's correlation coefficients on current data.
 
         Returns
         -------
         np.ndarray
-            Temporal correlation per block position and hypothesis.
+            Temporal correlation per byte and hypothesis.
 
         """
         n = self.iterations
-        ret = np.empty((BLOCK_SIZE, COUNT_HYP, self.samples))
         mean = self.sum / n
         dev = self.sum2 / n
         dev -= np.square(mean)
         dev = np.sqrt(dev)
-
-        for b in range(BLOCK_SIZE):
-            mean_ij = np.nan_to_num(self.sums[b] / self.lens[b].reshape((COUNT_CLS, 1)))
-            for h in range(COUNT_HYP):
-                y = np.array(self.hypothesis[h] * self.lens[b], dtype=np.float)
-                y_mean = np.sum(y) / n
-                y_dev = np.sqrt(np.sum(self.hypothesis[h] * y) / n - y_mean * y_mean)
-                xy = np.sum(y.reshape((COUNT_HYP, 1)) * mean_ij, axis=0) / n
-                ret[b, h] = ((xy - mean * y_mean) / dev) / y_dev
-                ret[b, h] = np.nan_to_num(ret[b, h])
-
-        return ret
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            args = ((b, n, self.sums, self.lens, self.hypothesis, mean, dev, self.samples) for b in range(BLOCK_SIZE))
+            results = executor.map(Handler._byte_correlations, args)
+        return np.array(list(results))
