@@ -1,4 +1,4 @@
-Welcome to the SCABox documentation!
+Welcome to the SCABox documentation !
 ***************************************************************
 
 Reference
