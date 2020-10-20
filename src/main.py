@@ -15,11 +15,10 @@ import serial_asyncio
 from scipy import signal, fft
 
 import lib.traces as tr
-import ui
 from lib.aes import BLOCK_LEN
 from lib.cpa import Handler, Statistics
 from lib.data import Request, Parser, Keywords
-from widgets import MainFrame, config
+from widgets import MainFrame, config, sizeof
 
 logger_format = '[%(asctime)s | %(processName)s | %(threadName)s] %(message)s'
 logging.basicConfig(stream=sys.stdout, format=logger_format, level=logging.DEBUG, datefmt="%y-%m-%d %H:%M:%S")
@@ -610,7 +609,7 @@ class App(Tk):
         self.frames.log.log(
             f"* Traces parsed *\n"
             f"{'parsed':<16}{parsed}/{self.request.iterations}\n"
-            f"{'size':<16}{ui.sizeof(self.serial_protocol.size):<8}/{ui.sizeof(self.serial_protocol.total_size):<8}\n")
+            f"{'size':<16}{sizeof(self.serial_protocol.size):<8}/{sizeof(self.serial_protocol.total_size):<8}\n")
         if self.curr_chunk is not None:
             self.frames.log.log(
                 f"{'chunk':<16}{self.curr_chunk + 1}/{self.request.chunks}\n"

@@ -5,6 +5,27 @@ from widgets.log import LogFrame
 from widgets.plot import PlotFrame
 
 
+def sizeof(num, suffix="B"):
+    """Converts and format a number to a file size unit.
+
+    Parameters
+    ----------
+    num : int
+        Number to format.
+    suffix : str
+        Unit suffix.
+    Returns
+    -------
+    str
+        Formatted number.
+    """
+    for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
+        if abs(num) < 1024.0:
+            return f"{num:3.1f} {unit}{suffix}"
+        num /= 1024.0
+    return f"{num:.1f} {'Yi'}{suffix}"
+
+
 class MainFrame(Frame):
     def __init__(self, master):
         super().__init__(master)
