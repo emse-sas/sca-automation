@@ -14,7 +14,7 @@ scripts:
 - echo "Generating documentation..."
 - cd docs/sources
 - make html
-- cd ../build/all/html
+- cd ../build/html
 - touch .nojekyll
 - cd ../../../../
 
@@ -26,7 +26,7 @@ deploy:
   provider: pages:git
   email: sami@dahoux.net
   deploy_key: deploy_sca
-  local_dir: docs/build/all/html
+  local_dir: docs/build/html
   keep_history: true
   edge: true
   on:

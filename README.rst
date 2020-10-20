@@ -2,6 +2,7 @@ SCABox Attack Demo
 ***************************************************************
 
 .. image:: https://api.travis-ci.com/samiBendou/sca-automation.svg?token=LqpGzZ56omzjYoep5ESp&branch=master
+    :target:https://travis-ci.com/samiBendou/sca-automation
 
 Overview
 ===============================================================
@@ -89,6 +90,16 @@ Documentation
 
 The complete documentation of the project is available `here <https://samibendou.github.io/sca-automation/>`_.
 
+Build
+---------------------------------------------------------------
+
+You can build the documentation of the library and application using sphinx and autodoc
+
+.. code-block:: shell
+
+    $ cd sca-automation/docs/sources
+    $ make html
+
 More
 ===============================================================
 
@@ -104,3 +115,19 @@ SCABox is an open-source project, all the sources are hosted on GitHub
 - `Acquisition demo <https://github.com/samiBendou/sca-demo-tdc-aes/>`_
 - `Attack demo <https://github.com/samiBendou/sca-automation/>`_
 - `SCABox website  <https://github.com/samiBendou/sca_framework/>`_
+
+Contributing
+---------------------------------------------------------------
+
+Please feel free to take part into SCABox project, all kind of contributions are welcomed.
+
+The project aims at gathering a significant number of IP cores, crypto-algorithms and attack models 
+in order to provide an exhaustive view of today's remote SCA threat.
+
+Software and embedded improvements are also greatly welcomed. Since the project is quite vast and invovles
+a very heterogeneous technical stack, it is difficult to maintain the quality with a reduced size team.  
+
+License
+---------------------------------------------------------------
+
+All the contents of the SCABox project are licensed under the `MIT license <https://choosealicense.com/licenses/mit/>` provided in each GitHub repository.
