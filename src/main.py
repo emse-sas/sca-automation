@@ -1,30 +1,24 @@
 import argparse
-import time
-import traceback
-from enum import Enum, auto, Flag
-
-import serial_asyncio
 import asyncio
+import logging
 import multiprocessing as mp
 import os
 import threading as th
+import time
+import traceback
 from datetime import datetime, timedelta
+from enum import Enum, auto, Flag
 from tkinter import *
-from warnings import warn
 
-import logging
-import matplotlib.pyplot as plt
 import numpy as np
+import serial_asyncio
 from scipy import signal, fft
 
-import signal as sgl
-
+import lib.traces as tr
 import ui
-from lib import cpa
 from lib.aes import BLOCK_LEN
 from lib.cpa import Handler, Statistics
 from lib.data import Request, Parser, Keywords
-import lib.traces as tr
 from widgets import MainFrame, config
 
 logger_format = '[%(asctime)s | %(processName)s | %(threadName)s] %(message)s'
@@ -57,7 +51,6 @@ class Pending(Flag):
     CHUNK = auto()
     DONE = auto()
     STOP = auto()
-    PAUSE = auto()
     RESUME = auto()
 
 

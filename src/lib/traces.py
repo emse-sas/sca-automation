@@ -3,20 +3,6 @@
 This module is designed to provide fast signal processing
 function for power consumption signals.
 
-Examples
---------
->>> from lib import data, read, traces as tr
->>> from numpy import np
->>> s = read.file("path/to/binary/file")
->>> parser = data.Parser.from_bytes(s)
->>> traces = np.array(tr.crop(parser.leak.traces))
-
->>> from lib import data, read, traces as tr
->>> from numpy import np
->>> s = read.file("path/to/binary/file")
->>> parser = data.Parser.from_bytes(s)
->>> traces = np.array(tr.pad(parser.leak.traces))
-
 """
 
 import numpy as np

@@ -6,7 +6,6 @@ from matplotlib.backends.backend_tkagg import (
 from matplotlib.figure import Figure
 
 from lib.cpa import COUNT_HYP, Statistics
-from lib.aes import BLOCK_LEN
 
 
 def raw(ax, traces, limit=16, chunk=None):
@@ -61,7 +60,7 @@ class PlotFrame(LabelFrame):
         super().__init__(master, text="Plots")
         self.scale = scale or []
         self.gs = gridspec.GridSpec(2, 1, hspace=0.5)
-        self.fig = Figure()
+        self.fig = Figure(figsize=(16, 9))
         self.ax1 = self.fig.add_subplot(self.gs[0])
         self.ax2 = self.fig.add_subplot(self.gs[1])
         self.plot1 = None

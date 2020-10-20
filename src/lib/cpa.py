@@ -7,26 +7,13 @@ It features a trace accumulator to avoid storing all the
 traces in memory. It also implements a fast Pearson correlation algorithm
 to retrieve attack results in a reasonable amount of time.
 
-Examples
---------
->>> from lib import data, cpa, aes, traces as tr
->>> import numpy as np
->>> meta = data.Meta.from_csv("path/to/meta.csv")
->>> data = data.Channel.from_csv("path/to/data.csv")
->>> leak = data.Leak.from_csv("path/to/leak.csv")
->>> blocks = np.array([aes.words_to_block(block) for block in data.plains], dtype=np.uint8)
->>> key = aes.words_to_block(data.keys[0])
->>> traces = np.array(tr.crop(leak.traces))
->>> handler = cpa.Handler(blocks, key, traces)
->>> correlations = handler.correlations()
-
 """
 import concurrent
 from itertools import product
 
 import numpy as np
 
-from lib import aes, traces as tr
+from lib import aes
 
 COUNT_HYP = 256  # Count of key hypothesis for one byte
 COUNT_CLS = 256  # Traces with the same byte value in a given position
@@ -49,8 +36,6 @@ class Statistics:
         self.corr_max = None
 
         self.key = None
-        self.corr_key = []
-        self.corr_guess = []
         self.guesses = []
         self.exacts = []
         self.ranks = []
@@ -216,7 +201,7 @@ class Handler:
 
         Parameters
         ----------
-        channel : np.ndarray
+        channel : data.Channel
             Channel data blocks for each trace.
         traces : np.ndarray
             Leak traces matrix.
@@ -352,7 +337,7 @@ class Handler:
         for h in range(COUNT_HYP):
             y = np.array(hypothesis[h] * lens[b], dtype=np.float)
             y_mean = np.divide(np.sum(y), n)
-            y_dev = np.sqrt(np.divide(np.sum(hypothesis[h] * y),  n) - y_mean * y_mean)
+            y_dev = np.sqrt(np.divide(np.sum(hypothesis[h] * y), n) - y_mean * y_mean)
             xy = np.divide(np.sum(y.reshape((COUNT_HYP, 1)) * mean_ij, axis=0), n)
             ret[h] = np.nan_to_num(np.divide(np.divide(xy - mean * y_mean, dev), y_dev))
         return ret

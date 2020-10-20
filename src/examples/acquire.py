@@ -1,122 +1,80 @@
-"""Export and plot data from SoC.
+"""Export and plot leakage from SoC.
 
-The data retrieved from SoC consists on side-channel leakage
-and encryption data in order to later perform correlation.
+The data acquired from SoC consists on the side-channel leakage
+and encryption channel data used later to perform and validate correlation.
 
-The side-channel leakage is plot to evaluate the quality of
-the acquisition.
-The data is exported in 3 separated CSV files.
-
-Examples
---------
-.. code-block:: shell
-
-    $ python acquire.py 256 COM5
-    $ python acquire.py -m sw 1024 cmd
-
-In the above example, the first line will launch the acquisition
-of 256 hardware traces and read the serial port ``COM5``.
-
-The second line will read the file ``cmd_hw_1024.log`` located in the
-directory containing the 1024 software traces.
-
-In the last case, the file must be a valid binary log file previously
-acquired from the SoC via serial port.
+The side-channel leakage is plot to evaluate the quality of the acquisition.
+The data is exported in separated files.
 
 """
 
-import argparse
 import os
-from warnings import warn
-
-import numpy as np
-import ui
-
 from datetime import datetime
-import ui.actions
-import ui.update
-import ui.plot
+
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy import fft
+from serial import Serial, PARITY_NONE
+
 from lib import data
-from lib.data import Request
 from lib import traces as tr
-from scipy import fft, signal
+from lib.data import Request, Keywords
 
+print(f"{'started':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")
 
-@ui.actions.timed("acquire.py", "\nexiting...")
-def main(args):
-    f_nyq = 200e6 / 2
-    order = 4
-    w = 7e5 / f_nyq
-    b0, a0, *_ = signal.butter(order, w, btype="highpass", output="ba")
+# Creating request object to generate the command to send to SoC and latter used filenames
+request = Request({
+    "iterations": 1024,
+    "target": "/dev/ttyUSB1",
+    "path": "./testdata"
+})
 
-    w = 55e6 / f_nyq
+os.makedirs(request.path)
 
+# Send acquisition command and read acquisition data from serial port
+with Serial(request.target, 921_600, parity=PARITY_NONE, xonxoff=False) as ser:
+    command = f"{request.command('sca')}"
+    print(f"{'sending':<16}{command}")
+    ser.flush()
+    ser.write(f"{command}\n".encode())
+    s = bytearray(ser.read(16))
+    while s[-16:].find(Keywords.END_ACQ_TAG) == -1:
+        while ser.in_waiting == 0:
+            continue
+        while ser.in_waiting != 0:
+            s += ser.read_all()
 
-    b1, a1, *_ = signal.butter(order, w, btype="lowpass", output="ba")
+# Parse received serial data to perform deserialization
+parser = data.Parser(s, direction=request.direction, verbose=request.verbose)
+parsed = len(parser.channel)
 
-    @ui.actions.timed("start acquisition")
-    def prepare(chunk=None):
-        if chunk is not None:
-            print(f"{'chunk':<16}{chunk + 1}/{args.chunks}")
-            print(f"{'requested':<16}{(chunk + 1) * request.iterations}/{request.iterations * request.chunks}")
-        print(f"{'started':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")
+# Save parsed and raw data to file system
+with open(os.path.join(request.path, request.filename(suffix=".bin")), "wb+") as file:
+    file.write(s)
+parser.channel.write_csv(os.path.join(request.path, request.filename("channel", ".csv")))
+parser.leak.write_csv(os.path.join(request.path, request.filename("leak", ".csv")))
+parser.meta.write_csv(os.path.join(request.path, request.filename("meta", ".csv")))
+parser.noise.write_csv(os.path.join(request.path, request.filename("noise", ".csv")))
 
-    @ui.actions.timed("start processing", "\nprocessing successful!")
-    def process(x, chunk=None):
-        print(f"{'started':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")
-        parser = data.Parser(x, direction=request.direction, verbose=request.verbose)
-        parsed = len(parser.channel)
-        trace = ui.update.Current.trace
-        ui.save(request, x, parser.leak, parser.channel, parser.meta, parser.noise, chunk=chunk, path=savepath)
-        print(f"{'size':<16}{ui.sizeof(len(x or []))}")
-        print(f"{'parsed':<16}{parsed}/{request.iterations}")
-        print(f"{'total':<16}{parser.meta.iterations}/{(request.chunks or 1) * request.iterations}")
-        if not parsed:
-            warn("no traces parsed!\nskipping...")
-            return
-        traces = np.array(tr.adjust(parser.leak.traces, len(trace if trace is not None else [])))
-        mean = ui.update.trace(traces) / parser.meta.iterations
-        spectrum = np.absolute(fft.fft(mean - np.mean(mean)))
-        ui.plot.acquisition(traces, mean, spectrum, parser.meta, request, path=savepath)
+print(f"{'size':<16}{len(s)} B")
+print(f"{'parsed':<16}{parsed}/{request.iterations}")
+print(f"{'total':<16}{parser.meta.iterations}/{(request.chunks or 1) * request.iterations}")
 
-    request = Request(args)
-    savepath, loadpath = ui.actions.init(request, args.path)
-    print(request)
-    print(f"{'load path':<16}{os.path.abspath(loadpath)}")
-    print(f"{'save path':<16}{os.path.abspath(savepath)}")
-    ui.actions.acquire(request, process, prepare=prepare, path=loadpath)
+# Compute mean the trace and the spectrum of the mean trace
+traces = np.array(tr.crop(parser.leak.traces))
+mean = np.sum(traces.copy(), axis=0) / parser.meta.iterations
+spectrum = np.absolute(fft.fft(mean - np.mean(mean)))
 
+# Plot the raw traces, the mean and the spectrum
+for trace in traces[:16]:
+    plt.plot(trace)
+plt.savefig(os.path.join(request.path, request.filename("traces")))
+plt.close()
+plt.plot(mean)
+plt.savefig(os.path.join(request.path, request.filename("mean")))
+plt.close()
+plt.plot(spectrum)
+plt.savefig(os.path.join(request.path, request.filename("spectrum")))
+plt.close()
 
-argp = argparse.ArgumentParser(
-    description="Acquire data from SoC and export it.")
-argp.add_argument("iterations", type=int,
-                  help="Requested count of traces.")
-argp.add_argument("name", type=str,
-                  help="Acquisition source name.")
-argp.add_argument("-m", "--mode",
-                  choices=[Request.Modes.HARDWARE, Request.Modes.TINY, Request.Modes.SSL],
-                  default=Request.Modes.HARDWARE,
-                  help="Encryption mode.")
-argp.add_argument("-d", "--direction",
-                  choices=[Request.Directions.ENCRYPT, Request.Directions.DECRYPT],
-                  default=Request.Directions.ENCRYPT,
-                  help="Encryption direction.")
-argp.add_argument("--chunks", type=int, default=None,
-                  help="Count of chunks to acquire.")
-argp.add_argument("--path", type=str, default=ui.actions.DEFAULT_DATA_PATH,
-                  help="Path where to save files.")
-argp.add_argument("-s", "--source",
-                  choices=[Request.Sources.FILE, Request.Sources.SERIAL],
-                  default=Request.Sources.FILE,
-                  help="Acquisition source.")
-argp.add_argument("-p", "--plot", type=int, default=16,
-                  help="Count of raw traces to plot.")
-argp.add_argument("--start", type=int,
-                  help="Start time sample index of each trace.")
-argp.add_argument("--end", type=int,
-                  help="End time sample index of each trace.")
-argp.add_argument("-v", "--verbose", action="store_true",
-                  help="End time sample index of each trace.")
-
-if __name__ == "__main__":
-    main(argp.parse_args())
+print(f"{'ended':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")

@@ -7,21 +7,6 @@ It provides binary data parsing in order to read
 acquisition data from a serial sources or a binary file and
 retrieve it in the entity classes.
 
-Examples
---------
-
->>> from lib import io
->>> from lib.data import Request, Parser
->>> request = Request(256)
->>> s = io.acquire_serial("/dev/ttyUSB1", request.command("sca"))
->>> parser = Parser(s)
-
->>> from lib import io
->>> from lib.data import Request, Parser
->>> request = Request(256)
->>> s = io.read_file("/path/to/file.bin")
->>> parser = Parser(s)
-
 All the entity classes of the module provide CSV support
 to allow processing acquisition data without parsing.
 It also provides formatting data in a more human-readable format.
@@ -39,8 +24,8 @@ Examples
 import csv
 import math
 import os
-from warnings import warn
 from collections.abc import *
+from warnings import warn
 
 from lib.cpa import Models
 
@@ -538,6 +523,12 @@ class Request:
         self.end = None
         self.path = ""
 
+        if type(args) == dict:
+            self._from_dict(args)
+        else:
+            self._from_namespace(args)
+
+    def _from_namespace(self, args):
         if hasattr(args, "iterations"):
             self.iterations = args.iterations
         if hasattr(args, "target"):
@@ -546,7 +537,7 @@ class Request:
             self.source = args.source
         if hasattr(args, "mode"):
             self.mode = args.mode
-        if hasattr(args, "noise"):
+        if hasattr(args, "model"):
             self.model = args.model
         if hasattr(args, "direction"):
             self.direction = args.direction
@@ -562,6 +553,32 @@ class Request:
             self.end = args.end
         if hasattr(args, "path"):
             self.path = args.path
+
+    def _from_dict(self, args):
+        if "iterations" in args:
+            self.iterations = args["iterations"]
+        if "target" in args:
+            self.target = args["target"]
+        if "source" in args:
+            self.source = args["source"]
+        if "mode" in args:
+            self.mode = args["mode"]
+        if "model" in args:
+            self.model = args["model"]
+        if "direction" in args:
+            self.direction = args["direction"]
+        if "verbose" in args:
+            self.verbose = args["verbose"]
+        if "chunks" in args:
+            self.chunks = args["chunks"]
+        if "noise" in args:
+            self.noise = args["noise"]
+        if "start" in args:
+            self.start = args["start"]
+        if "end" in args:
+            self.end = args["end"]
+        if "path" in args:
+            self.path = args["path"]
 
     def __repr__(self):
         return f"{type(self).__name__}" \

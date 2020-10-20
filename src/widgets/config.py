@@ -1,9 +1,11 @@
 import os
 from enum import Enum
 from tkinter import *
+
+import serial.tools.list_ports
+
 from lib.cpa import Models
 from lib.data import Request
-import serial.tools.list_ports
 
 
 def _set_validation_fg(widget, valid):

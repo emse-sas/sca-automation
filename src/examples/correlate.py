@@ -1,4 +1,4 @@
-"""Import acquisition data and perform attack.
+"""Import acquisition data and perform CPA.
 
 The data are imported from CSV files produced by ``acquire.py``
 in order to avoid parsing which is computationally expensive.
@@ -6,86 +6,63 @@ in order to avoid parsing which is computationally expensive.
 The temporal correlations are plot and the key guess is displayed
 to validate the attack.
 
-Examples
---------
-.. code-block:: shell
-
-    $ python correlate.py 256
-    $ python correlate.py -m sw 1024
-
-In the above example, the first line will launch
-the attack on the CSV files representing the SoC data retrieved
-from the acquisition of 256 hardware traces.
-
-The second example do the same except it will launch the attack
-on 1024 software traces.
-
 """
-import argparse
+
 import os
 from datetime import datetime
 
+import matplotlib.pyplot as plt
 import numpy as np
-import ui.actions
-import ui.update
-import ui.plot
-from lib.data import Request
-from lib.cpa import Handler
-from lib import traces as tr
 from scipy import signal
 
+from lib import traces as tr, data
+from lib.cpa import Handler, Statistics
+from lib.data import Request
 
-@ui.actions.timed("correlate.py", "\nexiting...")
-def main(args):
-    f_c = 13e6
-    order = 4
-    w = f_c / (200e6 / 2)
-    b, a, *_ = signal.butter(order, w, btype="highpass", output="ba")
+print(f"{'started':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")
 
-    @ui.actions.timed("start acquisition")
-    def prepare(chunk=None):
-        if chunk is not None:
-            print(f"{'chunk':<16}{chunk + 1}/{args.chunks}")
-            print(f"{'requested':<16}{(chunk + 1) * request.iterations}/{request.iterations * request.chunks}")
-        print(f"{'started':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")
+# Creating leakage signal filters according to the sensors sampling frequency
+f_sampling = 200e6
+f_nyquist = f_sampling / 2
+f_cut = 13e6
+w_cut = f_cut / f_nyquist
+order = 4
+b, a, *_ = signal.butter(order, w_cut, btype="highpass", output="ba")
 
-    @ui.actions.timed("start processing", "\nprocessing successful!")
-    def process(channel, leak, meta, _):
-        print(f"{'started':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")
-        m = handler.samples if handler.samples else None
-        traces = np.array(tr.adjust(leak.traces, m), dtype=np.float)
-        for trace in traces:
-            trace[:] = signal.filtfilt(b, a, trace)
-        key = ui.update.handler(channel, traces, model=args._model, current=handler)
-        cor = handler.correlations()
-        ui.plot.correlations(cor, key, request, maxs, handler, path=loadpath)
+# Creating request object to generate the command to send to SoC and latter used filenames
+request = Request({
+    "iterations": 1024,
+    "target": "/dev/ttyUSB1",
+    "path": "./testdata",
+    "model": 1
+})
 
-    maxs = []
-    handler = Handler(model=args._model)
-    request = Request(args)
-    _, loadpath = ui.init(request, args.path)
-    print(request)
-    print(f"{'load path':<16}{os.path.abspath(loadpath)}")
-    ui.actions.load(request, process, prepare, path=loadpath)
+# Select a byte to plot the correlation
+byte = 0
 
+# Load acquisition data from CSV files
+channel = data.Channel(os.path.join(request.path, request.filename("channel", ".csv")))
+leak = data.Leak(os.path.join(request.path, request.filename("leak", ".csv")))
+meta = data.Meta(os.path.join(request.path, request.filename("meta", ".csv")))
 
-np.set_printoptions(formatter={"int": hex})
-argp = argparse.ArgumentParser(
-    description="Load acquisition data and perform a side-channel attack.")
-argp.add_argument("iterations", type=int,
-                  help="Requested count of traces.")
-argp.add_argument("name", type=str,
-                  help="Acquisition source name.")
-argp.add_argument("-m", "--mode",
-                  choices=[Request.Modes.HARDWARE, Request.Modes.TINY, Request.Modes.SSL],
-                  default=Request.Modes.HARDWARE,
-                  help="Encryption mode.")
-argp.add_argument("--chunks", type=int, default=None,
-                  help="Count of chunks to acquire.")
-argp.add_argument("--path", type=str, default=ui.actions.DEFAULT_DATA_PATH,
-                  help="Path where to save files.")
-argp.add_argument("--model", type=int,
-                  help="Leakage model.")
+# Filter leakage signal in order to decrease noise
+traces = np.array(tr.crop(leak.traces))
+for trace in traces:
+    trace[:] = signal.filtfilt(b, a, trace)
 
-if __name__ == "__main__":
-    main(argp.parse_args())
+# Perform correlation on the current data and attack statistics
+handler = Handler(model=request.model, traces=traces, channel=channel)
+stats = Statistics(handler)
+
+# Plot the temporal correlation of the selected byte and saves the figure with the other acquisition data
+plt.fill_between(range(stats.corr.shape[2]), stats.corr_max[byte], stats.corr_min[byte], color="grey")
+if stats.exacts[-1][byte]:
+    plt.plot(stats.corr[byte, stats.key[byte]], color="r", label=f"key 0x{stats.key[byte]:02x}")
+else:
+    plt.plot(stats.corr[byte, stats.guesses[-1][byte]], color="c", label=f"guess 0x{stats.guesses[-1][byte]:02x}")
+    plt.plot(stats.corr[byte, stats.key[byte]], color="b", label=f"key 0x{stats.key[byte]:02x}")
+
+plt.savefig(os.path.join(request.path, request.filename(f"corr_b{byte}")))
+plt.close()
+
+print(f"{'ended':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")
