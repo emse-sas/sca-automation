@@ -1,3 +1,4 @@
+import argparse
 import time
 import traceback
 from enum import Enum, auto, Flag
@@ -150,7 +151,7 @@ class AppSerial(asyncio.Protocol):
 
 
 class App(Tk):
-    def __init__(self, loop, interval=1 / 60):
+    def __init__(self, loop, request, interval=1 / 60):
         super().__init__()
         self.frames = MainFrame(self)
         self.loop_main = loop
@@ -169,7 +170,7 @@ class App(Tk):
         self.thread_comm = th.Thread(target=self.communication, name="t.comm")
 
         self.command = ""
-        self.request = Request()
+        self.request = request or Request()
         self.parser = Parser()
         self.handler = Handler(0)
         self.stats = Statistics()
@@ -205,6 +206,9 @@ class App(Tk):
         self.thread_comm.start()
         logging.info(self.thread_comm)
         self.frames.log.log("*** Welcome to SCABox demo ***\n")
+
+        if request:
+            self._set()
 
     def close(self):
         self.queue_comm.put(False)
@@ -527,6 +531,17 @@ class App(Tk):
         self.request.chunks = self.frames.config.perfs.chunks
         return True
 
+    def _set(self):
+        self.frames.config.general.iterations = self.request.iterations
+        self.frames.config.general.target = self.request.target
+        self.frames.config.file.path = self.request.path
+        self.frames.config.general.frame_mode.mode = self.request.mode
+        self.frames.config.general.frame_model.model = self.request.model
+        self.frames.config.perfs.start = self.request.start
+        self.frames.config.perfs.end = self.request.end
+        self.frames.config.perfs.chunks = self.request.chunks
+        return True
+
     async def launch(self):
         logging.info("launching attack...")
         self.handler.clear().set_model(self.request.model)
@@ -637,8 +652,39 @@ class App(Tk):
 
 
 if __name__ == "__main__":
+    argp = argparse.ArgumentParser(
+        description="Acquire data from SoC and export it.")
+    argp.add_argument("-i", "--iterations", type=int,
+                      help="Requested count of traces.")
+    argp.add_argument("-t", "--target", type=str,
+                      help="Serial acquisition target name.")
+    argp.add_argument("-m", "--mode",
+                      choices=[Request.Modes.HARDWARE, Request.Modes.TINY, Request.Modes.SSL],
+                      default=Request.Modes.HARDWARE,
+                      help="Encryption mode.")
+    argp.add_argument("-d", "--direction",
+                      choices=[Request.Directions.ENCRYPT, Request.Directions.DECRYPT],
+                      default=Request.Directions.ENCRYPT,
+                      help="Encryption direction.")
+    argp.add_argument("--chunks", type=int, default=None,
+                      help="Count of chunks to acquire.")
+    argp.add_argument("--path", type=str,
+                      help="Path where to save files.")
+    argp.add_argument("-p", "--plot", type=int, default=16,
+                      help="Count of raw traces to plot.")
+    argp.add_argument("--start", type=int,
+                      help="Start time sample index of each trace.")
+    argp.add_argument("--end", type=int,
+                      help="End time sample index of each trace.")
+    argp.add_argument("-v", "--verbose", action="store_true",
+                      help="Perform verbose serialization during acquisition.")
+    argp.add_argument("-n", "--noise", action="store_true",
+                      help="Acquire noise before starting each synchronous capture.")
+    argp.add_argument("--model", type=int,
+                      help="Leakage model.")
+
     lo = asyncio.get_event_loop()
-    app = App(lo)
+    app = App(lo, request=Request(argp.parse_args()))
     app.title("SCABox Demo")
     try:
         lo.run_forever()

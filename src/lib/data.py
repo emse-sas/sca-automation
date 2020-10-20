@@ -540,7 +540,7 @@ class Request:
 
         if hasattr(args, "iterations"):
             self.iterations = args.iterations
-        if hasattr(args, "name"):
+        if hasattr(args, "target"):
             self.target = args.target
         if hasattr(args, "source"):
             self.source = args.source

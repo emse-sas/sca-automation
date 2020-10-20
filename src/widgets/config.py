@@ -51,6 +51,13 @@ class ModeFrame(LabelFrame):
     def mode(self):
         return self._mode
 
+    @mode.setter
+    def mode(self, mode):
+        if mode is None:
+            return
+        self._mode = mode
+        self.var_mode.set(mode)
+
     def on_click(self):
         self._mode = self.var_mode.get()
 
@@ -89,6 +96,13 @@ class ModelFrame(LabelFrame):
     @property
     def model(self):
         return self._model
+
+    @model.setter
+    def model(self, model):
+        if model is None:
+            return
+        self._model = model
+        self.var_model.set(model)
 
     def on_click(self):
         self._model = int(self.var_model.get())
@@ -200,9 +214,23 @@ class GeneralFrame(LabelFrame):
     def iterations(self):
         return self._iterations
 
+    @iterations.setter
+    def iterations(self, iterations):
+        if iterations is None:
+            return
+        self._iterations = iterations
+        self.var_iterations.set(iterations)
+
     @property
     def target(self):
         return self._target
+
+    @target.setter
+    def target(self, target):
+        if target is None:
+            return
+        self._target = target
+        self.var_target.set(target)
 
     def _validate_iterations(self):
         iterations = None
@@ -300,21 +328,56 @@ class PerfsFrame(LabelFrame):
     def start(self):
         return self._start
 
+    @start.setter
+    def start(self, start):
+        if start is None:
+            return
+        self._start = start
+        self.var_start.set(start)
+
     @property
     def end(self):
         return self._end
+
+    @end.setter
+    def end(self, end):
+        if end is None:
+            return
+        self._end = end
+        self.var_end.set(end)
 
     @property
     def chunks(self):
         return self._chunks
 
+    @chunks.setter
+    def chunks(self, chunks):
+        if chunks is None:
+            return
+        self._chunks = chunks
+        self.var_chunks.set(chunks)
+
     @property
     def verbose(self):
         return self._verbose
 
+    @verbose.setter
+    def verbose(self, verbose):
+        if verbose is None:
+            return
+        self._verbose = verbose
+        self.var_verbose.set(verbose)
+
     @property
     def noise(self):
         return self._noise
+
+    @noise.setter
+    def noise(self, noise):
+        if noise is None:
+            return
+        self._noise = noise
+        self.var_noise.set(noise)
 
     def on_click(self):
         self._noise = self.var_noise.get()
@@ -400,6 +463,13 @@ class FilesFrame(LabelFrame):
     @property
     def path(self):
         return self._path
+
+    @path.setter
+    def path(self, path):
+        if path is None:
+            return
+        self._path = path
+        self.var_path.set(path)
 
     def _validate_path(self):
         path = self.var_path.get()
