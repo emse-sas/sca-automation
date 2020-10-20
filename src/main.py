@@ -642,38 +642,39 @@ class App(Tk):
                             f"{'exacts':<16}{np.count_nonzero(self.stats.exacts[-1])}/{BLOCK_LEN * BLOCK_LEN}\n")
         self.frames.plot.draw_corr(self.stats, self.frames.config.plot.byte)
 
+argp = argparse.ArgumentParser(
+    description="Acquire data from SoC and export it.")
+argp.add_argument("-i", "--iterations", type=int,
+                  help="Requested count of traces.")
+argp.add_argument("-t", "--target", type=str,
+                  help="Serial acquisition target name.")
+argp.add_argument("-m", "--mode",
+                  choices=[Request.Modes.HARDWARE, Request.Modes.TINY, Request.Modes.SSL],
+                  default=Request.Modes.HARDWARE,
+                  help="Encryption mode.")
+argp.add_argument("-d", "--direction",
+                  choices=[Request.Directions.ENCRYPT, Request.Directions.DECRYPT],
+                  default=Request.Directions.ENCRYPT,
+                  help="Encryption direction.")
+argp.add_argument("--chunks", type=int, default=None,
+                  help="Count of chunks to acquire.")
+argp.add_argument("--path", type=str,
+                  help="Path where to save files.")
+argp.add_argument("-p", "--plot", type=int, default=16,
+                  help="Count of raw traces to plot.")
+argp.add_argument("--start", type=int,
+                  help="Start time sample index of each trace.")
+argp.add_argument("--end", type=int,
+                  help="End time sample index of each trace.")
+argp.add_argument("-v", "--verbose", action="store_true",
+                  help="Perform verbose serialization during acquisition.")
+argp.add_argument("-n", "--noise", action="store_true",
+                  help="Acquire noise before starting each synchronous capture.")
+argp.add_argument("--model", type=int,
+                  help="Leakage model.")
 
 if __name__ == "__main__":
-    argp = argparse.ArgumentParser(
-        description="Acquire data from SoC and export it.")
-    argp.add_argument("-i", "--iterations", type=int,
-                      help="Requested count of traces.")
-    argp.add_argument("-t", "--target", type=str,
-                      help="Serial acquisition target name.")
-    argp.add_argument("-m", "--mode",
-                      choices=[Request.Modes.HARDWARE, Request.Modes.TINY, Request.Modes.SSL],
-                      default=Request.Modes.HARDWARE,
-                      help="Encryption mode.")
-    argp.add_argument("-d", "--direction",
-                      choices=[Request.Directions.ENCRYPT, Request.Directions.DECRYPT],
-                      default=Request.Directions.ENCRYPT,
-                      help="Encryption direction.")
-    argp.add_argument("--chunks", type=int, default=None,
-                      help="Count of chunks to acquire.")
-    argp.add_argument("--path", type=str,
-                      help="Path where to save files.")
-    argp.add_argument("-p", "--plot", type=int, default=16,
-                      help="Count of raw traces to plot.")
-    argp.add_argument("--start", type=int,
-                      help="Start time sample index of each trace.")
-    argp.add_argument("--end", type=int,
-                      help="End time sample index of each trace.")
-    argp.add_argument("-v", "--verbose", action="store_true",
-                      help="Perform verbose serialization during acquisition.")
-    argp.add_argument("-n", "--noise", action="store_true",
-                      help="Acquire noise before starting each synchronous capture.")
-    argp.add_argument("--model", type=int,
-                      help="Leakage model.")
+
 
     lo = asyncio.get_event_loop()
     app = App(lo, request=Request(argp.parse_args()))
