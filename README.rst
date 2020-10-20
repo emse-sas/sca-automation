@@ -140,3 +140,5 @@ License
 ---------------------------------------------------------------
 
 All the contents of the SCABox project are licensed under the `MIT license <https://choosealicense.com/licenses/mit/>`_ provided in each GitHub repository.
+
+Copyright (c) 2020 Dahoux Sami
