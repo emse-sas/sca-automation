@@ -2,7 +2,16 @@ SCABox Attack Demo
 ***************************************************************
 
 .. image:: https://api.travis-ci.com/samiBendou/sca-automation.svg?token=LqpGzZ56omzjYoep5ESp&branch=master
-    :target:https://travis-ci.com/samiBendou/sca-automation
+    :target: https://travis-ci.com/samiBendou/sca-automation
+    :alt: tests
+
+.. image:: https://img.shields.io/github/license/samiBendou/sca-automation
+    :target: https://choosealicense.com/licenses/mit/
+    :alt: license
+
+.. image:: https://img.shields.io/github/deployments/samiBendou/sca-automation/github-pages
+    :target: https://samibendou.github.io/sca-automation/
+    :alt: pages
 
 Overview
 ===============================================================
@@ -130,4 +139,4 @@ a very heterogeneous technical stack, it is difficult to maintain the quality wi
 License
 ---------------------------------------------------------------
 
-All the contents of the SCABox project are licensed under the `MIT license <https://choosealicense.com/licenses/mit/>` provided in each GitHub repository.
+All the contents of the SCABox project are licensed under the `MIT license <https://choosealicense.com/licenses/mit/>`_ provided in each GitHub repository.
