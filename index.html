@@ -7,7 +7,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Overview &mdash; sca-automation 1.0.0 documentation</title>
+  <title>Welcome to the SCABox documentation! &mdash; sca-automation 1.0.0 documentation</title>
   
 
   
@@ -144,7 +144,7 @@
     
       <li><a href="#" class="icon icon-home"></a> &raquo;</li>
         
-      <li>Overview</li>
+      <li>Welcome to the SCABox documentation!</li>
     
     
       <li class="wy-breadcrumbs-aside">
@@ -163,26 +163,10 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <div class="section" id="overview">
-<h1>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h1>
-<p><em>sca-automation</em> is a Python package that <strong>automates the attack pipeline</strong>
-with a simple application and provides tools to validate and customize the attack.</p>
-<p>It is able to interface with the SoC to drive the low-level
-command prompt <em>cmd_sca</em> that runs on it, allowing to :</p>
-<ul class="simple">
-<li><p>Communicate with the SoC via serial port</p></li>
-<li><p>Parse and process received data</p></li>
-<li><p>Load and save data on the computer</p></li>
-<li><p>Achieve side-channel attack</p></li>
-</ul>
-<p>To do so, the package provides many useful tools :</p>
-<ul class="simple">
-<li><p><em>Scripts</em> to run the acquisition and the attack</p></li>
-<li><p><em>Library</em> and <em>API</em> to allow customization</p></li>
-</ul>
-</div>
+  <div class="section" id="welcome-to-the-scabox-documentation">
+<h1>Welcome to the SCABox documentation!<a class="headerlink" href="#welcome-to-the-scabox-documentation" title="Permalink to this headline">¶</a></h1>
 <div class="section" id="reference">
-<h1>Reference<a class="headerlink" href="#reference" title="Permalink to this headline">¶</a></h1>
+<h2>Reference<a class="headerlink" href="#reference" title="Permalink to this headline">¶</a></h2>
 <div class="toctree-wrapper compound">
 <p class="caption"><span class="caption-text">Application</span></p>
 <ul>
@@ -203,6 +187,100 @@ command prompt <em>cmd_sca</em> that runs on it, allowing to :</p>
 <li class="toctree-l1"><a class="reference internal" href="library.html#lib-log-module">lib.log module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="library.html#module-app.lib.traces">lib.traces module</a></li>
 <li class="toctree-l1"><a class="reference internal" href="library.html#lib-utils-module">lib.utils module</a></li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section" id="scabox-attack-demo">
+<h1>SCABox Attack Demo<a class="headerlink" href="#scabox-attack-demo" title="Permalink to this headline">¶</a></h1>
+<img alt="https://api.travis-ci.com/samiBendou/sca-automation.svg?token=LqpGzZ56omzjYoep5ESp&amp;branch=master" src="https://api.travis-ci.com/samiBendou/sca-automation.svg?token=LqpGzZ56omzjYoep5ESp&amp;branch=master" />
+<div class="section" id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h2>
+<p>This repository contains a Python GUI application and a library to retrieve side-channel acquisition data from serial
+port and perform an attack. It is part of the <a class="reference external" href="https://samibendou.github.io/sca_framework/">SCABox</a> project.</p>
+<ul class="simple">
+<li><p>Application : attack from serial port to key guess with exports</p></li>
+<li><p>Library : tools to perform attack, serial communication and correlation</p></li>
+</ul>
+<p>The application is based on the library and this least is intended to work for any kind of side-channel leakage data and crypto-algorithm.</p>
+</div>
+<div class="section" id="features">
+<h2>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="library">
+<h3>Library<a class="headerlink" href="#library" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Deserialization of acquisition data</p></li>
+<li><p>Fast acquisition data exports and imports</p></li>
+<li><p>Fast CPA computation and statistics</p></li>
+<li><p>Leakage model hypothesis generation</p></li>
+<li><p>Leakage signal processing</p></li>
+<li><p>Advanced Encryption Standard (AES)</p></li>
+</ul>
+</div>
+<div class="section" id="application">
+<h3>Application<a class="headerlink" href="#application" title="Permalink to this headline">¶</a></h3>
+<ul class="simple">
+<li><p>Automate acquisition and attack</p></li>
+<li><p>Provide correlation and leakage visualization</p></li>
+<li><p>Export attack and acquisition results and images</p></li>
+<li><p>Parametrize the acquisition and visualize performances</p></li>
+</ul>
+</div>
+</div>
+<div class="section" id="install">
+<h2>Install<a class="headerlink" href="#install" title="Permalink to this headline">¶</a></h2>
+<p>To install the repository you must clone the sources from GitHub and install the pip requirements</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/samiBendou/sca-automation
+$ <span class="nb">cd</span> sca-automation
+$ pip3 install -r requirements.txt
+</pre></div>
+</div>
+<p>You might alternatively create a venv and install the requirements inside to use the project.</p>
+<div class="section" id="compatibility">
+<h3>Compatibility<a class="headerlink" href="#compatibility" title="Permalink to this headline">¶</a></h3>
+<p>The project is compatible with Python 3.8 and latter. It is platform independent.</p>
+<p>However the it requires Tkinter to be installed in order to use the GUI application.
+The instructions my varies according to which system your are using and we encourage
+to visit the Tkinter documentation to install it.</p>
+</div>
+</div>
+<div class="section" id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="id1">
+<h3>Library<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>The library provides a complete API to develop your own application.
+In order to get started you can take a look at the examples and the reference.</p>
+</div>
+<div class="section" id="id2">
+<h3>Application<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>The GUI application can be started by running the <code class="docutils literal notranslate"><span class="pre">main.py</span></code> script</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">cd</span> sca-automation/app
+$ sudo python3 main.py
+</pre></div>
+</div>
+<p>You might pass arguments to the <code class="docutils literal notranslate"><span class="pre">main.py</span></code> script in order parametrize the acquisition from shell.</p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>$ sudo python3 main.py <span class="m">1024</span> /dev/ttyUSB1 --chunks <span class="m">8</span>
+</pre></div>
+</div>
+<p>To get an exhaustive list, please visit the reference</p>
+</div>
+</div>
+<div class="section" id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
+<p>The complete documentation of the project is available <a class="reference external" href="https://samibendou.github.io/sca-automation/">here</a>.</p>
+</div>
+<div class="section" id="more">
+<h2>More<a class="headerlink" href="#more" title="Permalink to this headline">¶</a></h2>
+<p>SCABox is a project on the topic of side-channel analysis.
+The goal of SCABox is to provide a cheap and efficient test-bench for side-channel analysis.</p>
+<p>To know more about SCABox please visit our <a class="reference external" href="https://samibendou.github.io/sca_framework/">website</a>.
+It provides a tutorials and a wiki about side-channel analysis.</p>
+<p>SCABox is an open-source project, all the sources are hosted on GitHub</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/samiBendou/sca-ip/">IP repository</a></p></li>
+<li><p><a class="reference external" href="https://github.com/samiBendou/sca-demo-tdc-aes/">Acquisition demo</a></p></li>
+<li><p><a class="reference external" href="https://github.com/samiBendou/sca-automation/">Attack demo</a></p></li>
+<li><p><a class="reference external" href="https://github.com/samiBendou/sca_framework/">SCABox website</a></p></li>
 </ul>
 </div>
 </div>
