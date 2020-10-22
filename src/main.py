@@ -352,7 +352,7 @@ class App(Tk):
             for trace in self.traces:
                 trace = signal.detrend(trace)
                 trace_spectrum = fft.fft(trace - np.mean(trace))
-                trace[:] = fft.ifft(trace_spectrum - noise_spectrum)
+                trace[:] = np.abs(fft.ifft(trace_spectrum - noise_spectrum))
                 # _, trace[:] = signal.deconvolve(trace - np.mean(trace), noise_mean)
         if self.handler.iterations > 0:
             self.handler.set_blocks(self.parser.channel).accumulate(self.traces)

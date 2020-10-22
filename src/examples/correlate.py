@@ -65,4 +65,5 @@ else:
 plt.savefig(os.path.join(request.path, request.filename(f"corr_b{byte}")))
 plt.close()
 
+print(stats)
 print(f"{'ended':<16}{datetime.now():%Y-%m-%d %H:%M:%S}")

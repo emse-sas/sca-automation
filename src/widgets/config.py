@@ -330,6 +330,60 @@ class TargetFrame(LabelFrame):
         self.label_infos["state"] = NORMAL
 
 
+class FilterField(Frame):
+    class Types(Enum):
+        NO_FILTER = ""
+        LOWPASS = "Lowpass"
+        HIGHPASS = "Highpass"
+        BANDPASS = "Bandpass"
+        BANDSTOP = "Bandstop"
+
+    def __init__(self, master):
+        super().__init__(master)
+
+        self._type = None
+        self._freq1 = None
+        self._freq2 = None
+        self.var_type = StringVar()
+        self.var_freq1 = StringVar()
+        self.var_freq2 = StringVar()
+
+        self.box_type = ttk.Combobox(self,
+                                     textvariable=self.var_type, values=[e.value for e in FilterField.Types],
+                                     width=8)
+        self.box_type.grid(row=0, column=0, sticky=NSEW)
+
+        self.entry_freq1 = Entry(self, textvariable=self.var_freq1, width=16)
+        self.entry_freq1.grid(row=0, column=1, sticky=NSEW)
+
+        self.entry_freq2 = Entry(self, textvariable=self.var_freq2, width=16)
+        self.entry_freq2.grid(row=0, column=2, sticky=NSEW)
+
+
+class FilterList(LabelFrame):
+    def __init__(self, master, size):
+        super().__init__(master, text="Frequencies")
+        self._freq = None
+        self.var_freq = StringVar()
+        self.fields = [FilterField(self) for _ in range(size)]
+        self.label_type = Label(self, text="Type", width=8)
+        self.label_type.grid(row=0, column=0, sticky=NSEW)
+        self.label_freq1 = Label(self, text="f_1", width=16)
+        self.label_freq1.grid(row=0, column=1, sticky=NSEW)
+        self.label_freq2 = Label(self, text="f_2", width=16)
+        self.label_freq2.grid(row=0, column=2, sticky=NSEW)
+        last = 0
+        for i, field in enumerate(self.fields):
+            field.grid(row=i + 1, column=0, columnspan=3, sticky=W, padx=4)
+            last = i
+
+        self.label_freq = Label(self, text="f_sampling", width=10)
+        self.label_freq.grid(row=last + 2, column=0, sticky=NSEW)
+
+        self.entry_freq = Entry(self, textvariable=self.var_freq, width=16)
+        self.entry_freq.grid(row=last + 2, column=1, sticky=NSEW)
+
+
 class FilterFrame(LabelFrame):
     class Mode(Enum):
         AUTO = 0
@@ -337,19 +391,27 @@ class FilterFrame(LabelFrame):
 
     def __init__(self, master):
         super().__init__(master, text="Filter")
-        self.var_mode = IntVar(value=0)
+
+        Grid.columnconfigure(self, 1, weight=2)
+        Grid.columnconfigure(self, 2, weight=2)
         self._mode = FilterFrame.Mode(value=0)
+        self._freq = None
+        self.var_mode = IntVar(value=0)
+        self.var_freq = StringVar()
         self.radio_mode_auto = Radiobutton(self,
                                            text="Auto",
                                            variable=self.var_mode,
                                            value=FilterFrame.Mode.AUTO.value)
-        self.radio_mode_auto.grid(row=0, column=0, sticky=W, padx=4)
+        self.radio_mode_auto.grid(row=0, column=0, columnspan=3, sticky=W, padx=4)
 
         self.radio_mode_manual = Radiobutton(self,
                                              text="Manual",
                                              variable=self.var_mode,
                                              value=FilterFrame.Mode.MANUAL.value)
-        self.radio_mode_manual.grid(row=1, column=0, sticky=W, padx=4)
+        self.radio_mode_manual.grid(row=1, column=0, columnspan=3, sticky=W, padx=4)
+
+        self.freqs = FilterList(self, 4)
+        self.freqs.grid(row=2, column=0, columnspan=3, sticky=NSEW)
 
     @property
     def mode(self):
