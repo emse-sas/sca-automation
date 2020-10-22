@@ -144,6 +144,7 @@ class App(Tk):
     def __init__(self, loop, request, interval=1 / 60):
         super().__init__()
         self.frames = MainFrame(self)
+        self.frames.pack()
         self.loop_main = loop
         self.loop_com = None
 

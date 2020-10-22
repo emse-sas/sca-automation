@@ -359,6 +359,98 @@ class FilterField(Frame):
         self.entry_freq2 = Entry(self, textvariable=self.var_freq2, width=16)
         self.entry_freq2.grid(row=0, column=2, sticky=NSEW)
 
+    @property
+    def type(self):
+        return self._type
+
+    @property
+    def freq1(self):
+        return self._freq1
+
+    @property
+    def freq2(self):
+        return self._freq2
+
+    def _validate_type(self):
+        type = None
+        try:
+            type = FilterField.Types(value=self.var_type.get())
+            valid = True
+        except ValueError:
+            valid = False
+        self._type = type if valid else None
+        _set_validation_fg(self.box_type, valid, True, self._type)
+
+        if not valid:
+            return valid
+
+        if self._type == FilterField.Types.NO_FILTER:
+            self.entry_freq1["state"] = DISABLED
+            self.entry_freq2["state"] = DISABLED
+        elif self._type == FilterField.Types.LOWPASS or self._type == FilterField.Types.HIGHPASS:
+            self.entry_freq1["state"] = NORMAL
+            self.entry_freq2["state"] = DISABLED
+        elif self._type == FilterField.Types.BANDPASS or self._type == FilterField.Types.BANDSTOP:
+            self.entry_freq1["state"] = NORMAL
+            self.entry_freq2["state"] = NORMAL
+        elif self._type is not None:
+            raise ValueError(f"unrecognized type {self._type}")
+
+        return valid
+
+    def _validate_freq1(self):
+        freq1 = None
+        try:
+            freq1 = float(self.var_freq1.get())
+            if self._type == FilterField.Types.NO_FILTER:
+                valid = True
+            elif self._type == FilterField.Types.LOWPASS or self._type == FilterField.Types.HIGHPASS:
+                valid = freq1 > 0
+            elif self._type == FilterField.Types.BANDPASS or self._type == FilterField.Types.BANDSTOP:
+                valid = freq1 > 0 and (freq1 <= (self._freq2 or freq1))
+            else:
+                raise ValueError(f"unrecognized type {self._type}")
+        except ValueError:
+            valid = False
+
+        self._freq1 = freq1 if valid else None
+        _set_validation_fg(self.entry_freq1, valid, True, self._freq1)
+        return valid
+
+    def _validate_freq2(self):
+        freq2 = None
+        try:
+            freq2 = float(self.var_freq1.get())
+            if self._type == FilterField.Types.NO_FILTER:
+                valid = True
+            elif self._type == FilterField.Types.LOWPASS or self._type == FilterField.Types.HIGHPASS:
+                valid = freq2 > 0
+            elif self._type == FilterField.Types.BANDPASS or self._type == FilterField.Types.BANDSTOP:
+                valid = freq2 > 0 and ((self._freq1 or freq2) <= freq2)
+            else:
+                raise ValueError(f"unrecognized type {self._type}")
+        except ValueError:
+            valid = False
+
+        self._freq2 = freq2 if valid else None
+        _set_validation_fg(self.entry_freq2, valid, True, self._freq2)
+        return valid
+
+    def lock(self):
+        self.box_type["state"] = DISABLED
+        self.entry_freq1["state"] = DISABLED
+        self.entry_freq2["state"] = DISABLED
+
+    def unlock(self):
+        self.box_type["state"] = NORMAL
+        self.entry_freq1["state"] = NORMAL
+        self.entry_freq2["state"] = NORMAL
+
+    def validate(self):
+        valid = self._validate_type()
+        valid = self._validate_freq1() and valid
+        return self._validate_freq2() and valid
+
 
 class FilterList(LabelFrame):
     def __init__(self, master, size):
@@ -382,6 +474,22 @@ class FilterList(LabelFrame):
 
         self.entry_freq = Entry(self, textvariable=self.var_freq, width=16)
         self.entry_freq.grid(row=last + 2, column=1, sticky=NSEW)
+
+    def lock(self):
+        self.entry_freq["state"] = DISABLED
+        for field in self.fields:
+            field.lock()
+
+    def unlock(self):
+        self.entry_freq["state"] = NORMAL
+        for field in self.fields:
+            field.unlock()
+
+    def validate(self):
+        valid = True
+        for field in self.fields:
+            valid = field.validate() and valid
+        return valid
 
 
 class FilterFrame(LabelFrame):
@@ -427,7 +535,13 @@ class FilterFrame(LabelFrame):
 
     def validate(self):
         self._mode = FilterFrame.Mode(value=self.var_mode.get())
-        return True
+        if self._mode == FilterFrame.Mode.AUTO:
+            self.freqs.lock()
+            return True
+        else:
+            self.freqs.unlock()
+            return self.freqs.validate()
+
 
 
 class FormatFrame(LabelFrame):
