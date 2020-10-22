@@ -192,7 +192,7 @@ class App(Tk):
 
         if request:
             self._set()
-        self.frames.config.general.refresh()
+        self.frames.config.target.refresh()
 
     def close(self):
         if self.serial_transport is not None and self.serial_transport.loop:
@@ -457,7 +457,7 @@ class App(Tk):
     async def acknowledge_pending(self):
         if self.frames.clicked_refresh:
             self.frames.clicked_refresh = False
-            self.frames.config.general.refresh()
+            self.frames.config.target.refresh()
 
         if self.thread_comp is not None:
             self.thread_comp.join(timeout=0)
@@ -500,15 +500,14 @@ class App(Tk):
                 self.pending &= ~ Pending.CONNECTING
                 self.thread_comm = th.Thread(target=self._communication, name="t.comm")
                 self.thread_comm.start()
-                self.frames.config.general.refresh()
+                self.frames.config.target.refresh()
 
         if self.pending & Pending.COMPUTING:
             self.pending &= ~ Pending.COMPUTING
 
-
         if self.pending & Pending.CONNECTING:
             self.pending &= ~ Pending.CONNECTING
-            self.frames.config.general.refresh()
+            self.frames.config.target.refresh()
 
         if self.pending & Pending.STATISTICS:
             self.pending &= ~ Pending.STATISTICS
@@ -544,29 +543,29 @@ class App(Tk):
         if not self.frames.config.validate():
             return False
         self.request.iterations = self.frames.config.general.iterations or self.request.iterations
-        self.request.target = self.frames.config.general.target or self.request.target
+        self.request.chunks = self.frames.config.general.chunks
+        self.request.mode = self.frames.config.general.mode
+        self.request.model = self.frames.config.general.model
+        self.request.source = self.frames.config.target.source or self.request.source
+        self.request.target = self.frames.config.target.target or self.request.target
+        self.request.start = self.frames.config.perfs.format.start
+        self.request.end = self.frames.config.perfs.format.end
+        self.request.verbose = self.frames.config.perfs.format.verbose
+        self.request.noise = self.frames.config.perfs.format.noise
         self.request.path = self.frames.config.file.path or self.request.path
-        self.request.source = Request.Sources.SERIAL
-        self.request.mode = self.frames.config.general.frame_mode.mode
-        self.request.model = self.frames.config.general.frame_model.model
-        self.request.start = self.frames.config.perfs.start
-        self.request.end = self.frames.config.perfs.end
-        self.request.chunks = self.frames.config.perfs.chunks
-        self.request.verbose = self.frames.config.perfs.verbose
-        self.request.noise = self.frames.config.perfs.noise
         return True
 
     def _set(self):
         self.frames.config.general.iterations = self.request.iterations
-        self.frames.config.general.target = self.request.target
-        self.frames.config.file.path = self.request.path
-        self.frames.config.general.frame_mode.mode = self.request.mode
-        self.frames.config.general.frame_model.model = self.request.model
-        self.frames.config.perfs.start = self.request.start
-        self.frames.config.perfs.end = self.request.end
         self.frames.config.perfs.chunks = self.request.chunks
-        self.frames.config.perfs.noise = self.request.noise
-        self.frames.config.perfs.verbose = self.request.verbose
+        self.frames.config.general.mode = self.request.mode
+        self.frames.config.general.model = self.request.model
+        self.frames.config.target.target = self.request.target
+        self.frames.config.perfs.format.start = self.request.start
+        self.frames.config.perfs.format.end = self.request.end
+        self.frames.config.perfs.format.noise = self.request.noise
+        self.frames.config.perfs.format.verbose = self.request.verbose
+        self.frames.config.file.path = self.request.path
         return True
 
     async def launch(self):
