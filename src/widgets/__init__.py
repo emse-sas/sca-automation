@@ -44,15 +44,21 @@ class MainFrame(Frame):
         self.button_launch.pack(side=LEFT)
         self.button_stop = Button(self.buttons, text="Stop", command=self.stop)
         self.button_stop.pack(side=LEFT)
+        self.button_refresh = Button(self.buttons, text="Refresh", command=self.refresh)
+        self.button_refresh.pack(side=LEFT)
 
         self.clicked_launch = False
         self.clicked_stop = False
+        self.clicked_refresh = False
 
     def launch(self):
         self.clicked_launch = True
 
     def stop(self):
         self.clicked_stop = True
+
+    def refresh(self):
+        self.clicked_refresh = True
 
     def lock_launch(self):
         self.button_launch['state'] = DISABLED

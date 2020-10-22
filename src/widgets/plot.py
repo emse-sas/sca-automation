@@ -104,6 +104,7 @@ class PlotFrame(LabelFrame):
         self.ax1.set_xlim([self.scale[0], request.iterations * (request.chunks or 1)])
 
     def draw_corr(self, data, byte):
+        byte = byte or 0
         stats = data
         for legend in self.fig.legends:
             legend.remove()

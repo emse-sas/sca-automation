@@ -8,12 +8,15 @@ from lib.cpa import Models
 from lib.data import Request
 
 
-def _set_validation_fg(widget, valid):
-    widget.config({"foreground": "Green" if valid else "Red"})
+def _set_validation_fg(widget, valid, optional=False, value=None):
+    if not optional:
+        widget.config({"foreground": "Green" if valid else "Red"})
+        return
 
-
-def _clear_fg(widget):
-    widget.config({"foreground": "Black"})
+    if valid and not value:
+        widget.config({"foreground": "Black"})
+    else:
+        widget.config({"foreground": "Green" if valid else "Red"})
 
 
 class ModeFrame(LabelFrame):
@@ -122,6 +125,7 @@ class PlotFrame(LabelFrame):
     class Mode(Enum):
         STATISTICS = 0
         CORRELATION = 1
+        NOISE = 2
 
     def __init__(self, master):
         super().__init__(master, text="Plots")
@@ -140,28 +144,35 @@ class PlotFrame(LabelFrame):
         self.radio_mode_stats = Radiobutton(self,
                                             text="Statistics",
                                             variable=self.var_mode,
-                                            value=0)
+                                            value=PlotFrame.Mode.STATISTICS.value)
         self.radio_mode_stats.grid(row=1, column=0, sticky=W, padx=4)
 
         self.radio_mode_corr = Radiobutton(self,
                                            text="Correlation",
                                            variable=self.var_mode,
-                                           value=1)
+                                           value=PlotFrame.Mode.CORRELATION.value)
         self.radio_mode_corr.grid(row=2, column=0, sticky=W, padx=4)
 
+        self.radio_mode_noise = Radiobutton(self,
+                                            text="Noise",
+                                            variable=self.var_mode,
+                                            value=PlotFrame.Mode.NOISE.value)
+        self.radio_mode_noise.grid(row=3, column=0, sticky=W, padx=4)
+
     def _validate_byte(self):
-        byte = None
+        byte = self.var_byte.get()
         try:
-            byte = int(self.var_byte.get())
+            byte = int(byte)
             valid = byte >= 0
         except ValueError:
-            valid = False
+            valid = byte == ""
+            byte = 0
         if valid:
             self._old_byte = self._byte
             self._byte = byte
         else:
             self._byte = None
-        _set_validation_fg(self.label_byte, valid)
+        _set_validation_fg(self.label_byte, valid, optional=True, value=self._byte)
         return valid
 
     @property
@@ -190,9 +201,11 @@ class GeneralFrame(LabelFrame):
         super().__init__(master, text="General")
         Grid.columnconfigure(self, 1, weight=1)
         Grid.columnconfigure(self, 0, weight=1)
-
+        self._ports = []
         self._iterations = None
         self._target = None
+        self._frame_target = LabelFrame(self, text="Target")
+        self._frame_target.grid(row=1, column=0, sticky=NSEW, padx=4, columnspan=2)
         self.var_iterations = StringVar()
         self.var_target = StringVar()
 
@@ -201,10 +214,7 @@ class GeneralFrame(LabelFrame):
         self.entry_iterations = Entry(self, textvariable=self.var_iterations)
         self.entry_iterations.grid(row=0, column=1, sticky=EW, padx=4)
 
-        self.label_target = Label(self, text="Target *")
-        self.label_target.grid(row=1, column=0, sticky=W, padx=4)
-        self.entry_target = Entry(self, textvariable=self.var_target)
-        self.entry_target.grid(row=1, column=1, sticky=EW, padx=4)
+        self.radios_target = []
 
         self.frame_mode = ModeFrame(self)
         self.frame_mode.grid(row=2, column=0, sticky=NSEW, padx=4)
@@ -249,14 +259,25 @@ class GeneralFrame(LabelFrame):
     def _validate_target(self):
         valid = False
         target = self.var_target.get()
-        for port, *_ in serial.tools.list_ports.comports():
+        for port, *_ in self._ports:
             if port == target:
                 valid = True
                 break
 
         self._target = target if valid else None
-        _set_validation_fg(self.label_target, valid)
         return valid
+
+    def refresh(self):
+        self._ports = serial.tools.list_ports.comports()
+        for radio in self.radios_target:
+            radio.destroy()
+        self.radios_target.clear()
+        for row, port in enumerate(self._ports):
+            self.radios_target.append(Radiobutton(self._frame_target,
+                                                  text=port,
+                                                  variable=self.var_target,
+                                                  value=port[0]))
+            self.radios_target[-1].grid(row=row, column=0, sticky=W, padx=4)
 
     def validate(self):
         valid = self._validate_target()
@@ -264,19 +285,13 @@ class GeneralFrame(LabelFrame):
 
     def lock(self):
         self.entry_iterations["state"] = DISABLED
-        self.entry_target["state"] = DISABLED
         self.frame_mode.lock()
         self.frame_model.lock()
 
     def unlock(self):
         self.entry_iterations["state"] = NORMAL
-        self.entry_target["state"] = NORMAL
         self.frame_mode.unlock()
         self.frame_model.unlock()
-
-    def clear(self):
-        _clear_fg(self.label_iterations)
-        _clear_fg(self.label_target)
 
 
 class PerfsFrame(LabelFrame):
@@ -394,7 +409,7 @@ class PerfsFrame(LabelFrame):
             valid = start == ""
 
         self._start = start if valid and start != "" else None
-        _set_validation_fg(self.label_start, valid)
+        _set_validation_fg(self.label_start, valid, optional=True, value=self._start)
         return valid
 
     def _validate_end(self):
@@ -406,7 +421,7 @@ class PerfsFrame(LabelFrame):
             valid = end == ""
 
         self._end = end if valid and end != "" else None
-        _set_validation_fg(self.label_end, valid)
+        _set_validation_fg(self.label_end, valid, optional=True, value=self._end)
         return valid
 
     def _validate_chunks(self):
@@ -418,7 +433,7 @@ class PerfsFrame(LabelFrame):
             valid = chunks == ""
 
         self._chunks = chunks if valid and chunks != "" else None
-        _set_validation_fg(self.label_chunks, valid)
+        _set_validation_fg(self.label_chunks, valid, optional=True, value=self._chunks)
         return valid
 
     def validate(self):
@@ -440,11 +455,6 @@ class PerfsFrame(LabelFrame):
         self.check_verbose["state"] = NORMAL
         self.check_noise["state"] = NORMAL
 
-    def clear(self):
-        _clear_fg(self.label_start)
-        _clear_fg(self.label_end)
-        _clear_fg(self.label_chunks)
-
     def update(self):
         _set_validation_fg(self.label_start, self._start)
         _set_validation_fg(self.label_end, self._end)
@@ -455,7 +465,7 @@ class FilesFrame(LabelFrame):
     def __init__(self, master):
         super().__init__(master, text="Files")
         Grid.columnconfigure(self, 1, weight=1)
-        self._path = os.path.abspath(os.sep.join(os.getcwd().split(os.sep)[:-3] + ["data"]))
+        self._path = os.path.abspath(os.sep.join(os.getcwd().split(os.sep)[:-1] + ["data"]))
         self.label_path = Label(self, text="Path *")
         self.label_path.grid(row=0, column=0, sticky=W, padx=4)
         self.var_path = StringVar(value=self._path)
@@ -488,9 +498,6 @@ class FilesFrame(LabelFrame):
 
     def unlock(self):
         self.entry_path["state"] = NORMAL
-
-    def clear(self):
-        _clear_fg(self.label_path)
 
     def update(self):
         _set_validation_fg(self.label_path, self._path)

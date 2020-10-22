@@ -11,14 +11,6 @@ All the entity classes of the module provide CSV support
 to allow processing acquisition data without parsing.
 It also provides formatting data in a more human-readable format.
 
-Examples
---------
->>> from lib import data
->>> meta = data.Meta("path/to/meta.csv")
->>> leak = data.Leak("path/to/leak.csv")
->>> # some processing on meta
->>> meta.write_csv("path/to/meta.csv",)
-
 """
 
 import csv
@@ -876,7 +868,7 @@ class Parser:
         for idx, line in enumerate(lines):
             if line in (Keywords.END_ACQ_TAG, Keywords.START_TRACE_TAG, Keywords.START_RAW_TAG):
                 if valid is False:
-                    valid = line == Keywords.START_TRACE_TAG
+                    valid = line == (Keywords.START_RAW_TAG if noise else Keywords.START_TRACE_TAG)
                 if noise:
                     noised = (line == Keywords.START_RAW_TAG) or not (line == Keywords.START_TRACE_TAG)
                 continue

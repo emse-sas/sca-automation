@@ -232,6 +232,8 @@ class Handler:
     def clear(self, samples=0):
         self.iterations = 0
         self.samples = samples
+        self.blocks = None
+        self.key = np.zeros((BLOCK_SIZE,), dtype=np.int)
         self.hypothesis = np.zeros((COUNT_HYP, COUNT_CLS), dtype=np.uint8)
         self.lens = np.zeros((BLOCK_SIZE, COUNT_CLS), dtype=np.int)
         self.sums = np.zeros((BLOCK_SIZE, COUNT_CLS, samples), dtype=np.float)

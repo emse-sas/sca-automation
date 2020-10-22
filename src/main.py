@@ -12,13 +12,14 @@ from tkinter import *
 
 import numpy as np
 import serial_asyncio
-from scipy import signal, fft
+from scipy import fft, signal
 
 import lib.traces as tr
 from lib.aes import BLOCK_LEN
 from lib.cpa import Handler, Statistics
 from lib.data import Request, Parser, Keywords
 from widgets import MainFrame, config, sizeof
+from widgets.config import PlotFrame
 
 logger_format = '[%(asctime)s | %(processName)s | %(threadName)s] %(message)s'
 logging.basicConfig(stream=sys.stdout, format=logger_format, level=logging.DEBUG, datefmt="%y-%m-%d %H:%M:%S")
@@ -43,6 +44,7 @@ class Pending(Flag):
     VALID = auto()
     STARTING = auto()
     CONNECTING = auto()
+    COMPUTING = auto()
     LAUNCHING = auto()
     PARSING = auto()
     STATISTICS = auto()
@@ -63,7 +65,7 @@ def show_error(*args):
 
 class AppSerial(asyncio.Protocol):
     def __init__(self):
-        self.buffer = bytearray()
+        self.buffer = bytes()
         self.transport = None
         self.connected = False
         self.done = False
@@ -80,7 +82,7 @@ class AppSerial(asyncio.Protocol):
     def connection_made(self, transport):
         self.total_size = 0
         self.size = 0
-        self.buffer.clear()
+        self.buffer = bytes()
         self.transport = transport
         self.connected = True
         self.done = False
@@ -128,11 +130,7 @@ class AppSerial(asyncio.Protocol):
 
     async def send(self, buffer):
         logging.info(f"sending {buffer} to {self.transport.serial.name}")
-        try:
-            self.buffer.clear()
-        except BufferError as err:
-            logging.warning(err)
-
+        self.buffer = bytes()
         self.transport.serial.flush()
         self.done = False
         self.pending = False
@@ -151,27 +149,28 @@ class App(Tk):
 
         self.tasks = []
         self.tasks.append(loop.create_task(self.event_loop(interval), name="event.update"))
-
-        self.queue_stats = mp.Queue(1)
-        self.queue_corr = mp.Queue(1)
-        self.queue_comp = mp.Queue(1)
-        self.queue_comm = mp.Queue(1)
-        self.process_stats = mp.Process(target=App.statistics, args=(self.queue_stats,), name="p.stats")
-        self.process_corr = mp.Process(target=App.correlation, args=(self.queue_corr,), name="p.corr")
-        self.thread_comp = th.Thread(target=self.computation, name="t.comp")
-        self.thread_comm = th.Thread(target=self.communication, name="t.comm")
+        self.thread_comp = None
+        self.thread_comm = None
 
         self.command = ""
         self.request = request or Request()
         self.parser = Parser()
         self.handler = Handler(0)
         self.stats = Statistics()
-        self.mean = None
-        self.spectrum = None
-        self.freq = None
-        self.trace = None
+        self.iterations = 0
+        self.buffer = None
+
+        self.trace_mean = None
+        self.trace_spectrum = None
+        self.trace_freq = None
+        self.trace_sum = None
         self.traces = None
-        self.maxs = None
+
+        self.noise_mean = None
+        self.noise_spectrum = None
+        self.noise_freq = None
+        self.noise_sum = None
+        self.noises = None
 
         self.state = State.IDLE
         self.pending = Pending.IDLE
@@ -189,181 +188,181 @@ class App(Tk):
         self.t_end = None
 
         self.protocol("WM_DELETE_WINDOW", self.close)
-        self.process_stats.start()
-        logging.info(self.process_stats)
-        self.process_corr.start()
-        logging.info(self.process_corr)
-        self.thread_comp.start()
-        logging.info(self.thread_comp)
-        self.thread_comm.start()
-        logging.info(self.thread_comm)
         self.frames.log.log("*** Welcome to SCABox demo ***\n")
 
         if request:
             self._set()
+        self.frames.config.general.refresh()
 
     def close(self):
-        self.queue_comm.put(False)
         if self.serial_transport is not None and self.serial_transport.loop:
             self.serial_transport.loop.call_soon_threadsafe(self.serial_transport.close)
-        self.thread_comm.join()
-        self.queue_comm.close()
-        logging.info(self.thread_comm)
 
         for task in self.tasks:
             task.cancel()
         self.loop_main.call_soon_threadsafe(self.loop_main.stop)
 
-        self.queue_stats.put((None,))
-        self.process_stats.join()
-        self.queue_stats.close()
-        logging.info(self.process_stats)
+        if self.thread_comm is not None:
+            self.thread_comm.join()
+            logging.info(self.thread_comm)
 
-        self.queue_corr.put((None,))
-        self.process_corr.join()
-        self.queue_corr.close()
-        logging.info(self.process_corr)
-
-        self.queue_comp.put(False)
-        self.thread_comp.join()
-        self.queue_comp.close()
-        logging.info(self.thread_comp)
+        if self.thread_comp is not None:
+            self.thread_comp.join()
+            logging.info(self.thread_comp)
 
         self.destroy()
 
-    def communication(self):
+    def _communication(self):
         self.loop_com = asyncio.new_event_loop()
-        while True:
+        if not self.serial_transport or self.serial_transport.is_closing():
             try:
-                if not self.queue_comm.get():
-                    return
-            except KeyboardInterrupt:
-                return
+                coro = serial_asyncio.create_serial_connection(
+                    self.loop_com,
+                    AppSerial,
+                    self.request.target,
+                    baudrate=921600,
+                    timeout=10)
+                self.serial_transport, self.serial_protocol = self.loop_com.run_until_complete(coro)
+                self.loop_com.run_forever()
+            except Exception as err:
+                logging.info(err)
+        self.loop_com.close()
 
-            if not self.serial_transport or self.serial_transport.is_closing():
-                try:
-                    coro = serial_asyncio.create_serial_connection(
-                        self.loop_com,
-                        AppSerial,
-                        self.request.target,
-                        baudrate=921600,
-                        timeout=10)
-                    self.serial_transport, self.serial_protocol = self.loop_com.run_until_complete(coro)
-                    self.loop_com.run_forever()
-                except Exception as err:
-                    logging.info(err)
-                    continue
+    def _computation(self):
+        t_start = time.perf_counter()
+        if not self.parse():
+            return
+        self.pending |= Pending.PARSING
 
-    def computation(self):
-        while True:
-            try:
-                if not self.queue_comp.get():
-                    return
-            except KeyboardInterrupt:
-                return
+        if not self.save():
+            pass
 
-            t_start = time.perf_counter()
-            self.parser.clear()
-            self.parser.parse(self.serial_protocol.buffer,
-                              direction=self.request.direction,
-                              verbose=self.request.verbose,
-                              warns=True)
-            t_end = time.perf_counter()
-            self.pending |= Pending.PARSING
+        pipe_stats = mp.Pipe()
+        pipe_noise = mp.Pipe()
+        pipe_corr = mp.Pipe()
 
-            parsed = len(self.parser.channel)
-            if not parsed:
-                logging.critical("no traces parsed, skipping...")
-                return
-            else:
-                logging.info(f"{parsed} traces parsed in {timedelta(seconds=t_end - t_start)}")
+        process_stats = mp.Process(target=self.statistics, args=(self.trace_sum, self.parser.leak, pipe_stats[1]),
+                                   name="p.stats")
+        process_noise = mp.Process(target=self.statistics, args=(self.noise_sum, self.parser.noise, pipe_noise[1]),
+                                   name="p.noise")
+        process_corr = mp.Process(target=self.correlation, args=(pipe_corr[1],),
+                                  name="p.corr")
+        process_stats.start()
+        if self.request.noise:
+            process_noise.start()
 
-            try:
-                append = self.request.chunks is not None
-                suffix = f"_{self.curr_chunk}.bin" if self.curr_chunk is not None else ".bin"
-                path = self.request.path
-                with open(os.path.join(self.request.path, self.request.filename(suffix=suffix)), "wb+") as file:
-                    file.write(self.serial_protocol.buffer)
-                self.parser.channel.write_csv(os.path.join(path, self.request.filename("channel", ".csv")), append)
-                self.parser.leak.write_csv(os.path.join(path, self.request.filename("leak", ".csv")), append)
-                self.parser.meta.write_csv(os.path.join(path, self.request.filename("meta", ".csv")), append)
-                self.parser.noise.write_csv(os.path.join(path, self.request.filename("noise", ".csv")), append)
-                logging.info(f"traces successfully saved {(self.curr_chunk or 0) + 1}/{self.request.chunks or 1}")
-            except OSError as err:
-                logging.error(f"error occurred during saving: {err}")
+        self.traces = pipe_stats[0].recv()
+        self.noises = pipe_noise[0].recv() if self.request.noise else None
+        self.trace_sum = pipe_stats[0].recv()
+        self.noise_sum = pipe_noise[0].recv() if self.request.noise else None
+        self.trace_mean = pipe_stats[0].recv()
+        self.noise_mean = pipe_noise[0].recv() if self.request.noise else None
 
-            if self.trace is None:
-                self.traces = np.array(tr.adjust(self.parser.leak.traces))
-                self.trace = np.sum(self.traces, axis=0)
-            else:
-                self.traces = np.array(tr.adjust(self.parser.leak.traces, len(self.trace)))
-                self.trace += np.sum(self.traces, axis=0)
+        process_corr.start()
+        self.trace_spectrum = pipe_stats[0].recv()
+        self.noise_spectrum = pipe_noise[0].recv() if self.request.noise else None
+        self.trace_freq = pipe_stats[0].recv()
+        self.noise_freq = pipe_noise[0].recv() if self.request.noise else None
 
-            self.queue_stats.put((self.trace, self.traces, self.serial_protocol.total_iterations))
-            self.queue_corr.put((self.handler, self.stats, self.request.model, self.parser.channel, self.traces))
-            try:
-                self.mean, self.spectrum, self.freq = self.queue_stats.get()
-            except ValueError:
-                return
-            if self.frames.config.plot.mode == config.PlotFrame.Mode.STATISTICS:
-                self.pending |= Pending.STATISTICS
-            try:
-                self.handler, self.stats = self.queue_corr.get()
-            except ValueError:
-                return
+        if self.frames.config.plot.mode == config.PlotFrame.Mode.STATISTICS \
+                or self.frames.config.plot.mode == config.PlotFrame.Mode.NOISE:
+            self.pending |= Pending.STATISTICS
 
-            self.frames.plot.update_scale(self.handler, self.request)
-            if self.frames.config.plot.mode == config.PlotFrame.Mode.CORRELATION:
-                self.pending |= Pending.CORRELATION
+        self.handler = pipe_corr[0].recv()
+        self.stats = pipe_corr[0].recv()
+        self.frames.plot.update_scale(self.handler, self.request)
+        if self.frames.config.plot.mode == config.PlotFrame.Mode.CORRELATION:
+            self.pending |= Pending.CORRELATION
 
+        process_stats.join()
+        if self.request.noise:
+            process_noise.join()
+        process_corr.join()
+
+        if self.curr_chunk is not None:
+            self.pending |= Pending.CHUNK
+        self.t_end = time.perf_counter()
+        t_end = time.perf_counter()
+        logging.info(f"computing succeeded in {timedelta(seconds=t_end - t_start)}")
+        logging.info(f"acquisition succeeded in {timedelta(seconds=self.t_end - self.t_start)}")
+
+    def parse(self):
+        t_start = time.perf_counter()
+        self.parser.clear()
+        self.parser.parse(self.buffer,
+                          direction=self.request.direction,
+                          verbose=self.request.verbose,
+                          noise=self.request.noise,
+                          warns=True)
+        t_end = time.perf_counter()
+        parsed = len(self.parser.channel)
+        if not parsed:
+            logging.critical("no traces parsed, skipping...")
             if self.curr_chunk is not None:
                 self.pending |= Pending.CHUNK
             self.t_end = time.perf_counter()
-            logging.info(f"acquisition succeeded in {timedelta(seconds=self.t_end - self.t_start)}")
+            return False
+        else:
+            logging.info(f"{parsed} traces parsed in {timedelta(seconds=t_end - t_start)}")
+        return True
 
-    @classmethod
-    def statistics(cls, queue):
-        while True:
-            try:
-                trace, traces, iterations = queue.get()
-            except (ValueError, KeyboardInterrupt):
-                return
+    def save(self):
+        try:
+            append = self.request.chunks is not None
+            suffix = f"_{self.curr_chunk}.bin" if self.curr_chunk is not None else ".bin"
+            path = self.request.path
+            with open(os.path.join(self.request.path, self.request.filename(suffix=suffix)), "wb+") as file:
+                file.write(self.serial_protocol.buffer)
+            self.parser.channel.write_csv(os.path.join(path, self.request.filename("channel", ".csv")), append)
+            self.parser.leak.write_csv(os.path.join(path, self.request.filename("leak", ".csv")), append)
+            self.parser.meta.write_csv(os.path.join(path, self.request.filename("meta", ".csv")), append)
+            self.parser.noise.write_csv(os.path.join(path, self.request.filename("noise", ".csv")), append)
+            logging.info(f"traces successfully saved {(self.curr_chunk or 0) + 1}/{self.request.chunks or 1}")
+        except OSError as err:
+            logging.error(f"error occurred during saving: {err}")
+            return False
+        return True
 
-            t_start = time.perf_counter()
-            mean = trace / iterations
-            spectrum = np.absolute(fft.fft(mean - np.mean(mean)))
-            size = spectrum.size
-            freq = np.argsort(np.fft.fftfreq(size, 1.0 / 200e6)[:size // 2] / 1e6)
-            queue.put((mean, spectrum, freq))
-            t_end = time.perf_counter()
-            logging.info(f"{iterations} traces computed in {timedelta(seconds=t_end - t_start)}")
+    def statistics(self, trace, leak, pipe):
+        t_start = time.perf_counter()
+        traces = np.array(tr.adjust(leak.traces, None if trace is None else trace.shape[0]))
+        pipe.send(traces)
+        if trace is None:
+            trace = np.sum(traces, axis=0)
+        else:
+            trace += np.sum(traces, axis=0)
+        pipe.send(trace)
+        mean = np.divide(trace, self.iterations)
+        pipe.send(mean)
+        spectrum = np.absolute(fft.fft(mean - np.mean(mean)))
+        pipe.send(spectrum)
+        size = spectrum.size
+        freq = np.argsort(np.fft.fftfreq(size, 1.0 / 200e6)[:size // 2] / 1e6)
+        pipe.send(freq)
+        t_end = time.perf_counter()
+        logging.info(f"{self.iterations} traces computed in {timedelta(seconds=t_end - t_start)}")
 
-    @classmethod
-    def correlation(cls, queue):
-        f_sampling = 200e6
-        f_nyquist = f_sampling / 2
-        f_cut = 13e6
-        w_cut = f_cut / f_nyquist
-        order = 4
-        b, a, *_ = signal.butter(order, w_cut, btype="highpass", output="ba")
-
-        while True:
-            try:
-                handler, stats, model, channel, traces = queue.get()
-            except (ValueError, KeyboardInterrupt):
-                return
-
-            t_start = time.perf_counter()
-            for trace in traces:
-                trace[:] = signal.filtfilt(b, a, trace)
-            if handler.iterations > 0:
-                handler.set_blocks(channel).accumulate(traces)
-            else:
-                handler = Handler(model, channel, traces)
-            stats.update(handler)
-            t_end = time.perf_counter()
-            logging.info(f"{len(channel)} traces computed in {timedelta(seconds=t_end - t_start)}")
-            queue.put((handler, stats))
+    def correlation(self, pipe):
+        t_start = time.perf_counter()
+        if self.request.noise:
+            noise_mean = np.mean(self.noises, axis=0)
+            noise_mean -= np.mean(noise_mean)
+            noise_mean = signal.detrend(noise_mean)
+            noise_spectrum = fft.fft(noise_mean)
+            for trace in self.traces:
+                trace = signal.detrend(trace)
+                trace_spectrum = fft.fft(trace - np.mean(trace))
+                trace[:] = fft.ifft(trace_spectrum - noise_spectrum)
+                # _, trace[:] = signal.deconvolve(trace - np.mean(trace), noise_mean)
+        if self.handler.iterations > 0:
+            self.handler.set_blocks(self.parser.channel).accumulate(self.traces)
+        else:
+            self.handler = Handler(self.request.model, self.parser.channel, self.traces)
+        pipe.send(self.handler)
+        self.stats.update(self.handler)
+        pipe.send(self.stats)
+        t_end = time.perf_counter()
+        logging.info(f"{self.iterations} traces computed in {timedelta(seconds=t_end - t_start)}")
 
     async def event_loop(self, interval):
         while True:
@@ -383,6 +382,8 @@ class App(Tk):
             if self.frames.config.plot.mode == config.PlotFrame.Mode.CORRELATION:
                 self.pending |= Pending.CORRELATION
             elif self.frames.config.plot.mode == config.PlotFrame.Mode.STATISTICS:
+                self.pending |= Pending.STATISTICS
+            elif self.frames.config.plot.mode == config.PlotFrame.Mode.NOISE:
                 self.pending |= Pending.STATISTICS
 
         if self.state != State.IDLE:
@@ -440,15 +441,34 @@ class App(Tk):
                 self.state = State.ACQUIRED
 
         elif self.state == State.ACQUIRED:
+            self.iterations = self.serial_protocol.total_iterations
+            self.buffer = bytes(self.serial_protocol.buffer)
+            self.pending |= Pending.COMPUTING
             if self.curr_chunk is not None and self.next_chunk < self.request.chunks - 1:
                 self.next_chunk += 1
                 self.state = State.LAUNCHED
             else:
                 self.state = State.IDLE
                 self.pending |= Pending.DONE
-            self.queue_comp.put(True)
+            if self.thread_comp is None:
+                self.thread_comp = th.Thread(target=self._computation, name="t.comp")
+                self.thread_comp.start()
 
     async def acknowledge_pending(self):
+        if self.frames.clicked_refresh:
+            self.frames.clicked_refresh = False
+            self.frames.config.general.refresh()
+
+        if self.thread_comp is not None:
+            self.thread_comp.join(timeout=0)
+            if not self.thread_comp.is_alive():
+                self.thread_comp = None
+
+        if self.thread_comm is not None:
+            self.thread_comm.join(timeout=0)
+            if not self.thread_comm.is_alive():
+                self.thread_comm = None
+
         if self.serial_protocol and self.serial_protocol.pending:
             self.serial_protocol.pending = False
             await self.show_serial()
@@ -475,6 +495,21 @@ class App(Tk):
             self.pending &= ~ Pending.PARSING
             await self.show_parsing()
 
+        if self.pending & Pending.CONNECTING:
+            if self.thread_comm is None:
+                self.pending &= ~ Pending.CONNECTING
+                self.thread_comm = th.Thread(target=self._communication, name="t.comm")
+                self.thread_comm.start()
+                self.frames.config.general.refresh()
+
+        if self.pending & Pending.COMPUTING:
+            self.pending &= ~ Pending.COMPUTING
+
+
+        if self.pending & Pending.CONNECTING:
+            self.pending &= ~ Pending.CONNECTING
+            self.frames.config.general.refresh()
+
         if self.pending & Pending.STATISTICS:
             self.pending &= ~ Pending.STATISTICS
             await self.show_stats()
@@ -486,10 +521,6 @@ class App(Tk):
             await self.show_parsing()
             if self.state != State.IDLE:
                 await self.show_starting()
-
-        if self.pending & Pending.CONNECTING:
-            self.pending &= ~ Pending.CONNECTING
-            self.queue_comm.put(True)
 
         if self.pending & Pending.CHUNK:
             self.pending &= ~ Pending.CHUNK
@@ -521,6 +552,8 @@ class App(Tk):
         self.request.start = self.frames.config.perfs.start
         self.request.end = self.frames.config.perfs.end
         self.request.chunks = self.frames.config.perfs.chunks
+        self.request.verbose = self.frames.config.perfs.verbose
+        self.request.noise = self.frames.config.perfs.noise
         return True
 
     def _set(self):
@@ -532,13 +565,25 @@ class App(Tk):
         self.frames.config.perfs.start = self.request.start
         self.frames.config.perfs.end = self.request.end
         self.frames.config.perfs.chunks = self.request.chunks
+        self.frames.config.perfs.noise = self.request.noise
+        self.frames.config.perfs.verbose = self.request.verbose
         return True
 
     async def launch(self):
         logging.info("launching attack...")
         self.handler.clear().set_model(self.request.model)
-        self.trace = None
-        self.maxs = None
+        self.parser.clear()
+        self.trace_mean = None
+        self.trace_spectrum = None
+        self.trace_freq = None
+        self.trace_sum = None
+        self.traces = None
+
+        self.noise_mean = None
+        self.noise_spectrum = None
+        self.noise_freq = None
+        self.noise_sum = None
+        self.noises = None
         self.stats.clear()
         self.t_start = time.perf_counter()
         self.curr_chunk = 0 if self.request.chunks else None
@@ -627,7 +672,12 @@ class App(Tk):
         else:
             msg = f"Statistics computed {now}"
         self.frames.log.var_status.set(msg)
-        self.frames.plot.draw_stats((self.mean, self.spectrum, self.freq))
+        if self.frames.config.plot.mode == PlotFrame.Mode.STATISTICS:
+            self.frames.plot.draw_stats((self.trace_mean, self.trace_spectrum, self.trace_freq))
+        elif self.frames.config.plot.mode == PlotFrame.Mode.NOISE:
+            self.frames.plot.draw_stats((self.noise_mean, self.noise_spectrum, self.noise_freq))
+        else:
+            raise ValueError(f"invalid plot mode : {self.frames.config.plot.mode}")
 
     async def show_corr(self):
         now = f"{datetime.now():the %d %b %Y at %H:%M:%S}"
@@ -640,10 +690,10 @@ class App(Tk):
         self.frames.log.log(f"* Correlation computed *\n"
                             f"{self.stats}\n"
                             f"{'exacts':<16}{np.count_nonzero(self.stats.exacts[-1])}/{BLOCK_LEN * BLOCK_LEN}\n")
-        self.frames.plot.draw_corr(self.stats, self.frames.config.plot.byte)
+        self.frames.plot.draw_corr(self.stats, min(self.frames.config.plot.byte, 15))
 
-argp = argparse.ArgumentParser(
-    description="Acquire data from SoC and export it.")
+
+argp = argparse.ArgumentParser(description="Side-channel attack demonstration GUI.")
 argp.add_argument("-i", "--iterations", type=int,
                   help="Requested count of traces.")
 argp.add_argument("-t", "--target", type=str,
@@ -674,7 +724,6 @@ argp.add_argument("--model", type=int,
                   help="Leakage model.")
 
 if __name__ == "__main__":
-
 
     lo = asyncio.get_event_loop()
     app = App(lo, request=Request(argp.parse_args()))
