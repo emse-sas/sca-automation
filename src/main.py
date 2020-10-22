@@ -19,7 +19,7 @@ from lib.aes import BLOCK_LEN
 from lib.cpa import Handler, Statistics
 from lib.data import Request, Parser, Keywords
 from widgets import MainFrame, config, sizeof
-from widgets.config import PlotFrame
+from widgets.config import PlotFrame, PlotList
 
 logger_format = '[%(asctime)s | %(processName)s | %(threadName)s] %(message)s'
 logging.basicConfig(stream=sys.stdout, format=logger_format, level=logging.DEBUG, datefmt="%y-%m-%d %H:%M:%S")
@@ -196,6 +196,8 @@ class App(Tk):
         self.frames.config.target.refresh()
 
     def close(self):
+        self.loop_main.call_soon_threadsafe(self.destroy)
+
         if self.serial_transport is not None and self.serial_transport.loop:
             self.serial_transport.loop.call_soon_threadsafe(self.serial_transport.close)
 
@@ -211,7 +213,7 @@ class App(Tk):
             self.thread_comp.join()
             logging.info(self.thread_comp)
 
-        self.destroy()
+
 
     def _communication(self):
         self.loop_com = asyncio.new_event_loop()
@@ -265,14 +267,14 @@ class App(Tk):
         self.trace_freq = pipe_stats[0].recv()
         self.noise_freq = pipe_noise[0].recv() if self.request.noise else None
 
-        if self.frames.config.plot.mode == config.PlotFrame.Mode.STATISTICS \
-                or self.frames.config.plot.mode == config.PlotFrame.Mode.NOISE:
+        if self.frames.config.plot.mode.mode == config.PlotList.Mode.STATISTICS \
+                or self.frames.config.plot.mode.mode == config.PlotList.Mode.NOISE:
             self.pending |= Pending.STATISTICS
 
         self.handler = pipe_corr[0].recv()
         self.stats = pipe_corr[0].recv()
         self.frames.plot.update_scale(self.handler, self.request)
-        if self.frames.config.plot.mode == config.PlotFrame.Mode.CORRELATION:
+        if self.frames.config.plot.mode.mode == config.PlotList.Mode.CORRELATION:
             self.pending |= Pending.CORRELATION
 
         process_stats.join()
@@ -380,11 +382,11 @@ class App(Tk):
 
     async def update_state(self):
         if self.frames.config.plot.validate() and self.frames.config.plot.changed and self.handler.iterations > 0:
-            if self.frames.config.plot.mode == config.PlotFrame.Mode.CORRELATION:
+            if self.frames.config.plot.mode.mode == config.PlotList.Mode.CORRELATION:
                 self.pending |= Pending.CORRELATION
-            elif self.frames.config.plot.mode == config.PlotFrame.Mode.STATISTICS:
+            elif self.frames.config.plot.mode.mode == config.PlotList.Mode.STATISTICS:
                 self.pending |= Pending.STATISTICS
-            elif self.frames.config.plot.mode == config.PlotFrame.Mode.NOISE:
+            elif self.frames.config.plot.mode.mode == config.PlotList.Mode.NOISE:
                 self.pending |= Pending.STATISTICS
 
         if self.state != State.IDLE:
@@ -680,12 +682,12 @@ class App(Tk):
         else:
             msg = f"Statistics computed {now}"
         self.frames.log.var_status.set(msg)
-        if self.frames.config.plot.mode == PlotFrame.Mode.STATISTICS:
+        if self.frames.config.plot.mode.mode == PlotList.Mode.STATISTICS:
             self.frames.plot.draw_stats((self.trace_mean, self.trace_spectrum, self.trace_freq))
-        elif self.frames.config.plot.mode == PlotFrame.Mode.NOISE:
+        elif self.frames.config.plot.mode.mode == PlotList.Mode.NOISE:
             self.frames.plot.draw_stats((self.noise_mean, self.noise_spectrum, self.noise_freq))
         else:
-            raise ValueError(f"invalid plot mode : {self.frames.config.plot.mode}")
+            raise ValueError(f"invalid plot mode : {self.frames.config.plot.mode.mode}")
 
     async def show_corr(self):
         now = f"{datetime.now():the %d %b %Y at %H:%M:%S}"
@@ -698,7 +700,7 @@ class App(Tk):
         self.frames.log.log(f"* Correlation computed *\n"
                             f"{self.stats}\n"
                             f"{'exacts':<16}{np.count_nonzero(self.stats.exacts[-1])}/{BLOCK_LEN * BLOCK_LEN}\n")
-        self.frames.plot.draw_corr(self.stats, min(self.frames.config.plot.byte, 15))
+        self.frames.plot.draw_corr(self.stats, min(self.frames.config.plot.options.byte, 15))
 
 
 argp = argparse.ArgumentParser(description="Side-channel attack demonstration GUI.")

@@ -510,13 +510,13 @@ class FilterFrame(LabelFrame):
                                            text="Auto",
                                            variable=self.var_mode,
                                            value=FilterFrame.Mode.AUTO.value)
-        self.radio_mode_auto.grid(row=0, column=0, columnspan=3, sticky=W, padx=4)
+        self.radio_mode_auto.grid(row=0, column=0, columnspan=2, sticky=NSEW, padx=4)
 
         self.radio_mode_manual = Radiobutton(self,
                                              text="Manual",
                                              variable=self.var_mode,
                                              value=FilterFrame.Mode.MANUAL.value)
-        self.radio_mode_manual.grid(row=1, column=0, columnspan=3, sticky=W, padx=4)
+        self.radio_mode_manual.grid(row=0, column=2, sticky=NSEW, padx=4)
 
         self.freqs = FilterList(self, 4)
         self.freqs.grid(row=2, column=0, columnspan=3, sticky=NSEW)
@@ -541,7 +541,6 @@ class FilterFrame(LabelFrame):
         else:
             self.freqs.unlock()
             return self.freqs.validate()
-
 
 
 class FormatFrame(LabelFrame):
@@ -679,9 +678,9 @@ class PerfsFrame(LabelFrame):
         Grid.columnconfigure(self, 1, weight=1)
 
         self.format = FormatFrame(self)
-        self.format.grid(row=0, column=0, sticky=NSEW, padx=4)
+        self.format.grid(row=0, column=0, sticky=NSEW)
         self.filter = FilterFrame(self)
-        self.filter.grid(row=0, column=1, sticky=NSEW, padx=4)
+        self.filter.grid(row=0, column=1, sticky=NSEW)
 
     def lock(self):
         self.format.lock()
@@ -735,43 +734,55 @@ class FilesFrame(LabelFrame):
         self.entry_path["state"] = NORMAL
 
 
-class PlotFrame(LabelFrame):
+class PlotList(LabelFrame):
+    class Mode(Enum):
+        STATISTICS = "Leakage"
+        NOISE = "Noise"
+        CORRELATION = "Correlation"
+
+    def __init__(self, master):
+        super().__init__(master, text="Mode")
+        self._mode = PlotList.Mode.CORRELATION
+        self._old_mode = PlotList.Mode.CORRELATION
+        self.var_mode = StringVar(value=self._mode.value)
+        self.radios_mode = [Radiobutton(self,
+                                        text=e.value,
+                                        variable=self.var_mode,
+                                        value=e.value) for e in PlotList.Mode]
+
+        for i, radio in enumerate(self.radios_mode):
+            radio.grid(row=i, column=0, sticky=W, padx=4)
+
+    @property
+    def changed(self):
+        return self._old_mode != self._mode
+
+    @property
+    def mode(self):
+        return self._mode
+
+    def validate(self):
+        self._old_mode = PlotList.Mode(value=self._mode.value)
+        self._mode = PlotList.Mode(value=self.var_mode.get())
+        return True
+
+
+class PlotOptions(LabelFrame):
     class Mode(Enum):
         STATISTICS = 0
         CORRELATION = 1
         NOISE = 2
 
     def __init__(self, master):
-        super().__init__(master, text="Plots")
-        self._mode = PlotFrame.Mode.CORRELATION
-        self._old_mode = PlotFrame.Mode.CORRELATION
+        super().__init__(master, text="Options")
         self._byte = None
         self._old_byte = None
-        self.var_mode = IntVar(value=self._mode.value)
         self.var_byte = StringVar(value=0)
 
         self.label_byte = Label(self, text="Byte")
         self.label_byte.grid(row=0, column=0, sticky=W, padx=4)
         self.entry_byte = Entry(self, textvariable=self.var_byte)
         self.entry_byte.grid(row=0, column=1, sticky=EW, padx=4)
-
-        self.radio_mode_stats = Radiobutton(self,
-                                            text="Statistics",
-                                            variable=self.var_mode,
-                                            value=PlotFrame.Mode.STATISTICS.value)
-        self.radio_mode_stats.grid(row=1, column=0, sticky=W, padx=4)
-
-        self.radio_mode_corr = Radiobutton(self,
-                                           text="Correlation",
-                                           variable=self.var_mode,
-                                           value=PlotFrame.Mode.CORRELATION.value)
-        self.radio_mode_corr.grid(row=2, column=0, sticky=W, padx=4)
-
-        self.radio_mode_noise = Radiobutton(self,
-                                            text="Noise",
-                                            variable=self.var_mode,
-                                            value=PlotFrame.Mode.NOISE.value)
-        self.radio_mode_noise.grid(row=3, column=0, sticky=W, padx=4)
 
     def _validate_byte(self):
         byte = self.var_byte.get()
@@ -791,23 +802,36 @@ class PlotFrame(LabelFrame):
 
     @property
     def changed(self):
-        return ((self._old_byte or 0) != (self._byte or 0)) or (self._old_mode != self._mode)
-
-    @property
-    def mode(self):
-        return self._mode
+        return (self._old_byte or 0) != (self._byte or 0)
 
     @property
     def byte(self):
         return self._byte
 
     def validate(self):
-        self.on_click()
         return self._validate_byte()
 
-    def on_click(self):
-        self._old_mode = PlotFrame.Mode(value=self._mode.value)
-        self._mode = PlotFrame.Mode(value=self.var_mode.get())
+
+class PlotFrame(LabelFrame):
+
+    def __init__(self, master):
+        super().__init__(master, text="Plots")
+
+        Grid.columnconfigure(self, 0, weight=1)
+        Grid.columnconfigure(self, 1, weight=1)
+
+        self.mode = PlotList(self)
+        self.mode.grid(row=0, column=0, sticky=NSEW)
+        self.options = PlotOptions(self)
+        self.options.grid(row=0, column=1, sticky=NSEW)
+
+    @property
+    def changed(self):
+        return self.mode.changed or self.options.changed
+
+    def validate(self):
+        valid = self.mode.validate()
+        return self.options.validate() and valid
 
 
 class ConfigFrame(LabelFrame):
