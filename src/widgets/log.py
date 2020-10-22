@@ -8,7 +8,7 @@ class LogFrame(LabelFrame):
         self.text_log.configure(height=18)
         self.text_log.pack()
         self.text_status = Text(self, state=DISABLED)
-        self.text_status.configure(height=4)
+        self.text_status.configure(height=5)
         self.text_status.pack()
         self.text_status.tag_configure("last_insert", background="bisque")
         self.var_status = StringVar(value="Initialized")

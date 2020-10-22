@@ -389,6 +389,7 @@ class App(Tk):
         if self.state != State.IDLE:
             if self.frames.clicked_stop and self.status & Status.PAUSE:
                 self.state = State.IDLE
+                self.pending |= Pending.STOP
                 self.status &= ~Status.PAUSE
             elif self.frames.clicked_stop:
                 self.pending |= Pending.STOP
@@ -405,8 +406,7 @@ class App(Tk):
                 logging.warning(f"error occurred during validation {err}")
                 valid = False
 
-            if ((not valid) and self.status & Status.VALID) or (valid and not (self.status & Status.VALID)):
-                self.pending |= Pending.IDLE
+            self.pending |= Pending.IDLE
             self.status = self.status | Status.VALID if valid else self.status & ~Status.VALID
             if self.frames.clicked_launch and valid:
                 self.state = State.LAUNCHED
@@ -475,6 +475,7 @@ class App(Tk):
 
         if self.pending & Pending.IDLE:
             self.pending &= ~ Pending.IDLE
+            self.command = f"{self.request.command('sca')}"
             await self.show_idle()
 
         if self.pending & Pending.LAUNCHING:
@@ -531,8 +532,10 @@ class App(Tk):
             self.pending &= ~ Pending.DONE
 
         if self.pending & Pending.STOP:
-            self.frames.config.unlock()
-            self.frames.unlock_launch()
+            if self.status & Status.PAUSE:
+                self.frames.unlock_launch()
+            else:
+                self.frames.config.unlock()
             self.pending &= ~ Pending.STOP
 
         if self.pending & Pending.RESUME:
@@ -621,6 +624,11 @@ class App(Tk):
         else:
             self.frames.log.var_status.set("Please correct errors before launching acquisition...")
             self.frames.lock_launch()
+
+        msg = f"{'target':<16}{self.request.target}\n"
+        msg += f"{'requested':<16}{self.request.total}\n"
+        msg += f"{'command':<16}{self.command}\n"
+        self.frames.log.update_text_status(msg)
 
     async def show_serial(self):
         acquired = self.serial_protocol.iterations

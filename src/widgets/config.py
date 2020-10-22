@@ -127,8 +127,13 @@ class GeneralFrame(LabelFrame):
         mode = _recreate_label(self.var_mode.get())
         names = [e.name for e in Request.Modes]
         values = [e.value for e in Request.Modes]
-        valid = names.index(mode) != -1
-        self._mode = Request.Modes(value=values[valid]) if valid else None
+        idx = -1
+        try:
+            idx = names.index(mode)
+            valid = True
+        except ValueError:
+            valid = False
+        self._mode = Request.Modes(value=values[idx]) if valid else None
         _set_validation_fg(self.label_mode, valid)
         return valid
 
