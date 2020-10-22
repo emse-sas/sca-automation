@@ -5,6 +5,7 @@ from tkinter import ttk
 
 import serial.tools.list_ports
 
+from lib.cpa import Handler
 from lib.data import Request
 
 
@@ -19,21 +20,15 @@ def _set_validation_fg(widget, valid, optional=False, value=None):
         widget.config({"foreground": "Green" if valid else "Red"})
 
 
+def _clean_label(label):
+    return label.replace("_", " ").lower().title()
+
+
+def _recreate_label(label):
+    return label.upper().replace(" ", "_")
+
+
 class GeneralFrame(LabelFrame):
-    class Mode(Enum):
-        HARDWARE = "Hardware"
-        TINY = "Tiny"
-        SSL = "OpenSSL"
-        DHUERTAS = "Dhuertas"
-
-    MODE_POS = {name.value: i for i, name in enumerate(Mode)}
-
-    class Model(Enum):
-        SBOX = "SBox R0"
-        INV_SBOX = "InvSBox R10"
-
-    MODEL_POS = {name.value: i for i, name in enumerate(Model)}
-
     def __init__(self, master):
         super().__init__(master, text="General")
 
@@ -41,10 +36,8 @@ class GeneralFrame(LabelFrame):
         self._mode = None
         self._model = None
         self._chunks = None
-        self._target = None
 
         self.var_iterations = StringVar()
-        self.var_target = StringVar()
         self.var_mode = StringVar()
         self.var_model = StringVar()
         self.var_chunks = StringVar()
@@ -61,12 +54,14 @@ class GeneralFrame(LabelFrame):
 
         self.label_mode = Label(self, text="Mode *")
         self.label_mode.grid(row=2, column=0, sticky=W, padx=4)
-        self.box_mode = ttk.Combobox(self, values=[e.value for e in GeneralFrame.Mode], textvariable=self.var_mode)
+        self.box_mode = ttk.Combobox(self, textvariable=self.var_mode,
+                                     values=[_clean_label(e.name) for e in Request.Modes])
         self.box_mode.grid(row=2, column=1, sticky=EW, padx=4)
 
         self.label_model = Label(self, text="Model *")
         self.label_model.grid(row=3, column=0, sticky=W, padx=4)
-        self.box_model = ttk.Combobox(self, values=[e.value for e in GeneralFrame.Model], textvariable=self.var_model)
+        self.box_model = ttk.Combobox(self, textvariable=self.var_model,
+                                      values=[_clean_label(e.name) for e in Handler.Models])
         self.box_model.grid(row=3, column=1, sticky=EW, padx=4)
 
         Grid.columnconfigure(self, 1, weight=1)
@@ -92,7 +87,7 @@ class GeneralFrame(LabelFrame):
         if mode is None:
             return
         self._mode = mode
-        self.var_mode.set(mode)
+        self.var_mode.set(_clean_label(mode.name))
 
     @property
     def model(self):
@@ -103,7 +98,7 @@ class GeneralFrame(LabelFrame):
         if model is None:
             return
         self._model = model
-        self.var_model.set(model)
+        self.var_model.set(_clean_label(model.name))
 
     @property
     def chunks(self):
@@ -129,16 +124,25 @@ class GeneralFrame(LabelFrame):
         return valid
 
     def _validate_mode(self):
-        mode = self.var_mode.get()
-        valid = mode in (m.value for m in GeneralFrame.Mode)
-        self._mode = GeneralFrame.MODE_POS[mode] if valid else None
+        mode = _recreate_label(self.var_mode.get())
+        names = [e.name for e in Request.Modes]
+        values = [e.value for e in Request.Modes]
+        valid = names.index(mode) != -1
+        self._mode = Request.Modes(value=values[valid]) if valid else None
         _set_validation_fg(self.label_mode, valid)
         return valid
 
     def _validate_model(self):
-        model = self.var_model.get()
-        valid = model in (m.value for m in GeneralFrame.Model)
-        self._model = GeneralFrame.MODEL_POS[model] if valid else None
+        model = _recreate_label(self.var_model.get())
+        names = [e.name for e in Handler.Models]
+        values = [e.value for e in Handler.Models]
+        idx = -1
+        try:
+            idx = names.index(model)
+            valid = True
+        except ValueError:
+            valid = False
+        self._model = Handler.Models(value=values[idx]) if valid else None
         _set_validation_fg(self.label_model, valid)
         return valid
 
@@ -174,11 +178,9 @@ class GeneralFrame(LabelFrame):
 
 
 class TargetFrame(LabelFrame):
-    class Source(Enum):
-        SERIAL = "Serial"
-        FILE = "File"
-
-    SOURCE_POS = {s.value: i for i, s in enumerate(Source)}
+    class Sources(Enum):
+        SERIAL = "serial"
+        FILE = "file"
 
     def __init__(self, master):
         super().__init__(master, text="Target")
@@ -186,7 +188,7 @@ class TargetFrame(LabelFrame):
 
         self._port = None
         self._path = None
-        self._source = Request.Sources.FILE
+        self._source = TargetFrame.Sources.FILE
         self.var_port = StringVar()
         self.var_path = StringVar()
         self.var_source = StringVar(value=self._source)
@@ -198,7 +200,7 @@ class TargetFrame(LabelFrame):
         self.radio_source_serial = Radiobutton(self,
                                                text="Serial",
                                                variable=self.var_source,
-                                               value=Request.Sources.SERIAL)
+                                               value=TargetFrame.Sources.SERIAL.value)
         self.radio_source_serial.grid(row=0, column=0, sticky=W, padx=4)
         self.box_serial = ttk.Combobox(self, textvariable=self.var_port, values=[])
         self.box_serial.grid(row=0, column=1, sticky=NSEW, padx=4)
@@ -208,7 +210,7 @@ class TargetFrame(LabelFrame):
         self.radio_source_file = Radiobutton(self,
                                              text="Files",
                                              variable=self.var_source,
-                                             value=Request.Sources.FILE)
+                                             value=TargetFrame.Sources.FILE.value)
         self.radio_source_file.grid(row=1, column=0, sticky=W, padx=4)
         self.entry_file = Entry(self, textvariable=self.var_path)
         self.entry_file.grid(row=1, column=1, sticky=NSEW, padx=4, columnspan=2)
@@ -216,18 +218,17 @@ class TargetFrame(LabelFrame):
 
     @property
     def target(self):
-        return self._path if self._source == Request.Sources.FILE else self._port
+        return self._path if self._source == TargetFrame.Sources.FILE else self._port
 
     @target.setter
     def target(self, target):
-        self.refresh()
         if target is None:
             return
         if target in self._devices:
-            self.source = Request.Sources.SERIAL
+            self.source = TargetFrame.Sources.SERIAL
             self.port = target
             return
-        self.source = Request.Sources.FILE
+        self.source = TargetFrame.Sources.FILE
         self.path = target
 
     @property
@@ -260,8 +261,9 @@ class TargetFrame(LabelFrame):
     def source(self, source):
         if source is None:
             return
+
         self._source = source
-        self.var_source.set(source)
+        self.var_source.set(source.value)
 
     def refresh(self):
         ports = serial.tools.list_ports.comports()
@@ -287,19 +289,21 @@ class TargetFrame(LabelFrame):
         return valid
 
     def validate(self):
-        self._source = self.var_source.get()
-        if self._source == Request.Sources.SERIAL:
+        self._source = TargetFrame.Sources(value=self.var_source.get())
+        if self._source == TargetFrame.Sources.SERIAL:
             _set_validation_fg(self.radio_source_file, True, True, None)
             self.entry_file["state"] = DISABLED
             self.box_serial["state"] = NORMAL
             self.label_infos["state"] = NORMAL
             return self._validate_port()
-        elif self._source == Request.Sources.FILE:
+        elif self._source == TargetFrame.Sources.FILE:
             _set_validation_fg(self.radio_source_serial, True, True, None)
             self.entry_file["state"] = NORMAL
             self.box_serial["state"] = DISABLED
             self.label_infos["state"] = DISABLED
             return self._validate_path()
+        else:
+            raise ValueError(f"unrecognized source {self._source}")
 
     def lock(self):
         self.entry_file["state"] = DISABLED
@@ -309,10 +313,10 @@ class TargetFrame(LabelFrame):
         self.label_infos["state"] = DISABLED
 
     def unlock(self):
-        if self._source == Request.Sources.SERIAL:
+        if self._source == TargetFrame.Sources.SERIAL:
             self.entry_file["state"] = DISABLED
             self.box_serial["state"] = NORMAL
-        elif self._source == Request.Sources.FILE:
+        elif self._source == TargetFrame.Sources.FILE:
             self.entry_file["state"] = NORMAL
             self.box_serial["state"] = DISABLED
 

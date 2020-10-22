@@ -9,6 +9,7 @@ to retrieve attack results in a reasonable amount of time.
 
 """
 import concurrent
+from enum import Enum
 from itertools import product
 
 import numpy as np
@@ -19,14 +20,13 @@ COUNT_HYP = 256  # Count of key hypothesis for one byte
 COUNT_CLS = 256  # Traces with the same byte value in a given position
 BLOCK_SIZE = aes.BLOCK_SIZE
 
-
-class Models:
+class Models(Enum):
     """CPA power consumption models.
 
     """
 
-    SBOX = 0
-    INV_SBOX = 1
+    SBOX_R0 = 0
+    INV_SBOX_R10 = 1
 
 
 class Statistics:
@@ -196,6 +196,14 @@ class Handler:
 
     """
 
+    class Models(Enum):
+        """CPA power consumption models.
+
+        """
+
+        SBOX_R0 = 0
+        INV_SBOX_R10 = 1
+
     def __init__(self, model, channel=None, traces=None, samples=None):
         """Allocates memory, accumulates traces and initialize model.
 
@@ -205,7 +213,7 @@ class Handler:
             Channel data blocks for each trace.
         traces : np.ndarray
             Leak traces matrix.
-        model : int
+        model : Handler.Models
             Hypothesis model.
         samples : int
             Count of time samples in the signals.
@@ -288,9 +296,9 @@ class Handler:
 
     def set_key(self, channel):
         shape = (BLOCK_SIZE,)
-        if self.model == Models.SBOX:
+        if self.model == Handler.Models.SBOX_R0:
             self.key = aes.words_to_block(channel.keys[0]).reshape(shape)
-        elif self.model == Models.INV_SBOX:
+        elif self.model == Handler.Models.INV_SBOX_R10:
             self.key = aes.key_expansion(aes.words_to_block(channel.keys[0]))[10].T.reshape(shape)
         else:
             raise ValueError(f"unknown model: {self.model}")
@@ -298,9 +306,9 @@ class Handler:
 
     def set_blocks(self, channel):
         shape = (BLOCK_SIZE,)
-        if self.model == Models.SBOX:
+        if self.model == Handler.Models.SBOX_R0:
             self.blocks = np.array([aes.words_to_block(block).reshape(shape) for block in channel.plains])
-        elif self.model == Models.INV_SBOX:
+        elif self.model == Handler.Models.INV_SBOX_R10:
             self.blocks = ([aes.words_to_block(block).reshape(shape) for block in channel.ciphers])
         else:
             raise ValueError(f"unknown model: {self.model}")
@@ -311,8 +319,8 @@ class Handler:
 
         Parameters
         ----------
-        model : int
-            Model index.
+        model : Handler.Models
+            Model value.
 
         Returns
         -------
@@ -320,15 +328,16 @@ class Handler:
             Reference to self.
 
         """
-        self.model = model
-        if model == Models.SBOX:
+
+        if model == Handler.Models.SBOX_R0:
             for h, k in product(range(COUNT_HYP), range(COUNT_CLS)):
                 self.hypothesis[h, k] = bin(aes.S_BOX[k ^ h]).count("1")
-        elif model == Models.INV_SBOX:
+        elif model == Handler.Models.INV_SBOX_R10:
             for h, k in product(range(COUNT_HYP), range(COUNT_CLS)):
                 self.hypothesis[h, k] = bin(aes.INV_S_BOX[k ^ h] ^ k).count("1")
         else:
             raise ValueError(f"unknown model: {self.model}")
+        self.model = model
         return self
 
     @classmethod

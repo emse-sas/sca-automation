@@ -17,9 +17,10 @@ import csv
 import math
 import os
 from collections.abc import *
+from enum import Enum
 from warnings import warn
 
-from lib.cpa import Models
+from lib.cpa import Models, Handler
 
 
 class Serializable:
@@ -475,23 +476,15 @@ class Request:
 
     ACQ_CMD_NAME = "sca"
 
-    class Modes:
+    class Modes(Enum):
         HARDWARE = "hw"
         TINY = "tiny"
-        SSL = "ssl"
+        OPENSSL = "ssl"
         DHUERTAS = "dhuertas"
 
-    class Directions:
+    class Directions(Enum):
         ENCRYPT = "enc"
         DECRYPT = "dec"
-
-    class Sources:
-        FILE = "file"
-        SERIAL = "serial"
-
-    class Sensors:
-        TDC = 0
-        RO = 1
 
     def __init__(self, args=None):
         """Initializes a request with a previously parsed command.
@@ -504,9 +497,8 @@ class Request:
         """
         self.target = ""
         self.iterations = 0
-        self.source = Request.Sources.FILE
         self.mode = Request.Modes.HARDWARE
-        self.model = Models.SBOX
+        self.model = Handler.Models.SBOX_R0
         self.direction = Request.Directions.ENCRYPT
         self.verbose = False
         self.noise = False
@@ -525,12 +517,10 @@ class Request:
             self.iterations = args.iterations
         if hasattr(args, "target"):
             self.target = args.target
-        if hasattr(args, "source"):
-            self.source = args.source
         if hasattr(args, "mode"):
-            self.mode = args.mode
+            self.mode = next(filter(lambda e: args.mode == e.name, Request.Modes))
         if hasattr(args, "model"):
-            self.model = args.model
+            self.model = next(filter(lambda e: args.model == e.name, Handler.Models))
         if hasattr(args, "direction"):
             self.direction = args.direction
         if hasattr(args, "verbose"):
@@ -551,8 +541,6 @@ class Request:
             self.iterations = args["iterations"]
         if "target" in args:
             self.target = args["target"]
-        if "source" in args:
-            self.source = args["source"]
         if "mode" in args:
             self.mode = args["mode"]
         if "model" in args:
@@ -576,7 +564,6 @@ class Request:
         return f"{type(self).__name__}" \
                f"({self.target!r}, " \
                f"{self.iterations!r}, " \
-               f"{self.source!r}, " \
                f"{self.mode!r}, " \
                f"{self.model!r}, " \
                f"{self.direction!r}, " \
@@ -589,10 +576,9 @@ class Request:
     def __str__(self):
         return f"{'target':<16}{self.target}\n" \
                f"{'iterations':<16}{self.iterations}\n" \
-               f"{'source':<16}{self.source}\n" \
-               f"{'mode':<16}{self.mode}\n" \
-               f"{'model':<16}{self.model}\n" \
-               f"{'direction':<16}{self.direction}\n" \
+               f"{'mode':<16}{self.mode.name}\n" \
+               f"{'model':<16}{self.model.name}\n" \
+               f"{'direction':<16}{self.direction.name}\n" \
                f"{'verbose':<16}{self.verbose}\n" \
                f"{'start':<16}{self.start}\n" \
                f"{'end':<16}{self.end}\n" \
@@ -624,7 +610,7 @@ class Request:
     def command(self, name):
         return f"{name}" \
                f" -t {self.iterations}" \
-               f" -m {self.mode}" \
+               f" -m {self.mode.value}" \
                f"{' -i' if self.direction == Request.Directions.DECRYPT else ''}" \
                f"{' -r' if self.noise else ''}" \
                f"{' -v' if self.verbose else ''}" \

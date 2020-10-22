@@ -155,7 +155,7 @@ class App(Tk):
         self.command = ""
         self.request = request or Request()
         self.parser = Parser()
-        self.handler = Handler(0)
+        self.handler = Handler(Handler.Models.SBOX_R0)
         self.stats = Statistics()
         self.iterations = 0
         self.buffer = None
@@ -695,18 +695,18 @@ class App(Tk):
 argp = argparse.ArgumentParser(description="Side-channel attack demonstration GUI.")
 argp.add_argument("-i", "--iterations", type=int,
                   help="Requested count of traces.")
+argp.add_argument("-c", "--chunks", type=int, default=None,
+                  help="Count of chunks to acquire.")
+argp.add_argument("-m", "--mode",
+                  choices=[e.name for e in Request.Modes],
+                  default=Request.Modes.HARDWARE.name,
+                  help="Encryption mode.")
+argp.add_argument("--model", choices=[e.name for e in Handler.Models],
+                  default=Handler.Models.INV_SBOX_R10.name,
+                  help="Leakage model.")
 argp.add_argument("-t", "--target", type=str,
                   help="Serial acquisition target name.")
-argp.add_argument("-m", "--mode",
-                  choices=[Request.Modes.HARDWARE, Request.Modes.TINY, Request.Modes.SSL],
-                  default=Request.Modes.HARDWARE,
-                  help="Encryption mode.")
-argp.add_argument("-d", "--direction",
-                  choices=[Request.Directions.ENCRYPT, Request.Directions.DECRYPT],
-                  default=Request.Directions.ENCRYPT,
-                  help="Encryption direction.")
-argp.add_argument("--chunks", type=int, default=None,
-                  help="Count of chunks to acquire.")
+
 argp.add_argument("--path", type=str,
                   help="Path where to save files.")
 argp.add_argument("-p", "--plot", type=int, default=16,
@@ -719,8 +719,6 @@ argp.add_argument("-v", "--verbose", action="store_true",
                   help="Perform verbose serialization during acquisition.")
 argp.add_argument("-n", "--noise", action="store_true",
                   help="Acquire noise before starting each synchronous capture.")
-argp.add_argument("--model", type=int,
-                  help="Leakage model.")
 
 if __name__ == "__main__":
 
