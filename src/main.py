@@ -12,17 +12,32 @@ from tkinter import *
 
 import numpy as np
 import serial_asyncio
-from scipy import fft, signal
+from scipy import signal
 
 import lib.traces as tr
+from lib import cpa
 from lib.aes import BLOCK_LEN
-from lib.cpa import Handler, Statistics
+from lib.cpa import Handler
 from lib.data import Request, Parser, Keywords
 from widgets import MainFrame, config, sizeof
-from widgets.config import PlotFrame, PlotList
+from widgets.config import PlotList, FilterField
 
 logger_format = '[%(asctime)s | %(processName)s | %(threadName)s] %(message)s'
 logging.basicConfig(stream=sys.stdout, format=logger_format, level=logging.DEBUG, datefmt="%y-%m-%d %H:%M:%S")
+logging.getLogger('matplotlib.font_manager').disabled = True
+
+
+def _generate_filter(type, f_1, f_2, order=4, f_s=1):
+    f_n = f_s / 2
+    if type == FilterField.Types.LOWPASS or type == FilterField.Types.HIGHPASS:
+        w = f_1 / f_n
+    elif type == FilterField.Types.BANDPASS or type == FilterField.Types.BANDSTOP:
+        w = [f_1 / f_n, f_2 / f_n]
+    elif type == FilterField.Types.NO_FILTER:
+        return None
+    else:
+        raise ValueError(f"unrecognized type: {type}")
+    return signal.butter(order, w, btype=type.value.lower(), output="ba")
 
 
 class State(Enum):
@@ -85,6 +100,7 @@ class AppSerial(asyncio.Protocol):
         self.buffer = bytes()
         self.transport = transport
         self.connected = True
+        self.t_start = time.perf_counter()
         self.done = False
         self.pending = False
         self.paused = False
@@ -155,23 +171,17 @@ class App(Tk):
 
         self.command = ""
         self.request = request or Request()
-        self.parser = Parser()
-        self.handler = Handler(Handler.Models.SBOX_R0)
-        self.stats = Statistics()
         self.iterations = 0
         self.buffer = None
+        self.filters = None
 
-        self.trace_mean = None
-        self.trace_spectrum = None
-        self.trace_freq = None
-        self.trace_sum = None
-        self.traces = None
-
-        self.noise_mean = None
-        self.noise_spectrum = None
-        self.noise_freq = None
-        self.noise_sum = None
-        self.noises = None
+        self.parser = Parser()
+        self.handler = Handler()
+        self.trace = tr.Statistics()
+        self.noise = tr.Statistics()
+        self.trace_filt = tr.Statistics()
+        self.noise_filt = tr.Statistics()
+        self.stats = cpa.Statistics()
 
         self.state = State.IDLE
         self.pending = Pending.IDLE
@@ -213,8 +223,6 @@ class App(Tk):
             self.thread_comp.join()
             logging.info(self.thread_comp)
 
-
-
     def _communication(self):
         self.loop_com = asyncio.new_event_loop()
         if not self.serial_transport or self.serial_transport.is_closing():
@@ -240,32 +248,51 @@ class App(Tk):
         if not self.save():
             pass
 
-        pipe_stats = mp.Pipe()
+        pipe_trace = mp.Pipe()
         pipe_noise = mp.Pipe()
+        pipe_trace_filt = mp.Pipe()
+        pipe_noise_filt = mp.Pipe()
         pipe_corr = mp.Pipe()
 
-        process_stats = mp.Process(target=self.statistics, args=(self.trace_sum, self.parser.leak, pipe_stats[1]),
-                                   name="p.stats")
-        process_noise = mp.Process(target=self.statistics, args=(self.noise_sum, self.parser.noise, pipe_noise[1]),
-                                   name="p.noise")
-        process_corr = mp.Process(target=self.correlation, args=(pipe_corr[1],),
-                                  name="p.corr")
-        process_stats.start()
+        process_noise = mp.Process(
+            target=App.statistics,
+            args=(self.noise, self.parser.noise, None, None, pipe_noise[1]),
+            name="p.noise")
+
         if self.request.noise:
             process_noise.start()
+            self.noise = pipe_noise[0].recv()
 
-        self.traces = pipe_stats[0].recv()
-        self.noises = pipe_noise[0].recv() if self.request.noise else None
-        self.trace_sum = pipe_stats[0].recv()
-        self.noise_sum = pipe_noise[0].recv() if self.request.noise else None
-        self.trace_mean = pipe_stats[0].recv()
-        self.noise_mean = pipe_noise[0].recv() if self.request.noise else None
+        process_trace_filt = mp.Process(
+            target=App.statistics,
+            args=(self.trace, self.parser.leak, self.filters, self.noise, pipe_trace_filt[1]),
+            name="p.trace_filt")
+        process_trace_filt.start()
+        self.trace_filt = pipe_trace_filt[0].recv()
 
+        process_corr = mp.Process(
+            target=App.correlation,
+            args=(self.handler, self.stats, self.parser.channel, self.trace_filt, self.request.model, pipe_corr[1]),
+            name="p.corr")
         process_corr.start()
-        self.trace_spectrum = pipe_stats[0].recv()
-        self.noise_spectrum = pipe_noise[0].recv() if self.request.noise else None
-        self.trace_freq = pipe_stats[0].recv()
-        self.noise_freq = pipe_noise[0].recv() if self.request.noise else None
+
+        process_trace = mp.Process(
+            target=App.statistics,
+            args=(self.trace, self.parser.leak, None, None, pipe_trace[1]),
+            name="p.trace")
+        process_trace.start()
+
+        process_noise_filt = mp.Process(
+            target=App.statistics,
+            args=(self.noise, self.parser.noise, self.filters, self.noise, pipe_noise_filt[1]),
+            name="p.noise_filt")
+
+        if self.request.noise:
+            process_noise_filt.start()
+
+        self.trace = pipe_trace[0].recv()
+        if self.request.noise:
+            self.noise_filt = pipe_noise_filt[0].recv()
 
         if self.frames.config.plot.mode.mode == config.PlotList.Mode.STATISTICS \
                 or self.frames.config.plot.mode.mode == config.PlotList.Mode.NOISE:
@@ -273,13 +300,15 @@ class App(Tk):
 
         self.handler = pipe_corr[0].recv()
         self.stats = pipe_corr[0].recv()
-        self.frames.plot.update_scale(self.handler, self.request)
+
         if self.frames.config.plot.mode.mode == config.PlotList.Mode.CORRELATION:
             self.pending |= Pending.CORRELATION
 
-        process_stats.join()
+        process_trace.join()
+        process_trace_filt.join()
         if self.request.noise:
             process_noise.join()
+            process_noise_filt.join()
         process_corr.join()
 
         if self.curr_chunk is not None:
@@ -326,46 +355,26 @@ class App(Tk):
             return False
         return True
 
-    def statistics(self, trace, leak, pipe):
+    @classmethod
+    def statistics(cls, trace, leak, filters, noise, pipe):
         t_start = time.perf_counter()
-        traces = np.array(tr.adjust(leak.traces, None if trace is None else trace.shape[0]))
-        pipe.send(traces)
-        if trace is None:
-            trace = np.sum(traces, axis=0)
-        else:
-            trace += np.sum(traces, axis=0)
+        trace.update(leak, filters, noise)
         pipe.send(trace)
-        mean = np.divide(trace, self.iterations)
-        pipe.send(mean)
-        spectrum = np.absolute(fft.fft(mean - np.mean(mean)))
-        pipe.send(spectrum)
-        size = spectrum.size
-        freq = np.argsort(np.fft.fftfreq(size, 1.0 / 200e6)[:size // 2] / 1e6)
-        pipe.send(freq)
         t_end = time.perf_counter()
-        logging.info(f"{self.iterations} traces computed in {timedelta(seconds=t_end - t_start)}")
+        logging.info(f"{len(leak)} traces computed in {timedelta(seconds=t_end - t_start)}")
 
-    def correlation(self, pipe):
+    @classmethod
+    def correlation(cls, handler, stats, channel, trace, model, pipe):
         t_start = time.perf_counter()
-        if self.request.noise:
-            noise_mean = np.mean(self.noises, axis=0)
-            noise_mean -= np.mean(noise_mean)
-            noise_mean = signal.detrend(noise_mean)
-            noise_spectrum = fft.fft(noise_mean)
-            for trace in self.traces:
-                trace = signal.detrend(trace)
-                trace_spectrum = fft.fft(trace - np.mean(trace))
-                trace[:] = np.abs(fft.ifft(trace_spectrum - noise_spectrum))
-                # _, trace[:] = signal.deconvolve(trace - np.mean(trace), noise_mean)
-        if self.handler.iterations > 0:
-            self.handler.set_blocks(self.parser.channel).accumulate(self.traces)
+        if handler.iterations > 0:
+            handler.set_blocks(channel).accumulate(trace.cropped)
         else:
-            self.handler = Handler(self.request.model, self.parser.channel, self.traces)
-        pipe.send(self.handler)
-        self.stats.update(self.handler)
-        pipe.send(self.stats)
+            handler = Handler(model, channel, trace.cropped)
+        pipe.send(handler)
+        stats.update(handler)
+        pipe.send(stats)
         t_end = time.perf_counter()
-        logging.info(f"{self.iterations} traces computed in {timedelta(seconds=t_end - t_start)}")
+        logging.info(f"{len(channel)} traces computed in {timedelta(seconds=t_end - t_start)}")
 
     async def event_loop(self, interval):
         while True:
@@ -576,21 +585,22 @@ class App(Tk):
 
     async def launch(self):
         logging.info("launching attack...")
+        self.t_start = time.perf_counter()
         self.handler.clear().set_model(self.request.model)
         self.parser.clear()
-        self.trace_mean = None
-        self.trace_spectrum = None
-        self.trace_freq = None
-        self.trace_sum = None
-        self.traces = None
-
-        self.noise_mean = None
-        self.noise_spectrum = None
-        self.noise_freq = None
-        self.noise_sum = None
-        self.noises = None
+        self.trace.clear()
+        self.noise.clear()
+        self.trace_filt.clear()
+        self.noise_filt.clear()
         self.stats.clear()
-        self.t_start = time.perf_counter()
+        try:
+            self.filters = [_generate_filter(field.type,
+                                             field.freq1,
+                                             field.freq2,
+                                             f_s=self.frames.config.perfs.filter.freqs.freq)
+                            for field in self.frames.config.perfs.filter.freqs.fields]
+        except TypeError:
+            self.filters = None
         self.curr_chunk = 0 if self.request.chunks else None
         self.next_chunk = 0 if self.request.chunks else None
         try:
@@ -683,11 +693,18 @@ class App(Tk):
             msg = f"Statistics computed {now}"
         self.frames.log.var_status.set(msg)
         if self.frames.config.plot.mode.mode == PlotList.Mode.STATISTICS:
-            self.frames.plot.draw_stats((self.trace_mean, self.trace_spectrum, self.trace_freq))
+            if self.frames.config.plot.options.filtered:
+                self.frames.plot.draw_stats((self.trace_filt.mean, self.trace_filt.spectrum, self.trace_filt.freqs))
+            else:
+                self.frames.plot.draw_stats((self.trace.mean, self.trace.spectrum, self.trace.freqs))
         elif self.frames.config.plot.mode.mode == PlotList.Mode.NOISE:
-            self.frames.plot.draw_stats((self.noise_mean, self.noise_spectrum, self.noise_freq))
-        else:
-            raise ValueError(f"invalid plot mode : {self.frames.config.plot.mode.mode}")
+            if not self.request.noise:
+                return
+            if self.frames.config.plot.options.filtered:
+                self.frames.plot.draw_stats((self.noise_filt.mean, self.noise_filt.spectrum, self.noise_filt.freqs))
+            else:
+                self.frames.plot.draw_stats((self.noise.mean, self.noise.spectrum, self.noise.freqs))
+
 
     async def show_corr(self):
         now = f"{datetime.now():the %d %b %Y at %H:%M:%S}"
@@ -700,7 +717,7 @@ class App(Tk):
         self.frames.log.log(f"* Correlation computed *\n"
                             f"{self.stats}\n"
                             f"{'exacts':<16}{np.count_nonzero(self.stats.exacts[-1])}/{BLOCK_LEN * BLOCK_LEN}\n")
-        self.frames.plot.draw_corr(self.stats, min(self.frames.config.plot.options.byte, 15))
+        self.frames.plot.draw_corr(self.stats, min(self.frames.config.plot.options.byte or 0, 15))
 
 
 argp = argparse.ArgumentParser(description="Side-channel attack demonstration GUI.")

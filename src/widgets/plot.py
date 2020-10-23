@@ -1,6 +1,7 @@
 from tkinter import *
 
 import matplotlib.gridspec as gridspec
+from matplotlib import ticker
 from matplotlib.backends.backend_tkagg import (
     FigureCanvasTkAgg, NavigationToolbar2Tk)
 from matplotlib.figure import Figure
@@ -10,21 +11,23 @@ from lib.cpa import COUNT_HYP, Statistics
 
 def raw(ax, traces, limit=16, chunk=None):
     chunk = (chunk or 0) + 1
-    ax.set(xlabel="Time Samples", ylabel="Hamming Weights")
+    ax.set(xlabel="Time Samples", ylabel="Quantification")
     return [ax.plot(trace, label=f"iteration {d * chunk}") for d, trace in enumerate(traces[:limit])]
 
 
 def avg(ax, trace):
-    ax.set(xlabel="Time Samples", ylabel="Hamming Weights")
+    ax.set(xlabel="Time Samples", ylabel="Quantification")
     return ax.plot(trace, color="grey")
 
 
 def fft(ax, freq, spectrum, f):
+    ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda v, *_: f"{int(v / 1e6)}"))
     ax.set(xlabel="Frequency (MHz)", ylabel="Hamming Weight")
-    return ax.plot(freq[f], spectrum[f], color="red")
+    *_, line = ax.magnitude_spectrum(spectrum, Fs=200e6, color="red")
+    return line
 
 
-def iterations(ax, scale, stats, byte):
+def iterations(ax, stats, byte):
     maxs = Statistics.graph(stats.bests)
     ax.set(xlabel="Traces acquired", ylabel="Pearson Correlation")
     plot_key = None
@@ -32,13 +35,13 @@ def iterations(ax, scale, stats, byte):
     plots = []
     for h in range(COUNT_HYP):
         if h == stats.key[byte] and h == stats.guesses[-1][byte]:
-            plot_key, = plot_guess, = ax.plot(scale, maxs[byte, h], color="r", zorder=10)
+            plot_key, = plot_guess, = ax.plot(stats.iterations, maxs[byte, h], color="r", zorder=10)
         elif h == stats.key[byte]:
-            plot_key, = ax.plot(scale, maxs[byte, h], color="b", zorder=10)
+            plot_key, = ax.plot(stats.iterations, maxs[byte, h], color="b", zorder=10)
         elif h == stats.guesses[-1][byte]:
-            plot_guess, = ax.plot(scale, maxs[byte, h], color="c", zorder=10)
+            plot_guess, = ax.plot(stats.iterations, maxs[byte, h], color="c", zorder=10)
         else:
-            plots.append(ax.plot(scale, maxs[byte, h], color="grey"))
+            plots.append(ax.plot(stats.iterations, maxs[byte, h], color="grey"))
     return plot_key, plot_guess, plots
 
 
@@ -56,9 +59,8 @@ def temporal(ax, stats, byte):
 
 
 class PlotFrame(LabelFrame):
-    def __init__(self, master, scale=None):
+    def __init__(self, master):
         super().__init__(master, text="Plots")
-        self.scale = scale or []
         self.gs = gridspec.GridSpec(2, 1, hspace=0.5)
         self.fig = Figure(figsize=(16, 9))
         self.ax1 = self.fig.add_subplot(self.gs[0])
@@ -74,7 +76,6 @@ class PlotFrame(LabelFrame):
         self.canvas.get_tk_widget().pack(side=TOP)
 
     def clear(self):
-        self.scale = []
         self.ax1.clear()
         self.ax2.clear()
         self.fig.clear()
@@ -91,17 +92,11 @@ class PlotFrame(LabelFrame):
         self.ax1.clear()
         self.ax2.clear()
         self.plot1, = avg(self.ax1, mean)
-        self.plot2, = fft(self.ax2, freq, spectrum, freq)
+        self.plot2 = fft(self.ax2, freq, spectrum, freq)
         self.fig.suptitle("Leakage statistics")
         self.fig.legend((self.plot1, self.plot2),
                         ("Temporal average", "Spectrum average"))
         self.fig.canvas.draw()
-
-    def update_scale(self, handler, request):
-        self.scale.append(handler.iterations)
-        if not request.chunks:
-            return
-        self.ax1.set_xlim([self.scale[0], request.iterations * (request.chunks or 1)])
 
     def draw_corr(self, data, byte):
         byte = byte or 0
@@ -110,7 +105,7 @@ class PlotFrame(LabelFrame):
             legend.remove()
         self.ax1.clear()
         self.ax2.clear()
-        plot_key, plot_guess, _ = iterations(self.ax1, self.scale, stats, byte)
+        plot_key, plot_guess, _ = iterations(self.ax1, stats, byte)
         temporal(self.ax2, stats, byte)
         self.fig.suptitle(f"Correlation byte {byte}")
         self.fig.legend((plot_key, plot_guess),

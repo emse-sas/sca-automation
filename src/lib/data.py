@@ -20,7 +20,7 @@ from collections.abc import *
 from enum import Enum
 from warnings import warn
 
-from lib.cpa import Models, Handler
+from lib.cpa import Handler
 
 
 class Serializable:

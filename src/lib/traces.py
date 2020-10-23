@@ -6,7 +6,54 @@ function for power consumption signals.
 """
 
 import numpy as np
-from scipy import stats
+from scipy import stats, fft, signal
+
+
+def _pearsonr_from_ref(r, st, sh):
+    return list(map(lambda s: stats.pearsonr(r, st[s])[0], sh))
+
+
+class Statistics:
+    def __init__(self, leak=None, filters=None, noise=None):
+        self.iterations = 0
+        self.cropped = None
+        self.sum = None
+        self.mean = None
+        self.spectrum = None
+        self.freqs = None
+
+        if leak is not None:
+            self.update(leak, filters, noise)
+
+    def update(self, leak, filters=None, noise=None):
+        self.iterations += len(leak)
+        self.cropped = signal.detrend(adjust(leak.traces, None if self.sum is None else self.sum.shape[0]), axis=1)
+        self.cropped -= np.mean(self.cropped, axis=1).reshape((self.cropped.shape[0], 1))
+        if filters is not None:
+            for f in filters:
+                if f is None:
+                    continue
+                b, a, *_ = f
+                self.cropped = signal.filtfilt(b, a, self.cropped, axis=1)
+        elif noise is not None and noise.iterations > 0:
+            filtered = fft.fft(self.cropped, axis=1) - fft.fft(noise.cropped, axis=1)
+            self.cropped = np.real(fft.ifft(filtered, axis=1))
+
+        if self.sum is None:
+            self.sum = np.sum(self.cropped, axis=0)
+        else:
+            self.sum += np.sum(self.cropped, axis=0)
+        self.mean = np.divide(self.sum, self.iterations)
+        self.spectrum = np.absolute(fft.fft(self.mean))
+        size = len(self.spectrum)
+        self.freqs = np.argsort(np.fft.fftfreq(size, 1.0 / 200e6)[:size // 2] / 1e6)
+
+    def clear(self):
+        self.iterations = 0
+        self.cropped = None
+        self.sum = None
+        self.mean = None
+        self.spectrum = None
 
 
 def crop(traces, end=None):
@@ -75,6 +122,9 @@ def adjust(traces, n=None, fill=0):
 def sync(traces, step=1, stop=None):
     """Synchronize trace signals by correlating them
 
+    WARNING: this method may cause segfault
+    when the memory adjacent to traces cannot be used
+
     This function implements an algorithm based on Pearson's
     correlation to synchronize signals peaks.
 
@@ -105,9 +155,6 @@ def sync(traces, step=1, stop=None):
     shape = (m, m)
     stop = min(stop or m, m)
     shifts = list(range(0, stop, step))
-
-    def _pearsonr_from_ref(r, st, sh):
-        return list(map(lambda s: stats.pearsonr(r, st[s])[0], sh))
 
     for trace in traces:
         strided = np.lib.stride_tricks.as_strided(trace, shape, strides_pos)

@@ -411,7 +411,7 @@ class FilterField(Frame):
             else:
                 raise ValueError(f"unrecognized type {self._type}")
         except ValueError:
-            valid = False
+            valid = self._type == FilterField.Types.NO_FILTER
 
         self._freq1 = freq1 if valid else None
         _set_validation_fg(self.entry_freq1, valid, True, self._freq1)
@@ -430,7 +430,7 @@ class FilterField(Frame):
             else:
                 raise ValueError(f"unrecognized type {self._type}")
         except ValueError:
-            valid = False
+            valid = self._type == FilterField.Types.NO_FILTER
 
         self._freq2 = freq2 if valid else None
         _set_validation_fg(self.entry_freq2, valid, True, self._freq2)
@@ -475,6 +475,22 @@ class FilterList(LabelFrame):
         self.entry_freq = Entry(self, textvariable=self.var_freq, width=16)
         self.entry_freq.grid(row=last + 2, column=1, sticky=NSEW)
 
+    @property
+    def freq(self):
+        return self._freq
+
+    def _validate_freq(self):
+        freq = self.var_freq.get()
+        try:
+            freq = float(freq)
+            valid = True
+        except ValueError:
+            valid = freq == ""
+
+        self._freq = freq if valid and freq != "" else None
+        _set_validation_fg(self.label_freq, valid, optional=True, value=self._freq)
+        return valid
+
     def lock(self):
         self.entry_freq["state"] = DISABLED
         for field in self.fields:
@@ -489,7 +505,7 @@ class FilterList(LabelFrame):
         valid = True
         for field in self.fields:
             valid = field.validate() and valid
-        return valid
+        return self._validate_freq() and valid
 
 
 class FilterFrame(LabelFrame):
@@ -776,13 +792,19 @@ class PlotOptions(LabelFrame):
     def __init__(self, master):
         super().__init__(master, text="Options")
         self._byte = None
+        self._filtered = False
         self._old_byte = None
+        self._old_filtered = False
         self.var_byte = StringVar(value=0)
-
+        self.var_filtered = BooleanVar(value=0)
         self.label_byte = Label(self, text="Byte")
         self.label_byte.grid(row=0, column=0, sticky=W, padx=4)
         self.entry_byte = Entry(self, textvariable=self.var_byte)
         self.entry_byte.grid(row=0, column=1, sticky=EW, padx=4)
+        self.check_filtered = Checkbutton(self, text="Filtered", var=self.var_filtered,
+                                          onvalue=True,
+                                          offvalue=False)
+        self.check_filtered.grid(row=1, column=0, sticky=EW, padx=4)
 
     def _validate_byte(self):
         byte = self.var_byte.get()
@@ -790,25 +812,28 @@ class PlotOptions(LabelFrame):
             byte = int(byte)
             valid = byte >= 0
         except ValueError:
-            valid = byte == ""
             byte = 0
-        if valid:
-            self._old_byte = self._byte
-            self._byte = byte
-        else:
-            self._byte = None
+            valid = byte == ""
+        self._old_byte = self._byte
+        self._byte = byte if valid else 0
         _set_validation_fg(self.label_byte, valid, optional=True, value=self._byte)
         return valid
 
     @property
     def changed(self):
-        return (self._old_byte or 0) != (self._byte or 0)
+        return ((self._old_byte or 0) != (self._byte or 0)) or (self._old_filtered != self._filtered)
 
     @property
     def byte(self):
         return self._byte
 
+    @property
+    def filtered(self):
+        return self._filtered
+
     def validate(self):
+        self._old_filtered = self._filtered
+        self._filtered = self.var_filtered.get()
         return self._validate_byte()
 
 

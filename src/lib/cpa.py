@@ -20,14 +20,6 @@ COUNT_HYP = 256  # Count of key hypothesis for one byte
 COUNT_CLS = 256  # Traces with the same byte value in a given position
 BLOCK_SIZE = aes.BLOCK_SIZE
 
-class Models(Enum):
-    """CPA power consumption models.
-
-    """
-
-    SBOX_R0 = 0
-    INV_SBOX_R10 = 1
-
 
 class Statistics:
     def __init__(self, handler=None):
@@ -204,7 +196,7 @@ class Handler:
         SBOX_R0 = 0
         INV_SBOX_R10 = 1
 
-    def __init__(self, model, channel=None, traces=None, samples=None):
+    def __init__(self, model=None, channel=None, traces=None, samples=None):
         """Allocates memory, accumulates traces and initialize model.
 
         Parameters
@@ -218,7 +210,7 @@ class Handler:
         samples : int
             Count of time samples in the signals.
         """
-        self.model = model
+        self.model = model or Handler.Models(value=0)
         self.blocks = None
         self.key = None
         self.iterations = 0
@@ -235,7 +227,7 @@ class Handler:
             samples = samples or traces.shape[1]
             self.clear(samples).set_model(model).set_key(channel).set_blocks(channel).accumulate(traces)
         else:
-            self.clear(samples or 0).set_model(model)
+            self.clear(samples or 0).set_model(self.model)
 
     def clear(self, samples=0):
         self.iterations = 0
