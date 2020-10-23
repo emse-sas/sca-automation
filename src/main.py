@@ -20,7 +20,7 @@ from lib.aes import BLOCK_LEN
 from lib.cpa import Handler
 from lib.data import Request, Parser, Keywords
 from widgets import MainFrame, config, sizeof
-from widgets.config import PlotList, FilterField
+from widgets.config import PlotList, FilterField, FilterFrame
 
 logger_format = '[%(asctime)s | %(processName)s | %(threadName)s] %(message)s'
 logging.basicConfig(stream=sys.stdout, format=logger_format, level=logging.DEBUG, datefmt="%y-%m-%d %H:%M:%S")
@@ -593,14 +593,16 @@ class App(Tk):
         self.trace_filt.clear()
         self.noise_filt.clear()
         self.stats.clear()
-        try:
+
+        if self.frames.config.perfs.filter.mode == FilterFrame.Mode.MANUAL:
             self.filters = [_generate_filter(field.type,
                                              field.freq1,
                                              field.freq2,
                                              f_s=self.frames.config.perfs.filter.freqs.freq)
                             for field in self.frames.config.perfs.filter.freqs.fields]
-        except TypeError:
+        else:
             self.filters = None
+
         self.curr_chunk = 0 if self.request.chunks else None
         self.next_chunk = 0 if self.request.chunks else None
         try:
