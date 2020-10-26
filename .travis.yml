@@ -18,10 +18,6 @@ scripts:
 - touch .nojekyll
 - cd ../../../
 
-before_deploy:
-- openssl aes-256-cbc -K $encrypted_b5cde2e0c765_key -iv $encrypted_b5cde2e0c765_iv
-  -in deploy_sca.enc -out deploy_sca -d
-  
 deploy:
   provider: pages:git
   email: sami@dahoux.net
