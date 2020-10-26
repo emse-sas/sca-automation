@@ -83,20 +83,15 @@
               <p class="caption"><span class="caption-text">Application</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="application.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="application.html#clean-py">clean.py</a></li>
-<li class="toctree-l1"><a class="reference internal" href="application.html#setup-py">setup.py</a></li>
-<li class="toctree-l1"><a class="reference internal" href="application.html#acquire-py">acquire.py</a></li>
-<li class="toctree-l1"><a class="reference internal" href="application.html#attack-py">attack.py</a></li>
-<li class="toctree-l1"><a class="reference internal" href="application.html#core-module">core module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="application.html#main-py">main.py</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Library</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="library.html">Overview</a></li>
-<li class="toctree-l1"><a class="reference internal" href="library.html#module-app.lib.aes">lib.aes module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="library.html#module-app.lib.cpa">lib.cpa module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="library.html#lib-log-module">lib.log module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="library.html#module-app.lib.traces">lib.traces module</a></li>
-<li class="toctree-l1"><a class="reference internal" href="library.html#lib-utils-module">lib.utils module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="library.html#module-src.lib.aes">lib.aes module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="library.html#module-src.lib.cpa">lib.cpa module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="library.html#module-src.lib.data">lib.log module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="library.html#module-src.lib.traces">lib.traces module</a></li>
 </ul>
 
             
@@ -169,65 +164,44 @@
  | <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
  | <a href="#E"><strong>E</strong></a>
+ | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
  | <a href="#H"><strong>H</strong></a>
  | <a href="#I"><strong>I</strong></a>
  | <a href="#K"><strong>K</strong></a>
  | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
+ | <a href="#O"><strong>O</strong></a>
  | <a href="#P"><strong>P</strong></a>
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
+ | <a href="#T"><strong>T</strong></a>
  | <a href="#U"><strong>U</strong></a>
+ | <a href="#V"><strong>V</strong></a>
  | <a href="#W"><strong>W</strong></a>
  
 </div>
 <h2 id="A">A</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.cpa.Handler.accumulate">accumulate() (app.lib.cpa.Handler method)</a>
+      <li><a href="library.html#src.lib.cpa.Handler.accumulate">accumulate() (src.lib.cpa.Handler method)</a>
 </li>
-      <li><a href="library.html#app.lib.aes.Stages.ADD_ROUND_KEY">ADD_ROUND_KEY (app.lib.aes.Stages attribute)</a>
+      <li><a href="library.html#src.lib.data.Request.ACQ_CMD_NAME">ACQ_CMD_NAME (src.lib.data.Request attribute)</a>
 </li>
-      <li><a href="library.html#app.lib.aes.add_round_key">add_round_key() (in module app.lib.aes)</a>
+      <li><a href="library.html#src.lib.aes.Stages.ADD_ROUND_KEY">ADD_ROUND_KEY (src.lib.aes.Stages attribute)</a>
 </li>
-      <li><a href="library.html#app.lib.traces.adjust">adjust() (in module app.lib.traces)</a>
+      <li><a href="library.html#src.lib.aes.add_round_key">add_round_key() (in module src.lib.aes)</a>
 </li>
-      <li>
-    app
-
-      <ul>
-        <li><a href="application.html#module-app">module</a>
-</li>
-      </ul></li>
-      <li>
-    app.lib
-
-      <ul>
-        <li><a href="library.html#module-app.lib">module</a>
-</li>
-      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li>
-    app.lib.aes
-
-      <ul>
-        <li><a href="library.html#module-app.lib.aes">module</a>
+      <li><a href="library.html#src.lib.traces.adjust">adjust() (in module src.lib.traces)</a>
 </li>
-      </ul></li>
-      <li>
-    app.lib.cpa
-
-      <ul>
-        <li><a href="library.html#module-app.lib.cpa">module</a>
+      <li><a href="library.html#src.lib.data.Keywords.all">all() (src.lib.data.Keywords method)</a>
 </li>
-      </ul></li>
-      <li>
-    app.lib.traces
+      <li><a href="library.html#src.lib.data.Channel.append">append() (src.lib.data.Channel method)</a>
 
       <ul>
-        <li><a href="library.html#module-app.lib.traces">module</a>
+        <li><a href="library.html#src.lib.data.Leak.append">(src.lib.data.Leak method)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -236,14 +210,14 @@
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.aes.block_to_words">block_to_words() (in module app.lib.aes)</a>
+      <li><a href="library.html#src.lib.aes.block_to_words">block_to_words() (in module src.lib.aes)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.aes.Handler.blocks">blocks (app.lib.aes.Handler attribute)</a>
+      <li><a href="library.html#src.lib.aes.Handler.blocks">blocks (src.lib.aes.Handler attribute)</a>
 
       <ul>
-        <li><a href="library.html#app.lib.cpa.Handler.blocks">(app.lib.cpa.Handler attribute)</a>
+        <li><a href="library.html#src.lib.cpa.Handler.blocks">(src.lib.cpa.Handler attribute)</a>
 </li>
       </ul></li>
   </ul></td>
@@ -252,19 +226,43 @@
 <h2 id="C">C</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.cpa.Handler.clear">clear() (app.lib.cpa.Handler method)</a>
+      <li><a href="library.html#src.lib.data.Channel">Channel (class in src.lib.data)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Parser.channel">channel (src.lib.data.Parser attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Request.chunks">chunks (src.lib.data.Request attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Keywords.CIPHER">CIPHER (src.lib.data.Keywords attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Channel.ciphers">ciphers (src.lib.data.Channel attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.cpa.Handler.clear">clear() (src.lib.cpa.Handler method)</a>
 
       <ul>
-        <li><a href="library.html#app.lib.cpa.Statistics.clear">(app.lib.cpa.Statistics method)</a>
+        <li><a href="library.html#src.lib.cpa.Statistics.clear">(src.lib.cpa.Statistics method)</a>
+</li>
+        <li><a href="library.html#src.lib.data.Channel.clear">(src.lib.data.Channel method)</a>
+</li>
+        <li><a href="library.html#src.lib.data.Leak.clear">(src.lib.data.Leak method)</a>
+</li>
+        <li><a href="library.html#src.lib.data.Meta.clear">(src.lib.data.Meta method)</a>
+</li>
+        <li><a href="library.html#src.lib.data.Parser.clear">(src.lib.data.Parser method)</a>
+</li>
+        <li><a href="library.html#src.lib.traces.Statistics.clear">(src.lib.traces.Statistics method)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.aes.col_to_word">col_to_word() (in module app.lib.aes)</a>
+      <li><a href="library.html#src.lib.data.Keywords.CODE">CODE (src.lib.data.Keywords attribute)</a>
 </li>
-      <li><a href="library.html#app.lib.cpa.Handler.correlations">correlations() (app.lib.cpa.Handler method)</a>
+      <li><a href="library.html#src.lib.aes.col_to_word">col_to_word() (in module src.lib.aes)</a>
 </li>
-      <li><a href="library.html#app.lib.traces.crop">crop() (in module app.lib.traces)</a>
+      <li><a href="library.html#src.lib.data.Request.command">command() (src.lib.data.Request method)</a>
+</li>
+      <li><a href="library.html#src.lib.cpa.Handler.correlations">correlations() (src.lib.cpa.Handler method)</a>
+</li>
+      <li><a href="library.html#src.lib.traces.crop">crop() (in module src.lib.traces)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -272,11 +270,25 @@
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.aes.Handler.decrypt">decrypt() (app.lib.aes.Handler method)</a>
+      <li><a href="library.html#src.lib.data.Keywords.datawords">datawords (src.lib.data.Keywords attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Request.Directions.DECRYPT">DECRYPT (src.lib.data.Request.Directions attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.aes.Handler.decrypt">decrypt() (src.lib.aes.Handler method)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Keywords.DELIMITER">DELIMITER (src.lib.data.Keywords attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.cpa.Statistics.div_idxs">div_idxs() (app.lib.cpa.Statistics method)</a>
+      <li><a href="library.html#src.lib.data.Deserializable">Deserializable (class in src.lib.data)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Request.Modes.DHUERTAS">DHUERTAS (src.lib.data.Request.Modes attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Keywords.DIRECTION">DIRECTION (src.lib.data.Keywords attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Request.direction">direction (src.lib.data.Request attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.cpa.Statistics.div_idxs">div_idxs() (src.lib.cpa.Statistics method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -284,7 +296,23 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.aes.Handler.encrypt">encrypt() (app.lib.aes.Handler method)</a>
+      <li><a href="library.html#src.lib.data.Request.Directions.ENCRYPT">ENCRYPT (src.lib.data.Request.Directions attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.aes.Handler.encrypt">encrypt() (src.lib.aes.Handler method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="library.html#src.lib.data.Keywords.END_ACQ_TAG">END_ACQ_TAG (src.lib.data.Keywords attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Keywords.END_LINE_TAG">END_LINE_TAG (src.lib.data.Keywords attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="F">F</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="library.html#src.lib.data.Request.filename">filename() (src.lib.data.Request method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -292,13 +320,13 @@
 <h2 id="G">G</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.cpa.Statistics.graph">graph() (app.lib.cpa.Statistics class method)</a>
+      <li><a href="library.html#src.lib.cpa.Statistics.graph">graph() (src.lib.cpa.Statistics class method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.cpa.Statistics.guess_envelope">guess_envelope() (app.lib.cpa.Statistics class method)</a>
+      <li><a href="library.html#src.lib.cpa.Statistics.guess_envelope">guess_envelope() (src.lib.cpa.Statistics class method)</a>
 </li>
-      <li><a href="library.html#app.lib.cpa.Statistics.guess_stats">guess_stats() (app.lib.cpa.Statistics class method)</a>
+      <li><a href="library.html#src.lib.cpa.Statistics.guess_stats">guess_stats() (src.lib.cpa.Statistics class method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -306,15 +334,19 @@
 <h2 id="H">H</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.aes.Handler">Handler (class in app.lib.aes)</a>
+      <li><a href="library.html#src.lib.aes.Handler">Handler (class in src.lib.aes)</a>
 
       <ul>
-        <li><a href="library.html#app.lib.cpa.Handler">(class in app.lib.cpa)</a>
+        <li><a href="library.html#src.lib.cpa.Handler">(class in src.lib.cpa)</a>
 </li>
       </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.cpa.Handler.hypothesis">hypothesis (app.lib.cpa.Handler attribute)</a>
+      <li><a href="library.html#src.lib.cpa.Handler.Models">Handler.Models (class in src.lib.cpa)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Request.Modes.HARDWARE">HARDWARE (src.lib.data.Request.Modes attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.cpa.Handler.hypothesis">hypothesis (src.lib.cpa.Handler attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -322,23 +354,37 @@
 <h2 id="I">I</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.aes.Stages.INV_ADD_ROUND_KEY">INV_ADD_ROUND_KEY (app.lib.aes.Stages attribute)</a>
+      <li><a href="library.html#src.lib.data.Keywords.idx">idx (src.lib.data.Keywords attribute)</a>
 </li>
-      <li><a href="library.html#app.lib.aes.Stages.INV_MIX_COLUMNS">INV_MIX_COLUMNS (app.lib.aes.Stages attribute)</a>
+      <li><a href="library.html#src.lib.data.Channel.insert">insert() (src.lib.data.Channel method)</a>
+
+      <ul>
+        <li><a href="library.html#src.lib.data.Leak.insert">(src.lib.data.Leak method)</a>
 </li>
-      <li><a href="library.html#app.lib.aes.inv_mix_columns">inv_mix_columns() (in module app.lib.aes)</a>
+      </ul></li>
+      <li><a href="library.html#src.lib.data.Keywords.inv">inv (src.lib.data.Keywords attribute)</a>
 </li>
-      <li><a href="library.html#app.lib.cpa.Models.INV_SBOX">INV_SBOX (app.lib.cpa.Models attribute)</a>
+      <li><a href="library.html#src.lib.aes.Stages.INV_ADD_ROUND_KEY">INV_ADD_ROUND_KEY (src.lib.aes.Stages attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.aes.Stages.INV_MIX_COLUMNS">INV_MIX_COLUMNS (src.lib.aes.Stages attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.aes.inv_mix_columns">inv_mix_columns() (in module src.lib.aes)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.aes.Stages.INV_SHIFT_ROWS">INV_SHIFT_ROWS (app.lib.aes.Stages attribute)</a>
+      <li><a href="library.html#src.lib.cpa.Handler.Models.INV_SBOX_R10">INV_SBOX_R10 (src.lib.cpa.Handler.Models attribute)</a>
 </li>
-      <li><a href="library.html#app.lib.aes.inv_shift_rows">inv_shift_rows() (in module app.lib.aes)</a>
+      <li><a href="library.html#src.lib.aes.Stages.INV_SHIFT_ROWS">INV_SHIFT_ROWS (src.lib.aes.Stages attribute)</a>
 </li>
-      <li><a href="library.html#app.lib.aes.Stages.INV_SUB_BYTES">INV_SUB_BYTES (app.lib.aes.Stages attribute)</a>
+      <li><a href="library.html#src.lib.aes.inv_shift_rows">inv_shift_rows() (in module src.lib.aes)</a>
 </li>
-      <li><a href="library.html#app.lib.aes.inv_sub_bytes">inv_sub_bytes() (in module app.lib.aes)</a>
+      <li><a href="library.html#src.lib.aes.Stages.INV_SUB_BYTES">INV_SUB_BYTES (src.lib.aes.Stages attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.aes.inv_sub_bytes">inv_sub_bytes() (in module src.lib.aes)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Keywords.ITERATIONS">ITERATIONS (src.lib.data.Keywords attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Request.iterations">iterations (src.lib.data.Request attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -346,13 +392,21 @@
 <h2 id="K">K</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.cpa.Handler.key">key (app.lib.cpa.Handler attribute)</a>
+      <li><a href="library.html#src.lib.cpa.Handler.key">key (src.lib.cpa.Handler attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Keywords.KEY">KEY (src.lib.data.Keywords attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.aes.key_expansion">key_expansion() (in module src.lib.aes)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.aes.key_expansion">key_expansion() (in module app.lib.aes)</a>
+      <li><a href="library.html#src.lib.aes.Handler.keys">keys (src.lib.aes.Handler attribute)</a>
+
+      <ul>
+        <li><a href="library.html#src.lib.data.Channel.keys">(src.lib.data.Channel attribute)</a>
 </li>
-      <li><a href="library.html#app.lib.aes.Handler.keys">keys (app.lib.aes.Handler attribute)</a>
+      </ul></li>
+      <li><a href="library.html#src.lib.data.Keywords">Keywords (class in src.lib.data)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -360,7 +414,13 @@
 <h2 id="L">L</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.cpa.Handler.lens">lens (app.lib.cpa.Handler attribute)</a>
+      <li><a href="library.html#src.lib.data.Leak">Leak (class in src.lib.data)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="library.html#src.lib.data.Parser.leak">leak (src.lib.data.Parser attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.cpa.Handler.lens">lens (src.lib.cpa.Handler attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -368,42 +428,110 @@
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.aes.Stages.MIX_COLUMNS">MIX_COLUMNS (app.lib.aes.Stages attribute)</a>
+      <li><a href="library.html#src.lib.data.Meta">Meta (class in src.lib.data)</a>
 </li>
-      <li><a href="library.html#app.lib.aes.mix_columns">mix_columns() (in module app.lib.aes)</a>
+      <li><a href="library.html#src.lib.data.Keywords.meta">meta (src.lib.data.Keywords attribute)</a>
+
+      <ul>
+        <li><a href="library.html#src.lib.data.Parser.meta">(src.lib.data.Parser attribute)</a>
 </li>
-      <li><a href="library.html#app.lib.cpa.Models">Models (class in app.lib.cpa)</a>
+      </ul></li>
+      <li><a href="library.html#src.lib.data.Keywords.metawords">metawords (src.lib.data.Keywords attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.aes.Stages.MIX_COLUMNS">MIX_COLUMNS (src.lib.aes.Stages attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.aes.mix_columns">mix_columns() (in module src.lib.aes)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Keywords.MODE">MODE (src.lib.data.Keywords attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="library.html#src.lib.data.Request.mode">mode (src.lib.data.Request attribute)</a>
 </li>
       <li>
     module
 
       <ul>
-        <li><a href="application.html#module-app">app</a>
+        <li><a href="application.html#module-src">src</a>
 </li>
-        <li><a href="library.html#module-app.lib">app.lib</a>
+        <li><a href="library.html#module-src.lib">src.lib</a>
 </li>
-        <li><a href="library.html#module-app.lib.aes">app.lib.aes</a>
+        <li><a href="library.html#module-src.lib.aes">src.lib.aes</a>
 </li>
-        <li><a href="library.html#module-app.lib.cpa">app.lib.cpa</a>
+        <li><a href="library.html#module-src.lib.cpa">src.lib.cpa</a>
 </li>
-        <li><a href="library.html#module-app.lib.traces">app.lib.traces</a>
+        <li><a href="library.html#module-src.lib.data">src.lib.data</a>
+</li>
+        <li><a href="library.html#module-src.lib.traces">src.lib.traces</a>
 </li>
       </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="O">O</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="library.html#src.lib.data.Keywords.OFFSET">OFFSET (src.lib.data.Keywords attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="library.html#src.lib.data.Request.Modes.OPENSSL">OPENSSL (src.lib.data.Request.Modes attribute)</a>
+</li>
   </ul></td>
 </tr></table>
 
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.traces.pad">pad() (in module app.lib.traces)</a>
+      <li><a href="library.html#src.lib.traces.pad">pad() (in module src.lib.traces)</a>
 </li>
+      <li><a href="library.html#src.lib.data.Parser.parse">parse() (src.lib.data.Parser method)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Parser">Parser (class in src.lib.data)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Keywords.PLAIN">PLAIN (src.lib.data.Keywords attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="library.html#src.lib.data.Channel.plains">plains (src.lib.data.Channel attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Channel.pop">pop() (src.lib.data.Channel method)</a>
+
+      <ul>
+        <li><a href="library.html#src.lib.data.Leak.pop">(src.lib.data.Leak method)</a>
+</li>
+        <li><a href="library.html#src.lib.data.Parser.pop">(src.lib.data.Parser method)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.aes.rot_word">rot_word() (in module app.lib.aes)</a>
+      <li><a href="library.html#src.lib.data.Channel.read_csv">read_csv() (src.lib.data.Channel method)</a>
+
+      <ul>
+        <li><a href="library.html#src.lib.data.Deserializable.read_csv">(src.lib.data.Deserializable method)</a>
+</li>
+        <li><a href="library.html#src.lib.data.Leak.read_csv">(src.lib.data.Leak method)</a>
+</li>
+        <li><a href="library.html#src.lib.data.Meta.read_csv">(src.lib.data.Meta method)</a>
+</li>
+      </ul></li>
+      <li><a href="library.html#src.lib.data.Request">Request (class in src.lib.data)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="library.html#src.lib.data.Request.Directions">Request.Directions (class in src.lib.data)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Request.Modes">Request.Modes (class in src.lib.data)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Request.requested">requested() (src.lib.data.Request method)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Keywords.reset">reset() (src.lib.data.Keywords method)</a>
+</li>
+      <li><a href="library.html#src.lib.aes.rot_word">rot_word() (in module src.lib.aes)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -411,41 +539,125 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.cpa.Models.SBOX">SBOX (app.lib.cpa.Models attribute)</a>
+      <li><a href="library.html#src.lib.data.Keywords.SAMPLES">SAMPLES (src.lib.data.Keywords attribute)</a>
 </li>
-      <li><a href="library.html#app.lib.cpa.Handler.set_blocks">set_blocks() (app.lib.cpa.Handler method)</a>
+      <li><a href="library.html#src.lib.data.Leak.samples">samples (src.lib.data.Leak attribute)</a>
 </li>
-      <li><a href="library.html#app.lib.cpa.Handler.set_key">set_key() (app.lib.cpa.Handler method)</a>
+      <li><a href="library.html#src.lib.cpa.Handler.Models.SBOX_R0">SBOX_R0 (src.lib.cpa.Handler.Models attribute)</a>
 </li>
-      <li><a href="library.html#app.lib.cpa.Handler.set_model">set_model() (app.lib.cpa.Handler method)</a>
+      <li><a href="library.html#src.lib.data.Keywords.SENSORS">SENSORS (src.lib.data.Keywords attribute)</a>
 </li>
-      <li><a href="library.html#app.lib.aes.Stages.SHIFT_ROWS">SHIFT_ROWS (app.lib.aes.Stages attribute)</a>
+      <li><a href="library.html#src.lib.data.Serializable">Serializable (class in src.lib.data)</a>
 </li>
-      <li><a href="library.html#app.lib.aes.shift_rows">shift_rows() (in module app.lib.aes)</a>
+      <li><a href="library.html#src.lib.cpa.Handler.set_blocks">set_blocks() (src.lib.cpa.Handler method)</a>
 </li>
-      <li><a href="library.html#app.lib.aes.Stages">Stages (class in app.lib.aes)</a>
+      <li><a href="library.html#src.lib.cpa.Handler.set_key">set_key() (src.lib.cpa.Handler method)</a>
 </li>
-      <li><a href="library.html#app.lib.aes.Stages.START">START (app.lib.aes.Stages attribute)</a>
+      <li><a href="library.html#src.lib.cpa.Handler.set_model">set_model() (src.lib.cpa.Handler method)</a>
+</li>
+      <li><a href="library.html#src.lib.aes.Stages.SHIFT_ROWS">SHIFT_ROWS (src.lib.aes.Stages attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.aes.shift_rows">shift_rows() (in module src.lib.aes)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Request.source">source (src.lib.data.Request attribute)</a>
+</li>
+      <li>
+    src
+
+      <ul>
+        <li><a href="application.html#module-src">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.lib
+
+      <ul>
+        <li><a href="library.html#module-src.lib">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.lib.aes
+
+      <ul>
+        <li><a href="library.html#module-src.lib.aes">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.lib.cpa
+
+      <ul>
+        <li><a href="library.html#module-src.lib.cpa">module</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    src.lib.data
+
+      <ul>
+        <li><a href="library.html#module-src.lib.data">module</a>
+</li>
+      </ul></li>
+      <li>
+    src.lib.traces
+
+      <ul>
+        <li><a href="library.html#module-src.lib.traces">module</a>
+</li>
+      </ul></li>
+      <li><a href="library.html#src.lib.aes.Stages">Stages (class in src.lib.aes)</a>
+</li>
+      <li><a href="library.html#src.lib.aes.Stages.START">START (src.lib.aes.Stages attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Keywords.START_RAW_TAG">START_RAW_TAG (src.lib.data.Keywords attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Keywords.START_TRACE_TAG">START_TRACE_TAG (src.lib.data.Keywords attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.cpa.Statistics">Statistics (class in src.lib.cpa)</a>
+
+      <ul>
+        <li><a href="library.html#src.lib.traces.Statistics">(class in src.lib.traces)</a>
+</li>
+      </ul></li>
+      <li><a href="library.html#src.lib.data.Channel.STR_MAX_LINES">STR_MAX_LINES (src.lib.data.Channel attribute)</a>
+
+      <ul>
+        <li><a href="library.html#src.lib.data.Leak.STR_MAX_LINES">(src.lib.data.Leak attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="library.html#src.lib.aes.Stages.SUB_BYTES">SUB_BYTES (src.lib.aes.Stages attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.aes.sub_bytes">sub_bytes() (in module src.lib.aes)</a>
+</li>
+      <li><a href="library.html#src.lib.aes.sub_word">sub_word() (in module src.lib.aes)</a>
+</li>
+      <li><a href="library.html#src.lib.cpa.Handler.sum">sum (src.lib.cpa.Handler attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.cpa.Handler.sum2">sum2 (src.lib.cpa.Handler attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.cpa.Handler.sums">sums (src.lib.cpa.Handler attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.cpa.Handler.sums2">sums2 (src.lib.cpa.Handler attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.traces.sync">sync() (in module src.lib.traces)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="T">T</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="library.html#src.lib.data.Keywords.TARGET">TARGET (src.lib.data.Keywords attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.data.Request.target">target (src.lib.data.Request attribute)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.cpa.Statistics">Statistics (class in app.lib.cpa)</a>
+      <li><a href="library.html#src.lib.data.Request.Modes.TINY">TINY (src.lib.data.Request.Modes attribute)</a>
 </li>
-      <li><a href="library.html#app.lib.aes.Stages.SUB_BYTES">SUB_BYTES (app.lib.aes.Stages attribute)</a>
+      <li><a href="library.html#src.lib.data.Request.total">total() (src.lib.data.Request property)</a>
 </li>
-      <li><a href="library.html#app.lib.aes.sub_bytes">sub_bytes() (in module app.lib.aes)</a>
-</li>
-      <li><a href="library.html#app.lib.aes.sub_word">sub_word() (in module app.lib.aes)</a>
-</li>
-      <li><a href="library.html#app.lib.cpa.Handler.sum">sum (app.lib.cpa.Handler attribute)</a>
-</li>
-      <li><a href="library.html#app.lib.cpa.Handler.sum2">sum2 (app.lib.cpa.Handler attribute)</a>
-</li>
-      <li><a href="library.html#app.lib.cpa.Handler.sums">sums (app.lib.cpa.Handler attribute)</a>
-</li>
-      <li><a href="library.html#app.lib.cpa.Handler.sums2">sums2 (app.lib.cpa.Handler attribute)</a>
-</li>
-      <li><a href="library.html#app.lib.traces.sync">sync() (in module app.lib.traces)</a>
+      <li><a href="library.html#src.lib.data.Leak.traces">traces (src.lib.data.Leak attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -453,7 +665,23 @@
 <h2 id="U">U</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.cpa.Statistics.update">update() (app.lib.cpa.Statistics method)</a>
+      <li><a href="library.html#src.lib.cpa.Statistics.update">update() (src.lib.cpa.Statistics method)</a>
+
+      <ul>
+        <li><a href="library.html#src.lib.traces.Statistics.update">(src.lib.traces.Statistics method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="library.html#src.lib.data.Keywords.value">value (src.lib.data.Keywords attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="library.html#src.lib.data.Request.verbose">verbose (src.lib.data.Request attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -461,12 +689,24 @@
 <h2 id="W">W</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.aes.word_to_col">word_to_col() (in module app.lib.aes)</a>
+      <li><a href="library.html#src.lib.data.Keywords.WEIGHTS">WEIGHTS (src.lib.data.Keywords attribute)</a>
+</li>
+      <li><a href="library.html#src.lib.aes.word_to_col">word_to_col() (in module src.lib.aes)</a>
+</li>
+      <li><a href="library.html#src.lib.aes.words_to_block">words_to_block() (in module src.lib.aes)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="library.html#app.lib.aes.words_to_block">words_to_block() (in module app.lib.aes)</a>
+      <li><a href="library.html#src.lib.data.Channel.write_csv">write_csv() (src.lib.data.Channel method)</a>
+
+      <ul>
+        <li><a href="library.html#src.lib.data.Leak.write_csv">(src.lib.data.Leak method)</a>
 </li>
+        <li><a href="library.html#src.lib.data.Meta.write_csv">(src.lib.data.Meta method)</a>
+</li>
+        <li><a href="library.html#src.lib.data.Serializable.write_csv">(src.lib.data.Serializable method)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 

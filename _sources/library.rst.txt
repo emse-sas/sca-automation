@@ -2,16 +2,15 @@ Overview
 --------------------
 
 
-.. automodule:: app.lib
+.. automodule:: src.lib
    :members:
    :undoc-members:
    :show-inheritance:
 
-
 lib.aes module
 ----------------------
 
-.. automodule:: app.lib.aes
+.. automodule:: src.lib.aes
    :members:
    :undoc-members:
    :show-inheritance:
@@ -19,7 +18,7 @@ lib.aes module
 lib.cpa module
 ----------------------
 
-.. automodule:: app.lib.cpa
+.. automodule:: src.lib.cpa
    :members:
    :undoc-members:
    :show-inheritance:
@@ -27,7 +26,7 @@ lib.cpa module
 lib.log module
 ----------------------
 
-.. automodule:: app.lib.log
+.. automodule:: src.lib.data
    :members:
    :undoc-members:
    :show-inheritance:
@@ -35,15 +34,7 @@ lib.log module
 lib.traces module
 -------------------------
 
-.. automodule:: app.lib.traces
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-lib.utils module
-------------------------
-
-.. automodule:: app.lib.utils
+.. automodule:: src.lib.traces
    :members:
    :undoc-members:
    :show-inheritance:
