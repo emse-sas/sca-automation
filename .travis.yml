@@ -22,6 +22,7 @@ deploy:
   provider: pages:git
   email: sami@dahoux.net
   local_dir: docs/build/html
+  github_token: $GH_PAGES_TOKEN
   keep_history: true
   edge: true
   on:

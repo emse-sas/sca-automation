@@ -707,7 +707,6 @@ class App(Tk):
             else:
                 self.frames.plot.draw_stats((self.noise.mean, self.noise.spectrum, self.noise.freqs))
 
-
     async def show_corr(self):
         now = f"{datetime.now():the %d %b %Y at %H:%M:%S}"
         if self.curr_chunk is not None:
