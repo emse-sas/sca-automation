@@ -7,7 +7,7 @@ install:
 
 scripts:
 - echo "Unit testing..."
-- cd app
+- cd src
 - python -m unittest tests.test_aes
 - python -m unittest tests.test_traces
 - cd ..
