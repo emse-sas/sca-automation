@@ -1,23 +1,25 @@
 SCABox Attack Demo
 ***************************************************************
 
-.. image:: https://api.travis-ci.com/samiBendou/sca-automation.svg?token=LqpGzZ56omzjYoep5ESp&branch=master
-    :target: https://travis-ci.com/samiBendou/sca-automation
+.. image:: https://api.travis-ci.com/emse-sas/sca-automation.svg?token=LqpGzZ56omzjYoep5ESp&branch=master
+    :target: https://travis-ci.com/emse-sas/sca-automation
     :alt: tests
 
-.. image:: https://img.shields.io/github/license/samiBendou/sca-automation
+.. image:: https://img.shields.io/github/license/emse-sas/sca-automation
     :target: https://choosealicense.com/licenses/mit/
     :alt: license
 
-.. image:: https://img.shields.io/github/deployments/samiBendou/sca-automation/github-pages
-    :target: https://samibendou.github.io/sca-automation/
+.. image:: https://img.shields.io/github/deployments/emse-sas/sca-automation/github-pages
+    :target: https://emse-sas.github.io/sca-automation/
     :alt: pages
+
+`Website <https://emse-sas.github.io/sca-automation/>`_
 
 Overview
 ===============================================================
 
 This repository contains a Python GUI application and a library to retrieve side-channel acquisition data from serial
-port and perform an attack. It is part of the `SCABox <https://samibendou.github.io/sca_framework/>`_ project.
+port and perform an attack. It is part of the `SCABox <https://emse-sas.github.io/sca_framework/>`_ project.
 
 - Application : attack from serial port to key guess with exports
 - Library : tools to perform attack, serial communication and correlation
@@ -52,7 +54,7 @@ To install the repository you must clone the sources from GitHub and install the
 
 .. code-block:: shell
 
-    $ git clone https://github.com/samiBendou/sca-automation
+    $ git clone https://github.com/emse-sas/sca-automation
     $ cd sca-automation
     $ pip3 install -r requirements.txt
 
@@ -97,7 +99,7 @@ To get an exhaustive list, please visit the reference
 Documentation
 ===============================================================
 
-The complete documentation of the project is available `here <https://samibendou.github.io/sca-automation/>`_.
+The complete documentation of the project is available `here <https://emse-sas.github.io/sca-automation/>`_.
 
 Build
 ---------------------------------------------------------------
@@ -115,15 +117,15 @@ More
 SCABox is a project on the topic of side-channel analysis.
 The goal of SCABox is to provide a cheap and efficient test-bench for side-channel analysis.
 
-To know more about SCABox please visit our `website <https://samibendou.github.io/sca_framework/>`_.
+To know more about SCABox please visit our `website <https://emse-sas.github.io/sca_framework/>`_.
 It provides a tutorials and a wiki about side-channel analysis.
 
 SCABox is an open-source project, all the sources are hosted on GitHub
 
-- `IP repository <https://github.com/samiBendou/sca-ip/>`_
-- `Acquisition demo <https://github.com/samiBendou/sca-demo-tdc-aes/>`_
-- `Attack demo <https://github.com/samiBendou/sca-automation/>`_
-- `SCABox website  <https://github.com/samiBendou/sca_framework/>`_
+- `IP repository <https://github.com/emse-sas/sca-ip/>`_
+- `Acquisition demo <https://github.com/emse-sas/sca-demo-tdc-aes/>`_
+- `Attack demo <https://github.com/emse-sas/sca-automation/>`_
+- `SCABox website  <https://github.com/emse-sas/sca_framework/>`_
 
 Contributing
 ---------------------------------------------------------------
