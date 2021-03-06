@@ -526,13 +526,14 @@ class App(Tk):
             self.pending &= ~ Pending.STATISTICS
             await self.show_stats()
 
-        if self.pending & Pending.CORRELATION:
-            self.pending &= ~ Pending.CORRELATION
-            self.frames.log.clear()
-            await self.show_corr()
-            await self.show_parsing()
-            if self.state != State.IDLE:
-                await self.show_starting()
+        if(self.request.algo == self.request.Algos.AES):
+            if self.pending & Pending.CORRELATION:
+                self.pending &= ~ Pending.CORRELATION
+                self.frames.log.clear()
+                await self.show_corr()
+                await self.show_parsing()
+                if self.state != State.IDLE:
+                    await self.show_starting()
 
         if self.pending & Pending.CHUNK:
             self.pending &= ~ Pending.CHUNK
@@ -572,7 +573,7 @@ class App(Tk):
 
     def _set(self):
         self.frames.config.general.iterations = self.request.iterations
-        self.frames.config.perfs.chunks = self.request.chunks
+        self.frames.config.general.chunks = self.request.chunks
         self.frames.config.general.mode = self.request.mode
         self.frames.config.general.model = self.request.model
         self.frames.config.target.target = self.request.target
@@ -633,6 +634,7 @@ class App(Tk):
         logging.info(f"stopping acquisition, duration {timedelta(seconds=self.t_start - self.t_end)}")
 
     async def show_idle(self):
+
         if self.status & Status.VALID:
             self.frames.log.var_status.set("Ready to launch acquisition !")
             self.frames.unlock_launch()
@@ -754,6 +756,7 @@ if __name__ == "__main__":
     lo = asyncio.get_event_loop()
     app = App(lo, request=Request(argp.parse_args()))
     app.title("SCABox Demo")
+    app.geometry("1200x800")
     try:
         lo.run_forever()
     except KeyboardInterrupt:

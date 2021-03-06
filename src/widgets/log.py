@@ -5,7 +5,7 @@ class LogFrame(LabelFrame):
     def __init__(self, master):
         super().__init__(master, text="Logging")
         self.text_log = Text(self, state=DISABLED)
-        self.text_log.configure(height=18)
+        self.text_log.configure(height=8)
         self.text_log.pack()
         self.text_status = Text(self, state=DISABLED)
         self.text_status.configure(height=5)

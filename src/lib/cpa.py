@@ -121,7 +121,7 @@ class Statistics:
         correlations : Compute temporal correlation.
 
         """
-        best = np.amax(cor, axis=2)
+        best = np.amax(np.absolute(cor), axis=2)
         guess = np.argmax(best, axis=1)
         rank = COUNT_HYP - np.argsort(np.argsort(best, axis=1), axis=1)
         rank = np.array([rank[b, key[b]] for b in range(BLOCK_SIZE)])

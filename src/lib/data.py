@@ -353,6 +353,7 @@ class Meta(Serializable, Deserializable):
         """
 
         self.mode = None
+        self.algo = None
         self.direction = None
         self.target = 0
         self.sensors = 0
@@ -386,6 +387,7 @@ class Meta(Serializable, Deserializable):
 
         """
         self.mode = None
+        self.algo = None
         self.direction = None
         self.target = 0
         self.sensors = 0
@@ -431,7 +433,7 @@ class Meta(Serializable, Deserializable):
                 row = next(reader)
             except StopIteration:
                 return
-            self.mode = row[Keywords.MODE]
+            self.mode = row[Keywords.MODE]          
             self.direction = row[Keywords.DIRECTION]
             self.target = int(row[Keywords.TARGET])
             self.sensors = int(row[Keywords.SENSORS])
@@ -476,12 +478,21 @@ class Request:
 
     ACQ_CMD_NAME = "sca"
 
+    class Algos(Enum):
+        AES = "aes"
+        PRESENT = "present"
+        KLEIN = "klein"
+        CRYPTON = "crypton"
+		
     class Modes(Enum):
         HARDWARE = "hw"
         TINY = "tiny"
         OPENSSL = "ssl"
         DHUERTAS = "dhuertas"
-
+        PRESENT = "present"
+        KLEIN = "klein"
+        CRYPTON = "crypton"
+		
     class Directions(Enum):
         ENCRYPT = "enc"
         DECRYPT = "dec"
@@ -498,6 +509,7 @@ class Request:
         self.target = ""
         self.iterations = 0
         self.mode = Request.Modes.HARDWARE
+        self.algo = Request.Algos.AES
         self.model = Handler.Models.SBOX_R0
         self.direction = Request.Directions.ENCRYPT
         self.verbose = False
@@ -519,6 +531,7 @@ class Request:
             self.target = args.target
         if hasattr(args, "mode"):
             self.mode = next(filter(lambda e: args.mode == e.name, Request.Modes))
+            self._set_algo(self.mode)
         if hasattr(args, "model"):
             self.model = next(filter(lambda e: args.model == e.name, Handler.Models))
         if hasattr(args, "direction"):
@@ -543,6 +556,7 @@ class Request:
             self.target = args["target"]
         if "mode" in args:
             self.mode = args["mode"]
+            self._set_algo(self.mode)
         if "model" in args:
             self.model = args["model"]
         if "direction" in args:
@@ -559,6 +573,26 @@ class Request:
             self.end = args["end"]
         if "path" in args:
             self.path = args["path"]
+
+    def _set_algo(self, mode):
+
+        if(mode == Request.Modes.HARDWARE):
+            self.algo = Request.Algos.AES
+        elif(mode == Request.Modes.TINY):
+            self.algo = Request.Algos.AES
+        elif(mode == Request.Modes.OPENSSL):
+            self.algo = Request.Algos.AES
+        elif(mode == Request.Modes.DHUERTAS):
+            self.algo = Request.Algos.AES
+        elif(mode == Request.Modes.PRESENT):
+            self.algo = Request.Algos.PRESENT
+        elif(mode == Request.Modes.KLEIN):
+            self.algo = Request.Algos.KLEIN
+        elif(mode == Request.Modes.CRYPTON):
+            self.algo = Request.Algos.CRYPTON
+        else:
+            print("unknown mode")
+
 
     def __repr__(self):
         return f"{type(self).__name__}" \

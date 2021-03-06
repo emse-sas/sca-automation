@@ -165,9 +165,15 @@ class GeneralFrame(LabelFrame):
 
     def validate(self):
         valid = self._validate_mode()
+        #print("_validate_mode = %d"%valid)
         valid = self._validate_model() and valid
+        #print("_validate_model = %d"%valid)
         valid = self._validate_chunks() and valid
-        return self._validate_iterations() and valid
+        #print("_validate_model = %d"%valid)
+        valid =self._validate_iterations() and valid
+        #print("_validate_iterations = %d"%valid)
+        return valid
+
 
     def lock(self):
         self.entry_iterations["state"] = DISABLED
@@ -505,13 +511,15 @@ class FilterList(LabelFrame):
         valid = True
         for field in self.fields:
             valid = field.validate() and valid
-        return self._validate_freq() and valid
+        valid =  self._validate_freq() and valid
+        return valid
 
 
 class FilterFrame(LabelFrame):
     class Mode(Enum):
-        AUTO = 0
-        MANUAL = 1
+        NONE = 0
+        AUTO = 1
+        MANUAL = 2
 
     def __init__(self, master):
         super().__init__(master, text="Filter")
@@ -522,19 +530,26 @@ class FilterFrame(LabelFrame):
         self._freq = None
         self.var_mode = IntVar(value=0)
         self.var_freq = StringVar()
+
+        self.radio_mode_none = Radiobutton(self,
+                                           text="None",
+                                           variable=self.var_mode,
+                                           value=FilterFrame.Mode.NONE.value)
+        self.radio_mode_none.grid(row=0, column=0, columnspan=1, sticky=NSEW, padx=4)
+
         self.radio_mode_auto = Radiobutton(self,
                                            text="Auto",
                                            variable=self.var_mode,
                                            value=FilterFrame.Mode.AUTO.value)
-        self.radio_mode_auto.grid(row=0, column=0, columnspan=2, sticky=NSEW, padx=4)
+        self.radio_mode_auto.grid(row=0, column=1, columnspan=1, sticky=NSEW, padx=4)
 
         self.radio_mode_manual = Radiobutton(self,
                                              text="Manual",
                                              variable=self.var_mode,
                                              value=FilterFrame.Mode.MANUAL.value)
-        self.radio_mode_manual.grid(row=0, column=2, sticky=NSEW, padx=4)
+        self.radio_mode_manual.grid(row=0, column=2, columnspan=1,sticky=NSEW, padx=4)
 
-        self.freqs = FilterList(self, 4)
+        self.freqs = FilterList(self, 2)
         self.freqs.grid(row=2, column=0, columnspan=3, sticky=NSEW)
 
     @property
@@ -542,16 +557,18 @@ class FilterFrame(LabelFrame):
         return self._mode
 
     def lock(self):
+        self.radio_mode_none["state"] = DISABLED
         self.radio_mode_auto["state"] = DISABLED
         self.radio_mode_manual["state"] = DISABLED
 
     def unlock(self):
+        self.radio_mode_none["state"] = NORMAL
         self.radio_mode_auto["state"] = NORMAL
         self.radio_mode_manual["state"] = NORMAL
 
     def validate(self):
         self._mode = FilterFrame.Mode(value=self.var_mode.get())
-        if self._mode == FilterFrame.Mode.AUTO:
+        if self._mode == FilterFrame.Mode.AUTO or self._mode == FilterFrame.Mode.NONE:
             self.freqs.lock()
             return True
         else:
@@ -758,8 +775,8 @@ class PlotList(LabelFrame):
 
     def __init__(self, master):
         super().__init__(master, text="Mode")
-        self._mode = PlotList.Mode.CORRELATION
-        self._old_mode = PlotList.Mode.CORRELATION
+        self._mode = PlotList.Mode.STATISTICS
+        self._old_mode = PlotList.Mode.STATISTICS
         self.var_mode = StringVar(value=self._mode.value)
         self.radios_mode = [Radiobutton(self,
                                         text=e.value,
@@ -782,6 +799,15 @@ class PlotList(LabelFrame):
         self._mode = PlotList.Mode(value=self.var_mode.get())
         return True
 
+    def lock(self):
+        self.radios_mode[0]["state"] = DISABLED
+        self.radios_mode[1]["state"] = DISABLED
+        self.radios_mode[2]["state"] = DISABLED
+
+    def unlock(self):
+        self.radios_mode[0]["state"] = NORMAL
+        self.radios_mode[1]["state"] = NORMAL
+        self.radios_mode[2]["state"] = NORMAL
 
 class PlotOptions(LabelFrame):
     class Mode(Enum):
@@ -878,7 +904,9 @@ class ConfigFrame(LabelFrame):
         valid = self.target.validate() and valid
         valid = self.perfs.validate() and valid
         valid = self.plot.validate() and valid
-        return self.file.validate() and valid
+        valid = self.file.validate() and valid
+
+        return valid
 
     def lock(self):
         self.general.lock()

@@ -8,3 +8,4 @@ docs/build
 deploy_sca
 deploy_sca.pub
 .
+src/run_on_windows.txt
