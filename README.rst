@@ -86,13 +86,13 @@ The GUI application can be started by running the ``main.py`` script
 .. code-block:: shell
 
     $ cd sca-automation/app 
-    $ sudo python3 main.py
+    $ sudo python3 main.py --target /dev/ttyUSB1
 
 You might pass arguments to the ``main.py`` script in order parametrize the acquisition from shell.
 
 .. code-block:: shell
 
-    $ sudo python3 main.py 1024 /dev/ttyUSB1 --chunks 8
+    $ sudo python3 main.py --iteration 1024 --target /dev/ttyUSB1 --chunks 8
 
 To get an exhaustive list, please visit the reference
 
